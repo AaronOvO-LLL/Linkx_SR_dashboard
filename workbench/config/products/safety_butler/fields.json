@@ -1,0 +1,31 @@
+{
+  "template_version": "0.4.0",
+  "product_type": "safety_butler",
+  "note": "安全管家字段模型 = 引用字段包（config/field_packs/）+ 本产品组装。字段本体在字段包里，本文件只负责「引用哪些包、按什么顺序、改哪几个例外」。口径唯一权威来源：『踏勘要求的项目具体内容.xlsx』；MVP 阶段不做增删。",
+  "packs": [
+    "common_project",
+    "common_docs",
+    "common_property",
+    "security_monitor",
+    "security_network",
+    "security_business",
+    "common_decision",
+    "common_requirements"
+  ],
+  "group_order": [
+    "basic",
+    "docs",
+    "property",
+    "monitor",
+    "devices",
+    "network",
+    "cabinet",
+    "business",
+    "decision",
+    "keypoints",
+    "special"
+  ],
+  "overrides": {},
+  "extra_fields": [],
+  "remove_fields": []
+}

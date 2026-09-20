@@ -1,0 +1,40 @@
+# {{ project.name }} · {{ product.name }} 踏勘结果
+
+> 本文件由系统根据录音文字稿自动提取并经人工确认后生成，是后续方案、估算与交付的事实基线。
+
+| 项目信息 | 内容 |
+|---|---|
+| 项目名称 | {{ project.name }} |
+| 客户名称 | {{ project.customer_name or '（未填写）' }} |
+| 项目分类 | {{ project.category }} |
+| 项目地点 | {{ project.location or '（未填写）' }} |
+| 项目负责人 | {{ project.owner or '（未填写）' }} |
+| 产品 | {{ product.name }}（版本 {{ meta.product_version }}） |
+| 文字稿字数 | {{ meta.source_chars }} 字 |
+| 提取方式 | {{ meta.extraction_provider }} |
+| 生成时间 | {{ meta.generated_at }} |
+
+{% for g in groups %}
+## {{ loop.index }}. {{ g.name }}
+
+{% if g.desc %}> {{ g.desc }}
+
+{% endif %}
+| 字段 | 内容 | 状态 |
+|---|---|---|
+{% for f in g.fields %}
+| {{ f.label }} | {{ (f.text | replace('\n', ' ') | replace('|', '/')) or '（未填写）' }}{% if f.unit %} {{ f.unit }}{% endif %} | {{ f.status_label }} |
+{% endfor %}
+
+{% endfor %}
+
+## 填写情况说明
+
+- 必填项应全部填写；标注「必须补填」的字段在文字稿中未找到依据，需人工补充。
+- 标注「待确认」的字段表示原文存在歧义或置信度较低，已由人工复核。
+- 本结果引用的字段模板版本为 {{ meta.template_version }}。
+
+<div class="meta"></div>
+
+---
+*生成时间：{{ meta.generated_at }}　|　模板版本：{{ meta.template_version }}　|　产品版本：{{ meta.product_version }}*

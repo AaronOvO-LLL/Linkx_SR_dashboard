@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block title %}选择分部 · {{ app_cfg.app_name }}{% endblock %}
+{% block content %}
+<div class="login-wrap">
+  <div class="login-brand">
+    <span class="mark">灵石</span>
+    <p>{{ app_cfg.app_subtitle }}</p>
+  </div>
+
+  <div class="card">
+    <h2>选择分部并输入密码</h2>
+    <p class="sub">不同分部的项目库相互隔离，验证通过后仅进入所选分部。</p>
+
+    {% if error %}<div class="flash warn">{{ error }}</div>{% endif %}
+
+    <form method="post" id="loginForm">
+      <div class="dept-list">
+        {% for d in depts %}
+        <label class="dept-opt" data-dept="{{ d.key }}">
+          <input type="radio" name="dept_key" value="{{ d.key }}" {% if loop.first %}checked{% endif %}>
+          <span class="nm">{{ d.name }}</span>
+          <span class="hint">{% if d.changed %}密码已修改{% else %}初始密码 {{ cfg.default_password }}{% endif %}</span>
+        </label>
+        {% endfor %}
+      </div>
+
+      <label class="fld">
+        <span>分部密码</span>
+        <input type="password" name="password" id="pwd" placeholder="请输入该分部的访问密码" autofocus>
+      </label>
+
+      <button class="btn" type="submit" style="width:100%;justify-content:center">进入分部项目库</button>
+    </form>
+
+    <div class="login-tip">{{ cfg.must_change_hint }}</div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.querySelectorAll('.dept-opt').forEach(function(el){
+  el.addEventListener('click', function(){
+    document.querySelectorAll('.dept-opt').forEach(function(x){x.classList.remove('on')});
+    el.classList.add('on');
+    el.querySelector('input').checked = true;
+  });
+});
+document.querySelector('.dept-opt').classList.add('on');
+</script>
+{% endblock %}

@@ -1,0 +1,406 @@
+{
+  "template_version": "0.2.0",
+  "note": "安全管家踏勘字段模板。唯一权威来源：『踏勘要求的项目具体内容.xlsx』。所有收资项、枚举、必填、是否影响报价均忠实该表，不做增删。affects_pricing 对应 Excel『是否影响报价』列，remark 对应『备注』列。",
+  "groups": [
+    {"key": "basic", "name": "项目基本情况", "order": 1, "desc": "项目名称、来源、业态、建设类型与规模"},
+    {"key": "docs", "name": "项目资料", "order": 2, "desc": "图纸、台账等需项目经理提供的资料"},
+    {"key": "property", "name": "物业信息", "order": 3, "desc": "物业合同、公司、业主与服务范围"},
+    {"key": "monitor", "name": "视频监控中心", "order": 4, "desc": "监控中心现状"},
+    {"key": "devices", "name": "监控设备现状", "order": 5, "desc": "摄像头与存储设备的品牌、类型、数量、协议"},
+    {"key": "network", "name": "网络配备情况", "order": 6, "desc": "外网、交换机、拓扑与网络管理员"},
+    {"key": "cabinet", "name": "服务器机柜情况", "order": 7, "desc": "现场机柜与服务器放置条件"},
+    {"key": "business", "name": "安全业务踏勘", "order": 8, "desc": "当前管理模式、人员、问题与期望"},
+    {"key": "decision", "name": "决策地图", "order": 9, "desc": "上线时间、决策人、对接人与预算"},
+    {"key": "keypoints", "name": "预期重点位置", "order": 10, "desc": "重点位置、事件与算法"},
+    {"key": "special", "name": "特殊要求", "order": 11, "desc": "合规保密、标杆与采购审批要求"}
+  ],
+  "fields": [
+    {
+      "key": "project_name", "label": "项目名称", "group": "basic", "type": "text", "required": true,
+      "help": "被服务项目的正式名称", "placeholder": "例如：新宇精密产业园",
+      "ai_hint": "提取项目或厂区/园区的正式名称",
+      "extract": {"mode": "entity", "keywords": ["项目名称", "厂区名称", "园区名称", "项目", "厂区", "园区"],
+                  "entity_suffix": ["园", "区", "厂", "大厦", "中心", "基地", "项目", "城", "馆"]}
+    },
+    {
+      "key": "project_source", "label": "项目来源", "group": "basic", "type": "select", "required": true,
+      "help": "内部项目、外部项目或重点项目",
+      "options": [
+        {"value": "内部项目", "synonyms": ["内部", "自有项目"]},
+        {"value": "外部项目", "synonyms": ["外部", "对外项目"]},
+        {"value": "重点项目", "synonyms": ["重点", "标杆项目"]}
+      ],
+      "ai_hint": "判断项目是内部、外部还是重点项目",
+      "extract": {"mode": "enum"}
+    },
+    {
+      "key": "business_type", "label": "项目业态", "group": "basic", "type": "select", "required": true,
+      "help": "影响方案模板与风险画像",
+      "options": [
+        {"value": "园区", "synonyms": ["工业园", "产业园", "园区", "厂区", "制造基地"]},
+        {"value": "住区", "synonyms": ["小区", "住宅", "社区", "公寓", "居民区"]},
+        {"value": "城区", "synonyms": ["城区", "城区治理", "街道"]},
+        {"value": "公园", "synonyms": ["公园", "景区", "绿地"]},
+        {"value": "酒店", "synonyms": ["酒店", "宾馆", "旅馆"]},
+        {"value": "医疗", "synonyms": ["医院", "诊所", "门诊", "医疗"]},
+        {"value": "学校", "synonyms": ["学校", "学院", "大学", "校园", "校区"]},
+        {"value": "商业", "synonyms": ["商业", "商场", "购物中心", "综合体", "写字楼", "办公楼"]},
+        {"value": "其他", "synonyms": []}
+      ],
+      "ai_hint": "按场所实际用途判断业态",
+      "extract": {"mode": "enum"}
+    },
+    {
+      "key": "build_type", "label": "项目建设类型", "group": "basic", "type": "select", "required": true,
+      "options": [
+        {"value": "新建", "synonyms": ["新建", "新项目", "刚建"]},
+        {"value": "旧改", "synonyms": ["旧改", "改造", "改建", "翻新", "存量"]}
+      ],
+      "ai_hint": "判断项目是新建还是旧改",
+      "extract": {"mode": "enum"}
+    },
+    {
+      "key": "land_area", "label": "占地面积", "group": "basic", "type": "number", "required": true, "unit": "m²",
+      "help": "项目总占地，用于点位密度与范围测算",
+      "ai_hint": "提取占地面积数字，统一为平方米",
+      "extract": {"mode": "number", "keywords": ["占地", "用地面积", "土地面积"], "unit_hint": "m²"}
+    },
+    {
+      "key": "building_area", "label": "建筑面积", "group": "basic", "type": "number", "required": true, "unit": "m²",
+      "help": "用于点位密度与费用测算",
+      "validate": {"min": 0, "message": "建筑面积不能为负数"},
+      "ai_hint": "提取建筑面积数字及单位，统一换算为平方米",
+      "extract": {"mode": "number", "keywords": ["建筑面积", "总面积", "平米", "平方米", "平方", "m²", "m2"], "unit_hint": "m²"}
+    },
+    {
+      "key": "site_address", "label": "项目地址", "group": "basic", "type": "text", "required": true,
+      "help": "用于实施范围与差旅测算",
+      "ai_hint": "提取项目所在的市、区、路名、门牌号",
+      "extract": {"mode": "entity", "keywords": ["地址", "位于", "坐落于", "路", "区", "号"],
+                  "entity_suffix": ["号", "路", "街", "区", "镇", "村", "大道", "工业园", "产业园"]}
+    },
+    {
+      "key": "drawings", "label": "图纸", "group": "docs", "type": "select", "required": false,
+      "help": "强电/弱电/暖通/给排水图纸，要求竣工图或终版施工图",
+      "remark": "强电图纸、弱电图纸、暖通图纸、给排水图纸，要求是竣工图或终版施工图",
+      "options": [
+        {"value": "有", "synonyms": ["有图纸", "图纸有", "已经提供", "CAD", "cad", "竣工图"]},
+        {"value": "无", "synonyms": ["没有图", "缺图", "没图纸", "无图纸"]}
+      ],
+      "ai_hint": "判断客户是否已提供图纸",
+      "extract": {"mode": "enum"}
+    },
+    {
+      "key": "equipment_ledger", "label": "设备台账", "group": "docs", "type": "select", "required": false,
+      "help": "项目所有机电设备清单",
+      "options": [
+        {"value": "有", "synonyms": ["有台账", "设备清单", "台账有"]},
+        {"value": "无", "synonyms": ["没有台账", "无台账"]}
+      ],
+      "ai_hint": "判断客户是否已提供设备台账",
+      "extract": {"mode": "enum"}
+    },
+    {
+      "key": "staffing_table", "label": "物业人员配置表", "group": "docs", "type": "select", "required": false,
+      "options": [
+        {"value": "有", "synonyms": ["有配置表", "人员表有"]},
+        {"value": "无", "synonyms": ["没有配置表", "无人员表"]}
+      ],
+      "ai_hint": "判断客户是否已提供物业人员配置表",
+      "extract": {"mode": "enum"}
+    },
+    {
+      "key": "contract_years", "label": "物业合同时间", "group": "property", "type": "text", "required": true,
+      "help": "物业合同服务期，是报价年限的商务来源", "placeholder": "例如：新签合同，服务期3年",
+      "ai_hint": "提取物业合同签订情况与服务期年限",
+      "extract": {"mode": "sentence", "keywords": ["物业合同", "合同", "服务期", "签了", "年限", "年"]}
+    },
+    {
+      "key": "property_company", "label": "物业公司名称", "group": "property", "type": "text", "required": true,
+      "ai_hint": "提取物业公司全称",
+      "extract": {"mode": "entity", "keywords": ["物业公司", "物业", "物业方"],
+                  "entity_suffix": ["物业", "公司", "服务"]}
+    },
+    {
+      "key": "project_owner", "label": "项目业主", "group": "property", "type": "text", "required": true,
+      "ai_hint": "提取项目业主或甲方单位全称",
+      "extract": {"mode": "entity", "keywords": ["业主", "甲方", "客户全称", "委托方", "产权方"],
+                  "entity_suffix": ["公司", "集团", "大学", "医院", "管委会", "厂", "院"]}
+    },
+    {
+      "key": "service_type", "label": "服务类型", "group": "property", "type": "select", "required": true,
+      "options": [
+        {"value": "FM", "synonyms": ["设施管理", "物业管理", "物业"]},
+        {"value": "PF", "synonyms": ["产业服务", "园区服务"]}
+      ],
+      "ai_hint": "判断服务类型是 FM 还是 PF",
+      "extract": {"mode": "enum"}
+    },
+    {
+      "key": "business_desc", "label": "业态补充描述", "group": "property", "type": "textarea", "required": true,
+      "help": "例如：2-5层公寓，5-22层酒店，23-30层写字楼",
+      "ai_hint": "提取业态构成的补充描述",
+      "extract": {"mode": "sentence", "keywords": ["业态", "楼层", "公寓", "酒店", "写字楼", "厂房", "宿舍"]}
+    },
+    {
+      "key": "fee_mode", "label": "物业收费模式", "group": "property", "type": "select", "required": true,
+      "options": [
+        {"value": "包干制", "synonyms": ["包干", "包干制"]},
+        {"value": "酬金制", "synonyms": ["酬金", "酬金制"]},
+        {"value": "其他", "synonyms": []}
+      ],
+      "ai_hint": "判断物业收费模式",
+      "extract": {"mode": "enum"}
+    },
+    {
+      "key": "mgmt_scope", "label": "物业管理范围", "group": "property", "type": "select", "required": true,
+      "options": [
+        {"value": "大物业", "synonyms": ["大物业"]},
+        {"value": "小物业", "synonyms": ["小物业"]},
+        {"value": "全委", "synonyms": ["全委", "全面委托"]}
+      ],
+      "ai_hint": "判断物业管理范围",
+      "extract": {"mode": "enum"}
+    },
+    {
+      "key": "monitor_center_count", "label": "视频监控中心数量", "group": "monitor", "type": "number", "required": true, "unit": "个",
+      "affects_pricing": true,
+      "remark": "与消防控制中心是否为同一地方",
+      "ai_hint": "提取视频监控中心数量，并注意是否与消防控制中心同址",
+      "extract": {"mode": "number", "keywords": ["监控中心", "监控室", "消控室", "控制中心"], "unit_hint": "个"}
+    },
+    {
+      "key": "camera_brand", "label": "摄像头品牌", "group": "devices", "type": "select", "required": true,
+      "affects_pricing": true,
+      "options": [
+        {"value": "海康", "synonyms": ["海康威视"]},
+        {"value": "大华", "synonyms": []},
+        {"value": "宇视", "synonyms": []},
+        {"value": "华为", "synonyms": []},
+        {"value": "其他", "synonyms": ["杂牌", "非主流"]}
+      ],
+      "ai_hint": "提取摄像头的品牌",
+      "extract": {"mode": "enum"}
+    },
+    {
+      "key": "camera_type", "label": "摄像头类型", "group": "devices", "type": "select", "required": true,
+      "remark": "如果是纯模拟则显示无法配置安全管家",
+      "options": [
+        {"value": "数字摄像头", "synonyms": ["数字", "网络摄像头", "IP摄像头", "IPC", "高清网络"]},
+        {"value": "模拟摄像头", "synonyms": ["模拟", "同轴", "模拟头", "标清模拟"]},
+        {"value": "混合", "synonyms": ["混合", "数字加模拟", "都有"]}
+      ],
+      "ai_hint": "判断摄像头是数字、模拟还是混合",
+      "extract": {"mode": "enum"}
+    },
+    {
+      "key": "camera_count", "label": "摄像头数量", "group": "devices", "type": "number", "required": true, "unit": "路",
+      "affects_pricing": true,
+      "remark": "如果超过300则需要增加服务器或算力卡",
+      "ai_hint": "提取摄像头/摄像机的总数量",
+      "extract": {"mode": "number", "keywords": ["摄像头", "摄像机", "探头", "路"], "unit_hint": "路"}
+    },
+    {
+      "key": "storage_brand", "label": "存储设备品牌", "group": "devices", "type": "select", "required": true,
+      "options": [
+        {"value": "海康", "synonyms": ["海康威视"]},
+        {"value": "大华", "synonyms": []},
+        {"value": "宇视", "synonyms": []},
+        {"value": "华为", "synonyms": []},
+        {"value": "其他", "synonyms": ["杂牌", "非主流"]}
+      ],
+      "ai_hint": "提取存储设备（NVR/CVR）的品牌",
+      "extract": {"mode": "enum"}
+    },
+    {
+      "key": "storage_type", "label": "存储设备类型", "group": "devices", "type": "select", "required": true,
+      "options": [
+        {"value": "CVR", "synonyms": ["cvr", "集中存储"]},
+        {"value": "NVR", "synonyms": ["nvr", "网络录像机", "录像机"]},
+        {"value": "DVR", "synonyms": ["dvr", "硬盘录像机"]},
+        {"value": "其他", "synonyms": []}
+      ],
+      "ai_hint": "提取存储设备的类型（CVR/NVR/DVR）",
+      "extract": {"mode": "enum"}
+    },
+    {
+      "key": "storage_model", "label": "存储设备型号", "group": "devices", "type": "text", "required": true,
+      "ai_hint": "提取存储设备的具体型号",
+      "extract": {"mode": "sentence", "keywords": ["型号", "存储设备", "录像机型号", "NVR型号"]}
+    },
+    {
+      "key": "storage_count", "label": "存储设备数量", "group": "devices", "type": "number", "required": true, "unit": "台",
+      "ai_hint": "提取存储设备（NVR/CVR）的数量",
+      "extract": {"mode": "number", "keywords": ["存储", "录像机", "NVR", "nvr", "CVR", "DVR"], "unit_hint": "台"}
+    },
+    {
+      "key": "storage_protocol", "label": "存储设备支持协议", "group": "devices", "type": "select", "required": true,
+      "affects_pricing": true,
+      "options": [
+        {"value": "GB/T28181-2022", "synonyms": ["GB/T28181", "GB28181", "28181", "国标", "国标协议", "2022国标"]},
+        {"value": "GB28181-2016", "synonyms": ["2016国标", "国标2016"]},
+        {"value": "其他", "synonyms": ["其他协议", "私有协议", "非国标", "onvif", "ONVIF", "不支持"]}
+      ],
+      "ai_hint": "提取存储设备支持的对接协议，判断是否国标 GB28181",
+      "extract": {"mode": "enum"}
+    },
+    {
+      "key": "has_internet", "label": "是否具备外网条件", "group": "network", "type": "select", "required": true,
+      "affects_pricing": true,
+      "remark": "如果没有外网，无法使用工单系统，价值卡片会有影响",
+      "options": [
+        {"value": "有", "synonyms": ["有外网", "可以上网", "有网", "外网", "能上网", "有宽带"]},
+        {"value": "无", "synonyms": ["无外网", "没有网", "没网", "不能上网", "纯内网"]}
+      ],
+      "ai_hint": "判断现场是否具备外网条件",
+      "extract": {"mode": "enum"}
+    },
+    {
+      "key": "switch_brand", "label": "交换机品牌", "group": "network", "type": "select", "required": true,
+      "options": [
+        {"value": "H3C", "synonyms": ["h3c", "华三"]},
+        {"value": "华为", "synonyms": []},
+        {"value": "锐捷", "synonyms": []},
+        {"value": "其他", "synonyms": []}
+      ],
+      "ai_hint": "提取交换机品牌",
+      "extract": {"mode": "enum"}
+    },
+    {
+      "key": "switch_port_type", "label": "交换机端口类型", "group": "network", "type": "select", "required": true,
+      "options": [
+        {"value": "百兆", "synonyms": ["百兆口", "100M"]},
+        {"value": "千兆", "synonyms": ["千兆口", "1000M", "千兆网"]},
+        {"value": "万兆", "synonyms": ["万兆口", "10G", "万兆网"]}
+      ],
+      "ai_hint": "提取交换机端口类型",
+      "extract": {"mode": "enum"}
+    },
+    {
+      "key": "switch_ports_free", "label": "交换机剩余端口", "group": "network", "type": "number", "required": true, "unit": "个",
+      "affects_pricing": true,
+      "remark": "需要大于等于3，如果不足需增加交换机",
+      "ai_hint": "提取交换机剩余可用端口数量",
+      "extract": {"mode": "number", "keywords": ["交换机", "剩余端口", "端口", "网口"], "unit_hint": "个"}
+    },
+    {
+      "key": "network_topo", "label": "网络拓扑图", "group": "network", "type": "select", "required": true,
+      "options": [
+        {"value": "有", "synonyms": ["有拓扑", "拓扑图有"]},
+        {"value": "无", "synonyms": ["没有拓扑", "无拓扑图"]}
+      ],
+      "ai_hint": "判断客户是否有网络拓扑图",
+      "extract": {"mode": "enum"}
+    },
+    {
+      "key": "network_admin", "label": "网络管理员", "group": "network", "type": "text", "required": true,
+      "help": "姓名与电话", "placeholder": "姓名：　　电话：",
+      "ai_hint": "提取网络管理员的姓名与联系方式",
+      "extract": {"mode": "sentence", "keywords": ["网络管理员", "网管", "IT", "网络负责人"]}
+    },
+    {
+      "key": "has_cabinet", "label": "现场是否有机柜", "group": "cabinet", "type": "text", "required": true,
+      "help": "机柜深度、剩余 U 数、供电插口等",
+      "ai_hint": "提取现场机柜有无及深度/剩余U/供电情况",
+      "extract": {"mode": "sentence", "keywords": ["机柜", "机房", "弱电间", "U", "供电"]}
+    },
+    {
+      "key": "cabinet_condition", "label": "放置机柜条件（需新增）", "group": "cabinet", "type": "select", "required": false,
+      "options": [
+        {"value": "具备", "synonyms": ["有条件", "能放"]},
+        {"value": "不具备", "synonyms": ["没条件", "放不下"]}
+      ],
+      "ai_hint": "判断新增机柜的放置条件",
+      "extract": {"mode": "enum"}
+    },
+    {
+      "key": "server_noise_ok", "label": "能否接受服务器噪音", "group": "cabinet", "type": "select", "required": false,
+      "options": [
+        {"value": "能", "synonyms": ["能接受", "可以", "没问题"]},
+        {"value": "不能", "synonyms": ["不能接受", "不行", "嫌吵"]}
+      ],
+      "ai_hint": "判断客户能否接受服务器噪音",
+      "extract": {"mode": "enum"}
+    },
+    {
+      "key": "current_mode", "label": "当前安全管理模式", "group": "business", "type": "textarea", "required": false,
+      "help": "现在是靠人巡、靠物业，还是已有外包",
+      "ai_hint": "概括客户当前的安全管理方式，保留关键事实",
+      "extract": {"mode": "sentence", "keywords": ["现在", "目前", "当前", "保安", "物业", "巡检", "值班", "人防", "没有系统", "人工"]}
+    },
+    {
+      "key": "current_staffing", "label": "当前人员与岗位安排", "group": "business", "type": "textarea", "required": false,
+      "help": "保安/安全员人数、班次",
+      "ai_hint": "提取现有安保人员数量、班次与岗位安排",
+      "extract": {"mode": "sentence", "keywords": ["保安", "门卫", "安保", "班次", "三班", "两班", "夜班", "白班", "人员", "轮班"]}
+    },
+    {
+      "key": "main_risks", "label": "主要问题/风险", "group": "business", "type": "textarea", "required": false,
+      "help": "客户主动提到的痛点或事故",
+      "ai_hint": "提取客户提到的安全隐患、事件与风险点，逐条列出",
+      "extract": {"mode": "sentence", "keywords": ["问题", "隐患", "风险", "事故", "丢", "偷", "闯入", "翻墙", "没发现", "死角", "看不到", "来不及", "起火", "烟感", "投诉"]}
+    },
+    {
+      "key": "expectations", "label": "客户期望与优先级", "group": "business", "type": "textarea", "required": false,
+      "help": "最想先解决什么",
+      "ai_hint": "提取客户希望达成的目标与优先顺序",
+      "extract": {"mode": "sentence", "keywords": ["希望", "想要", "期望", "需求", "最好", "优先", "关键是", "重点", "目的"]}
+    },
+    {
+      "key": "expected_launch", "label": "期望上线时间", "group": "decision", "type": "text", "required": true,
+      "help": "如：下个月、Q4 前",
+      "ai_hint": "提取客户期望的交付或上线时间",
+      "extract": {"mode": "sentence", "keywords": ["上线", "什么时候", "尽快", "月底", "下个月", "季度", "之前", "工期"]}
+    },
+    {
+      "key": "decision_maker", "label": "决策人", "group": "decision", "type": "text", "required": true,
+      "ai_hint": "提取项目的决策人姓名与角色",
+      "extract": {"mode": "entity", "keywords": ["决策人", "老板", "拍板", "决定", "负责人"],
+                  "entity_suffix": ["总", "经理", "主任", "长", "老板"]}
+    },
+    {
+      "key": "customer_contact", "label": "甲方对接人", "group": "decision", "type": "text", "required": true,
+      "ai_hint": "提取甲方对接人姓名与联系方式",
+      "extract": {"mode": "entity", "keywords": ["对接人", "联系人", "甲方", "接口人", "主任", "经理"],
+                  "entity_suffix": ["主任", "经理", "总", "工", "主管", "部长", "老师"]}
+    },
+    {
+      "key": "has_budget", "label": "是否有预算", "group": "decision", "type": "text", "required": true,
+      "ai_hint": "提取客户是否有预算及其大致情况",
+      "extract": {"mode": "sentence", "keywords": ["预算", "有没有钱", "经费", "投入"]}
+    },
+    {
+      "key": "key_points", "label": "重点位置", "group": "keypoints", "type": "textarea", "required": false,
+      "remark": "每个重点位置对应多种重点事件，对应多种算法",
+      "ai_hint": "提取需要重点监控/看护的具体点位，逐条列出",
+      "extract": {"mode": "sentence", "keywords": ["点位", "重点", "门口", "大门", "仓库", "通道", "周界", "围墙", "电梯", "装卸", "危化", "配电", "机房"]}
+    },
+    {
+      "key": "key_events", "label": "重点事件", "group": "keypoints", "type": "textarea", "required": false,
+      "ai_hint": "提取需要识别的重点事件类型",
+      "extract": {"mode": "sentence", "keywords": ["事件", "报警", "识别", "翻墙", "抽烟", "闯入", "偷盗", "离岗"]}
+    },
+    {
+      "key": "algorithms", "label": "使用算法", "group": "keypoints", "type": "textarea", "required": false,
+      "ai_hint": "提取需要配置的识别算法",
+      "extract": {"mode": "sentence", "keywords": ["算法", "识别", "智能", "AI", "视频分析"]}
+    },
+    {
+      "key": "compliance", "label": "特殊合规/安全/保密要求", "group": "special", "type": "textarea", "required": false,
+      "help": "例如：视频不得出园区，需要使用企业内网",
+      "ai_hint": "提取保密、合规、数据存储等特殊要求",
+      "extract": {"mode": "sentence", "keywords": ["保密", "合规", "等保", "存储", "出境", "隐私", "不许", "不能外传", "本地化", "存在本地", "不能出厂区", "不外传"]}
+    },
+    {
+      "key": "highlights", "label": "亮点或标杆打造要求", "group": "special", "type": "textarea", "required": false,
+      "help": "例如：是试点标杆",
+      "ai_hint": "提取客户对亮点或标杆打造的要求",
+      "extract": {"mode": "sentence", "keywords": ["亮点", "标杆", "试点", "示范", "展示"]}
+    },
+    {
+      "key": "procurement", "label": "采购与审批要求", "group": "special", "type": "textarea", "required": false,
+      "ai_hint": "提取招投标、比价、资质等采购要求",
+      "extract": {"mode": "sentence", "keywords": ["招标", "比价", "审批", "采购", "资质", "入围", "合同", "框架"]}
+    }
+  ]
+}

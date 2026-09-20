@@ -1,0 +1,108 @@
+{
+  "pack": "common_decision",
+  "name": "决策地图",
+  "scope": "common",
+  "desc": "上线时间、决策人、对接人与预算——任何产品都要谈",
+  "groups": [
+    {
+      "key": "decision",
+      "name": "决策地图",
+      "order": 9,
+      "desc": "上线时间、决策人、对接人与预算"
+    }
+  ],
+  "fields": [
+    {
+      "key": "expected_launch",
+      "label": "期望上线时间",
+      "group": "decision",
+      "type": "text",
+      "required": true,
+      "help": "如：下个月、Q4 前",
+      "ai_hint": "提取客户期望的交付或上线时间",
+      "extract": {
+        "mode": "sentence",
+        "keywords": [
+          "上线",
+          "什么时候",
+          "尽快",
+          "月底",
+          "下个月",
+          "季度",
+          "之前",
+          "工期"
+        ]
+      }
+    },
+    {
+      "key": "decision_maker",
+      "label": "决策人",
+      "group": "decision",
+      "type": "text",
+      "required": true,
+      "ai_hint": "提取项目的决策人姓名与角色",
+      "extract": {
+        "mode": "entity",
+        "keywords": [
+          "决策人",
+          "老板",
+          "拍板",
+          "决定",
+          "负责人"
+        ],
+        "entity_suffix": [
+          "总",
+          "经理",
+          "主任",
+          "长",
+          "老板"
+        ]
+      }
+    },
+    {
+      "key": "customer_contact",
+      "label": "甲方对接人",
+      "group": "decision",
+      "type": "text",
+      "required": true,
+      "ai_hint": "提取甲方对接人姓名与联系方式",
+      "extract": {
+        "mode": "entity",
+        "keywords": [
+          "对接人",
+          "联系人",
+          "甲方",
+          "接口人",
+          "主任",
+          "经理"
+        ],
+        "entity_suffix": [
+          "主任",
+          "经理",
+          "总",
+          "工",
+          "主管",
+          "部长",
+          "老师"
+        ]
+      }
+    },
+    {
+      "key": "has_budget",
+      "label": "是否有预算",
+      "group": "decision",
+      "type": "text",
+      "required": true,
+      "ai_hint": "提取客户是否有预算及其大致情况",
+      "extract": {
+        "mode": "sentence",
+        "keywords": [
+          "预算",
+          "有没有钱",
+          "经费",
+          "投入"
+        ]
+      }
+    }
+  ]
+}

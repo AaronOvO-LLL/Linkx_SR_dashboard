@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+{% block title %}项目中心 · {{ dept.name }}{% endblock %}
+{% block content %}
+{% set step = step_of(2) %}
+
+<div class="card">
+  <h2>{{ dept.name }} · 项目库</h2>
+  <p class="sub">创建或选择一个项目开始。项目数据保存在本机，除非主动删除，否则长期保留。</p>
+
+  <form class="row" method="post" action="{{ url_for('project_create') }}">
+    <label class="fld" style="flex:2 1 240px;margin-bottom:0">
+      <span>项目名称<span class="req">*</span></span>
+      <input type="text" name="name" placeholder="例如：新宇精密安全管家项目" required>
+    </label>
+    <label class="fld" style="flex:1 1 150px;margin-bottom:0">
+      <span>客户名称</span>
+      <input type="text" name="customer_name" placeholder="例如：苏州新宇精密">
+    </label>
+    <label class="fld" style="flex:0 1 140px;margin-bottom:0">
+      <span>项目分类</span>
+      <select name="category">
+        {% for c in categories %}<option>{{ c }}</option>{% endfor %}
+      </select>
+    </label>
+    <label class="fld" style="flex:1 1 170px;margin-bottom:0">
+      <span>产品<span class="req">*</span></span>
+      <select name="product_type" required>
+        {% for c in catalog %}<option value="{{ c.product_type }}">{{ c.name }}</option>{% endfor %}
+      </select>
+    </label>
+    <label class="fld" style="flex:0 0 auto;margin-bottom:0">
+      <span>&nbsp;</span>
+      <button class="btn" type="submit">新建并开始录入</button>
+    </label>
+  </form>
+</div>
+
+<div class="toolbar">
+  <form method="get" style="display:flex;gap:8px">
+    <input type="text" name="q" value="{{ kw }}" placeholder="搜索项目名称或客户名称">
+    <input type="hidden" name="view" value="{{ view }}">
+    <button class="btn ghost" type="submit">搜索</button>
+  </form>
+  <div class="spacer"></div>
+  <div class="seg">
+    <a href="{{ url_for('projects', view='active', q=kw) }}" class="{% if view=='active' %}on{% endif %}">进行中</a>
+    <a href="{{ url_for('projects', view='archived', q=kw) }}" class="{% if view=='archived' %}on{% endif %}">已归档</a>
+    <a href="{{ url_for('projects', view='deleted', q=kw) }}" class="{% if view=='deleted' %}on{% endif %}">已删除</a>
+  </div>
+</div>
+
+{% if not rows %}
+<div class="card">
+  <div class="empty">
+    <b>这里还没有项目</b>
+    用上方表单新建一个项目，即可开始录入调研文字稿。
+  </div>
+</div>
+{% else %}
+<div class="proj-grid">
+{% for p in rows %}
+  <div class="proj">
+    <div class="proj-top">
+      <a class="proj-name" href="{{ url_for('project_detail', pid=p.id) }}">{{ p.name }}</a>
+      <span class="tag blue">{{ p.category }}</span>
+    </div>
+    <div class="proj-meta">
+      {% if p.customer_name %}<span>客户：{{ p.customer_name }}</span>{% endif %}
+      <span>更新：{{ p.updated_at }}</span>
+      {% if p.products %}
+      <span>产品：{% for pp in p.products %}{{ product_name(pp.product_type) }}{% if not loop.last %}、{% endif %}{% endfor %}</span>
+      {% else %}
+      <span style="color:#b45309">尚未选择产品</span>
+      {% endif %}
+    </div>
+    <div class="proj-prog">
+      <div class="bar" style="flex:1"><i style="width:{{ p.progress }}%"></i></div>
+      <span>{{ p.status_label }} {{ p.progress }}%</span>
+    </div>
+    {% if p.deleted %}
+      <div class="proj-alert">该项目已删除，恢复后即可继续使用。</div>
+    {% endif %}
+    <div class="proj-acts">
+      <a class="btn sm" href="{{ url_for('project_detail', pid=p.id) }}">进入</a>
+      {% if p.deleted %}
+      <form method="post" action="{{ url_for('project_restore', pid=p.id) }}">
+        <button class="btn gray sm" type="submit">恢复</button>
+      </form>
+      <form method="post" action="{{ url_for('project_delete', pid=p.id) }}" onsubmit="return confirm('彻底删除后不可恢复，确定继续？')">
+        <input type="hidden" name="mode" value="purge">
+        <button class="btn danger sm" type="submit">彻底删除</button>
+      </form>
+      {% else %}
+      <form method="post" action="{{ url_for('project_copy', pid=p.id) }}">
+        <button class="btn gray sm" type="submit">复制</button>
+      </form>
+      <form method="post" action="{{ url_for('project_archive', pid=p.id) }}">
+        <input type="hidden" name="undo" value="{{ '1' if p.archived else '0' }}">
+        <button class="btn gray sm" type="submit">{{ '恢复' if p.archived else '归档' }}</button>
+      </form>
+      <form method="post" action="{{ url_for('project_delete', pid=p.id) }}" onsubmit="return confirm('删除「{{ p.name }}」？删除后可在「已删除」中恢复。')">
+        <button class="btn danger sm" type="submit">删除</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+{% endfor %}
+</div>
+{% endif %}
+{% endblock %}

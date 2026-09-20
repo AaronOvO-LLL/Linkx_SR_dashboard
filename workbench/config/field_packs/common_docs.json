@@ -1,0 +1,107 @@
+{
+  "pack": "common_docs",
+  "name": "项目资料",
+  "scope": "common",
+  "desc": "图纸、设备台账、人员配置表等由客户方提供的资料",
+  "groups": [
+    {
+      "key": "docs",
+      "name": "项目资料",
+      "order": 2,
+      "desc": "图纸、台账等需项目经理提供的资料"
+    }
+  ],
+  "fields": [
+    {
+      "key": "drawings",
+      "label": "图纸",
+      "group": "docs",
+      "type": "select",
+      "required": false,
+      "help": "强电/弱电/暖通/给排水图纸，要求竣工图或终版施工图",
+      "remark": "强电图纸、弱电图纸、暖通图纸、给排水图纸，要求是竣工图或终版施工图",
+      "options": [
+        {
+          "value": "有",
+          "synonyms": [
+            "有图纸",
+            "图纸有",
+            "已经提供",
+            "CAD",
+            "cad",
+            "竣工图"
+          ]
+        },
+        {
+          "value": "无",
+          "synonyms": [
+            "没有图",
+            "缺图",
+            "没图纸",
+            "无图纸"
+          ]
+        }
+      ],
+      "ai_hint": "判断客户是否已提供图纸",
+      "extract": {
+        "mode": "enum"
+      }
+    },
+    {
+      "key": "equipment_ledger",
+      "label": "设备台账",
+      "group": "docs",
+      "type": "select",
+      "required": false,
+      "help": "项目所有机电设备清单",
+      "options": [
+        {
+          "value": "有",
+          "synonyms": [
+            "有台账",
+            "设备清单",
+            "台账有"
+          ]
+        },
+        {
+          "value": "无",
+          "synonyms": [
+            "没有台账",
+            "无台账"
+          ]
+        }
+      ],
+      "ai_hint": "判断客户是否已提供设备台账",
+      "extract": {
+        "mode": "enum"
+      }
+    },
+    {
+      "key": "staffing_table",
+      "label": "物业人员配置表",
+      "group": "docs",
+      "type": "select",
+      "required": false,
+      "options": [
+        {
+          "value": "有",
+          "synonyms": [
+            "有配置表",
+            "人员表有"
+          ]
+        },
+        {
+          "value": "无",
+          "synonyms": [
+            "没有配置表",
+            "无人员表"
+          ]
+        }
+      ],
+      "ai_hint": "判断客户是否已提供物业人员配置表",
+      "extract": {
+        "mode": "enum"
+      }
+    }
+  ]
+}

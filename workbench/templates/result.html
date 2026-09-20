@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% block title %}结果中心 · {{ project.name }}{% endblock %}
+{% block content %}
+{% set step = step_of(7) %}
+
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+  <a class="btn gray sm" href="{{ url_for('preview', pp_id=pp.id) }}">← 返回预览与生成</a>
+  <h2 style="margin:0;font-size:17px">{{ project.name }} · {{ product.name }} · 结果中心</h2>
+</div>
+
+{% if not runs %}
+<div class="card"><div class="empty"><b>还没有生成任何材料</b>回到预览页勾选生成物后开始生成。</div></div>
+{% else %}
+
+<div class="card">
+  <h2>生成结果</h2>
+  <p class="sub">每项产物可单独查看或下载；失败项可单独重试，不影响其他成功结果。</p>
+
+  {% for r in runs %}
+  <div class="res">
+    <span class="nm">{{ r.def.name if r.def else r.artifact_key }}</span>
+    <span class="st">
+      {% if r.status == 'success' %}<span class="tag green">成功</span>
+      {% elif r.status == 'failed' %}<span class="tag red">失败</span>
+      {% else %}<span class="tag">{{ r.status }}</span>{% endif %}
+      <span class="hint" style="margin-left:8px">{{ r.finished_at }}</span>
+    </span>
+    <span class="files">
+      {% if r.status == 'success' %}
+        {% for f in r.files %}
+          {% if f.format == 'html' %}
+          <a class="btn ghost sm" target="_blank" href="{{ url_for('artifact_file', pp_id=pp.id, artifact_key=r.artifact_key, filename=f.name) }}?mode=view">在线查看</a>
+          {% endif %}
+          <a class="btn gray sm" href="{{ url_for('artifact_file', pp_id=pp.id, artifact_key=r.artifact_key, filename=f.name) }}?mode=dl">下载 {{ f.format|upper }}</a>
+        {% endfor %}
+      {% else %}
+        <span class="hint" style="color:#c0392b">{{ r.error }}</span>
+        <form method="post" action="{{ url_for('regenerate', pp_id=pp.id) }}">
+          <input type="hidden" name="artifact" value="{{ r.artifact_key }}">
+          <button class="btn ghost sm" type="submit">重试</button>
+        </form>
+      {% endif %}
+    </span>
+  </div>
+  {% endfor %}
+</div>
+
+{% set ok_runs = runs|selectattr('status','equalto','success')|list %}
+<div class="card">
+  <h2>打包下载</h2>
+  <p class="sub">
+    将成功产物与清单文件打包为一个 ZIP。目录结构与命名规则来自配置，清单文件记录了使用的模板版本与提取信息，便于追溯。
+  </p>
+  {% if ok_runs %}
+  <form method="post" action="{{ url_for('package', pp_id=pp.id) }}">
+    {% for r in ok_runs %}<input type="hidden" name="artifacts" value="{{ r.artifact_key }}">{% endfor %}
+    <div class="btn-row">
+      <button class="btn" type="submit">生成并下载 ZIP（{{ ok_runs|length }} 项）</button>
+      {% if export %}
+      <a class="btn ghost" href="{{ url_for('package_download', pp_id=pp.id) }}">
+        下载上次打包（{{ export.file_name }}）</a>
+      <span class="hint" style="align-self:center">{{ (export.size/1024)|round(1) }} KB · {{ export.created_at }}</span>
+      {% endif %}
+    </div>
+  </form>
+
+  {% if export %}
+  <h3>打包内容</h3>
+  {% set mf = export.manifest_json|fromjson %}
+  <table class="tbl">
+    <thead><tr><th>目录</th><th>生成物</th><th>文件</th><th>模板版本</th></tr></thead>
+    <tbody>
+    {% for a in mf.artifacts %}
+      <tr><td>{{ a.folder }}</td><td>{{ a.name }}</td><td>{{ a.files|join('、') }}</td><td>{{ a.template_version }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+  {% else %}
+  <div class="empty"><b>暂无可打包的成功产物</b>请先生成至少一项内容。</div>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

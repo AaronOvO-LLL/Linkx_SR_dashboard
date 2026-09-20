@@ -1,0 +1,23 @@
+{
+  "template_version": "0.1.0",
+  "product_type": "REPLACE_ME",
+  "note": "复制本文件到 config/products/<product_type>/fields.json，改 product_type 与 packs。字段本体写在 config/field_packs/ 下，不要写在这里。",
+
+  "packs": [
+    "common_project",
+    "common_docs",
+    "common_property"
+  ],
+
+  "group_order": [
+    "basic",
+    "docs",
+    "property"
+  ],
+
+  "overrides": {},
+
+  "extra_fields": [],
+
+  "remove_fields": []
+}

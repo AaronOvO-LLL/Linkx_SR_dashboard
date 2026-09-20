@@ -1,0 +1,188 @@
+{
+  "pack": "security_business",
+  "name": "安全业务与重点",
+  "scope": "product",
+  "desc": "当前管理模式、痛点、期望与重点位置算法",
+  "groups": [
+    {
+      "key": "business",
+      "name": "安全业务踏勘",
+      "order": 8,
+      "desc": "当前管理模式、人员、问题与期望"
+    },
+    {
+      "key": "keypoints",
+      "name": "预期重点位置",
+      "order": 10,
+      "desc": "重点位置、事件与算法"
+    }
+  ],
+  "fields": [
+    {
+      "key": "current_mode",
+      "label": "当前安全管理模式",
+      "group": "business",
+      "type": "textarea",
+      "required": false,
+      "help": "现在是靠人巡、靠物业，还是已有外包",
+      "ai_hint": "概括客户当前的安全管理方式，保留关键事实",
+      "extract": {
+        "mode": "sentence",
+        "keywords": [
+          "现在",
+          "目前",
+          "当前",
+          "保安",
+          "物业",
+          "巡检",
+          "值班",
+          "人防",
+          "没有系统",
+          "人工"
+        ]
+      }
+    },
+    {
+      "key": "current_staffing",
+      "label": "当前人员与岗位安排",
+      "group": "business",
+      "type": "textarea",
+      "required": false,
+      "help": "保安/安全员人数、班次",
+      "ai_hint": "提取现有安保人员数量、班次与岗位安排",
+      "extract": {
+        "mode": "sentence",
+        "keywords": [
+          "保安",
+          "门卫",
+          "安保",
+          "班次",
+          "三班",
+          "两班",
+          "夜班",
+          "白班",
+          "人员",
+          "轮班"
+        ]
+      }
+    },
+    {
+      "key": "main_risks",
+      "label": "主要问题/风险",
+      "group": "business",
+      "type": "textarea",
+      "required": false,
+      "help": "客户主动提到的痛点或事故",
+      "ai_hint": "提取客户提到的安全隐患、事件与风险点，逐条列出",
+      "extract": {
+        "mode": "sentence",
+        "keywords": [
+          "问题",
+          "隐患",
+          "风险",
+          "事故",
+          "丢",
+          "偷",
+          "闯入",
+          "翻墙",
+          "没发现",
+          "死角",
+          "看不到",
+          "来不及",
+          "起火",
+          "烟感",
+          "投诉"
+        ]
+      }
+    },
+    {
+      "key": "expectations",
+      "label": "客户期望与优先级",
+      "group": "business",
+      "type": "textarea",
+      "required": false,
+      "help": "最想先解决什么",
+      "ai_hint": "提取客户希望达成的目标与优先顺序",
+      "extract": {
+        "mode": "sentence",
+        "keywords": [
+          "希望",
+          "想要",
+          "期望",
+          "需求",
+          "最好",
+          "优先",
+          "关键是",
+          "重点",
+          "目的"
+        ]
+      }
+    },
+    {
+      "key": "key_points",
+      "label": "重点位置",
+      "group": "keypoints",
+      "type": "textarea",
+      "required": false,
+      "remark": "每个重点位置对应多种重点事件，对应多种算法",
+      "ai_hint": "提取需要重点监控/看护的具体点位，逐条列出",
+      "extract": {
+        "mode": "sentence",
+        "keywords": [
+          "点位",
+          "重点",
+          "门口",
+          "大门",
+          "仓库",
+          "通道",
+          "周界",
+          "围墙",
+          "电梯",
+          "装卸",
+          "危化",
+          "配电",
+          "机房"
+        ]
+      }
+    },
+    {
+      "key": "key_events",
+      "label": "重点事件",
+      "group": "keypoints",
+      "type": "textarea",
+      "required": false,
+      "ai_hint": "提取需要识别的重点事件类型",
+      "extract": {
+        "mode": "sentence",
+        "keywords": [
+          "事件",
+          "报警",
+          "识别",
+          "翻墙",
+          "抽烟",
+          "闯入",
+          "偷盗",
+          "离岗"
+        ]
+      }
+    },
+    {
+      "key": "algorithms",
+      "label": "使用算法",
+      "group": "keypoints",
+      "type": "textarea",
+      "required": false,
+      "ai_hint": "提取需要配置的识别算法",
+      "extract": {
+        "mode": "sentence",
+        "keywords": [
+          "算法",
+          "识别",
+          "智能",
+          "AI",
+          "视频分析"
+        ]
+      }
+    }
+  ]
+}

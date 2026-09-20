@@ -1,0 +1,298 @@
+{
+  "pack": "security_monitor",
+  "name": "安全监控中心与设备",
+  "scope": "product",
+  "desc": "监控中心数量、摄像头与存储设备现状——安全管家专有",
+  "groups": [
+    {
+      "key": "monitor",
+      "name": "视频监控中心",
+      "order": 4,
+      "desc": "监控中心现状"
+    },
+    {
+      "key": "devices",
+      "name": "监控设备现状",
+      "order": 5,
+      "desc": "摄像头与存储设备的品牌、类型、数量、协议"
+    }
+  ],
+  "fields": [
+    {
+      "key": "monitor_center_count",
+      "label": "视频监控中心数量",
+      "group": "monitor",
+      "type": "number",
+      "required": true,
+      "unit": "个",
+      "remark": "与消防控制中心是否为同一地方",
+      "ai_hint": "提取视频监控中心数量，并注意是否与消防控制中心同址",
+      "extract": {
+        "mode": "number",
+        "keywords": [
+          "监控中心",
+          "监控室",
+          "消控室",
+          "控制中心"
+        ],
+        "unit_hint": "个"
+      }
+    },
+    {
+      "key": "camera_brand",
+      "label": "摄像头品牌",
+      "group": "devices",
+      "type": "select",
+      "required": true,
+      "options": [
+        {
+          "value": "海康",
+          "synonyms": [
+            "海康威视"
+          ]
+        },
+        {
+          "value": "大华",
+          "synonyms": []
+        },
+        {
+          "value": "宇视",
+          "synonyms": []
+        },
+        {
+          "value": "华为",
+          "synonyms": []
+        },
+        {
+          "value": "其他",
+          "synonyms": [
+            "杂牌",
+            "非主流"
+          ]
+        }
+      ],
+      "ai_hint": "提取摄像头的品牌",
+      "extract": {
+        "mode": "enum"
+      }
+    },
+    {
+      "key": "camera_type",
+      "label": "摄像头类型",
+      "group": "devices",
+      "type": "select",
+      "required": true,
+      "remark": "如果是纯模拟则显示无法配置安全管家",
+      "options": [
+        {
+          "value": "数字摄像头",
+          "synonyms": [
+            "数字",
+            "网络摄像头",
+            "IP摄像头",
+            "IPC",
+            "高清网络"
+          ]
+        },
+        {
+          "value": "模拟摄像头",
+          "synonyms": [
+            "模拟",
+            "同轴",
+            "模拟头",
+            "标清模拟"
+          ]
+        },
+        {
+          "value": "混合",
+          "synonyms": [
+            "混合",
+            "数字加模拟",
+            "都有"
+          ]
+        }
+      ],
+      "ai_hint": "判断摄像头是数字、模拟还是混合",
+      "extract": {
+        "mode": "enum"
+      }
+    },
+    {
+      "key": "camera_count",
+      "label": "摄像头数量",
+      "group": "devices",
+      "type": "number",
+      "required": true,
+      "unit": "路",
+      "remark": "如果超过300则需要增加服务器或算力卡",
+      "ai_hint": "提取摄像头/摄像机的总数量",
+      "extract": {
+        "mode": "number",
+        "keywords": [
+          "摄像头",
+          "摄像机",
+          "探头",
+          "路"
+        ],
+        "unit_hint": "路"
+      }
+    },
+    {
+      "key": "storage_brand",
+      "label": "存储设备品牌",
+      "group": "devices",
+      "type": "select",
+      "required": true,
+      "options": [
+        {
+          "value": "海康",
+          "synonyms": [
+            "海康威视"
+          ]
+        },
+        {
+          "value": "大华",
+          "synonyms": []
+        },
+        {
+          "value": "宇视",
+          "synonyms": []
+        },
+        {
+          "value": "华为",
+          "synonyms": []
+        },
+        {
+          "value": "其他",
+          "synonyms": [
+            "杂牌",
+            "非主流"
+          ]
+        }
+      ],
+      "ai_hint": "提取存储设备（NVR/CVR）的品牌",
+      "extract": {
+        "mode": "enum"
+      }
+    },
+    {
+      "key": "storage_type",
+      "label": "存储设备类型",
+      "group": "devices",
+      "type": "select",
+      "required": true,
+      "options": [
+        {
+          "value": "CVR",
+          "synonyms": [
+            "cvr",
+            "集中存储"
+          ]
+        },
+        {
+          "value": "NVR",
+          "synonyms": [
+            "nvr",
+            "网络录像机",
+            "录像机"
+          ]
+        },
+        {
+          "value": "DVR",
+          "synonyms": [
+            "dvr",
+            "硬盘录像机"
+          ]
+        },
+        {
+          "value": "其他",
+          "synonyms": []
+        }
+      ],
+      "ai_hint": "提取存储设备的类型（CVR/NVR/DVR）",
+      "extract": {
+        "mode": "enum"
+      }
+    },
+    {
+      "key": "storage_model",
+      "label": "存储设备型号",
+      "group": "devices",
+      "type": "text",
+      "required": true,
+      "ai_hint": "提取存储设备的具体型号",
+      "extract": {
+        "mode": "sentence",
+        "keywords": [
+          "型号",
+          "存储设备",
+          "录像机型号",
+          "NVR型号"
+        ]
+      }
+    },
+    {
+      "key": "storage_count",
+      "label": "存储设备数量",
+      "group": "devices",
+      "type": "number",
+      "required": true,
+      "unit": "台",
+      "ai_hint": "提取存储设备（NVR/CVR）的数量",
+      "extract": {
+        "mode": "number",
+        "keywords": [
+          "存储",
+          "录像机",
+          "NVR",
+          "nvr",
+          "CVR",
+          "DVR"
+        ],
+        "unit_hint": "台"
+      }
+    },
+    {
+      "key": "storage_protocol",
+      "label": "存储设备支持协议",
+      "group": "devices",
+      "type": "select",
+      "required": true,
+      "options": [
+        {
+          "value": "GB/T28181-2022",
+          "synonyms": [
+            "GB/T28181",
+            "GB28181",
+            "28181",
+            "国标",
+            "国标协议",
+            "2022国标"
+          ]
+        },
+        {
+          "value": "GB28181-2016",
+          "synonyms": [
+            "2016国标",
+            "国标2016"
+          ]
+        },
+        {
+          "value": "其他",
+          "synonyms": [
+            "其他协议",
+            "私有协议",
+            "非国标",
+            "onvif",
+            "ONVIF",
+            "不支持"
+          ]
+        }
+      ],
+      "ai_hint": "提取存储设备支持的对接协议，判断是否国标 GB28181",
+      "extract": {
+        "mode": "enum"
+      }
+    }
+  ]
+}

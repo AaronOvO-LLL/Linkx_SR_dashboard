@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% block title %}预览与生成 · {{ project.name }}{% endblock %}
+{% block content %}
+{% set step = step_of(6) %}
+
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+  <a class="btn gray sm" href="{{ url_for('review', pp_id=pp.id) }}">← 返回信息核对</a>
+  <h2 style="margin:0;font-size:17px">{{ project.name }} · {{ product.name }} · 预览与生成</h2>
+</div>
+
+{% if not ok %}
+<div class="flash warn">
+  <b>存在 {{ issues|selectattr('level','equalto','error')|list|length }} 项未通过的校验，暂不能生成。</b>
+  <ul style="margin:8px 0 0 18px">
+  {% for i in issues if i.level == 'error' %}
+    <li><a href="{{ url_for('review', pp_id=pp.id) }}">{{ i.message }}</a></li>
+  {% endfor %}
+  </ul>
+</div>
+{% else %}
+<div class="flash ok">完整性校验已通过，可勾选需要生成的材料。</div>
+{% endif %}
+
+{% if issues %}
+{% set warns = issues|selectattr('level','equalto','warn')|list %}
+{% if warns %}
+<div class="card">
+  <h2>提示（不阻塞生成）</h2>
+  <ul class="hint" style="margin:8px 0 0 18px">
+  {% for i in warns %}<li>{{ i.message }}</li>{% endfor %}
+  </ul>
+</div>
+{% endif %}
+{% endif %}
+
+<!-- ============ 踏勘结果预览 ============ -->
+<div class="card">
+  <h2>踏勘结果预览</h2>
+  <p class="sub">以下内容为将用于生成的最终数据，按业务章节展示。</p>
+  {% for g in groups %}
+  <h3>{{ loop.index }}. {{ g.name }} <span class="tag">{{ g.desc }}</span></h3>
+  <table class="tbl">
+    <tbody>
+    {% for f in g.fields %}
+      <tr>
+        <th style="width:170px">{{ f.label }}</th>
+        <td>
+          {% if f.text %}{{ f.text|replace('\n',' ')|truncate(200) }}
+            {% if f.unit %}<span class="tag" style="margin-left:6px">{{ f.unit }}</span>{% endif %}
+          {% else %}<span style="color:#9ca3af">（未填写）</span>{% endif %}
+          <span class="tag {{ tag_class(f.status) }}" style="margin-left:8px">{{ f.status_label }}</span>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endfor %}
+</div>
+
+<!-- ============ 生成物选择 ============ -->
+<form method="post" action="{{ url_for('do_generate', pp_id=pp.id) }}" id="genForm">
+<div class="card">
+  <h2>选择要生成的材料</h2>
+  <p class="sub">可多选，至少选择一项。生成物定义来自配置，新增模板不需要改动页面。</p>
+
+  {% for a in artifacts %}
+  <label class="art" data-key="{{ a.key }}">
+    <input type="checkbox" name="artifacts" value="{{ a.key }}"
+           {% if a.run and a.run.status=='success' %}checked{% endif %}>
+    <div style="flex:1">
+      <div class="nm">{{ a.name }}
+        {% if a.run %}<span class="tag {{ 'green' if a.run.status=='success' else 'red' }}">
+          {{ '已生成' if a.run.status=='success' else '生成失败' }}</span>{% endif %}
+      </div>
+      <div class="pp">{{ a.purpose }}</div>
+      <div class="inc">包含：{{ a.includes|join(' · ') }}</div>
+    </div>
+  </label>
+  {% endfor %}
+
+  <div class="btn-row">
+    <button class="btn" type="submit" {% if not ok %}disabled{% endif %}>开始生成</button>
+    <span class="hint" id="selHint" style="align-self:center">已选择 0 项</span>
+  </div>
+</div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelectorAll('.art').forEach(function(el){
+  var cb = el.querySelector('input');
+  function sync(){ el.classList.toggle('on', cb.checked); updateHint(); }
+  cb.addEventListener('change', sync); sync();
+});
+function updateHint(){
+  var n = document.querySelectorAll('input[name=artifacts]:checked').length;
+  document.getElementById('selHint').textContent = '已选择 ' + n + ' 项';
+}
+document.getElementById('genForm').addEventListener('submit', function(e){
+  if (document.querySelectorAll('input[name=artifacts]:checked').length === 0){
+    e.preventDefault(); alert('请至少选择一项生成物。');
+  }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,82 @@
+{
+  "pack": "common_requirements",
+  "name": "特殊要求",
+  "scope": "common",
+  "desc": "合规保密、标杆打造、采购审批等商务约束",
+  "groups": [
+    {
+      "key": "special",
+      "name": "特殊要求",
+      "order": 11,
+      "desc": "合规保密、标杆与采购审批要求"
+    }
+  ],
+  "fields": [
+    {
+      "key": "compliance",
+      "label": "特殊合规/安全/保密要求",
+      "group": "special",
+      "type": "textarea",
+      "required": false,
+      "help": "例如：视频不得出园区，需要使用企业内网",
+      "ai_hint": "提取保密、合规、数据存储等特殊要求",
+      "extract": {
+        "mode": "sentence",
+        "keywords": [
+          "保密",
+          "合规",
+          "等保",
+          "存储",
+          "出境",
+          "隐私",
+          "不许",
+          "不能外传",
+          "本地化",
+          "存在本地",
+          "不能出厂区",
+          "不外传"
+        ]
+      }
+    },
+    {
+      "key": "highlights",
+      "label": "亮点或标杆打造要求",
+      "group": "special",
+      "type": "textarea",
+      "required": false,
+      "help": "例如：是试点标杆",
+      "ai_hint": "提取客户对亮点或标杆打造的要求",
+      "extract": {
+        "mode": "sentence",
+        "keywords": [
+          "亮点",
+          "标杆",
+          "试点",
+          "示范",
+          "展示"
+        ]
+      }
+    },
+    {
+      "key": "procurement",
+      "label": "采购与审批要求",
+      "group": "special",
+      "type": "textarea",
+      "required": false,
+      "ai_hint": "提取招投标、比价、资质等采购要求",
+      "extract": {
+        "mode": "sentence",
+        "keywords": [
+          "招标",
+          "比价",
+          "审批",
+          "采购",
+          "资质",
+          "入围",
+          "合同",
+          "框架"
+        ]
+      }
+    }
+  ]
+}

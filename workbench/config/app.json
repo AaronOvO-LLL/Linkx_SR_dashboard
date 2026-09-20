@@ -1,0 +1,53 @@
+{
+  "app_name": "灵石解决方案工作台",
+  "app_subtitle": "踏勘录入 · AI 提取 · 方案生成",
+  "version": "0.1.0",
+  "brand_color": "#2F5597",
+  "server": {
+    "host": "127.0.0.1",
+    "port": 8770,
+    "open_browser": true
+  },
+  "storage": {
+    "db_file": "data/workbench.db",
+    "output_dir": "data/outputs",
+    "export_dir": "data/exports"
+  },
+  "extraction": {
+    "provider": "llm",
+    "providers": {
+      "rule": {
+        "label": "内置规则引擎（离线、确定性）",
+        "enabled": true
+      },
+      "llm": {
+        "label": "DeepSeek 大模型（OpenAI 兼容）",
+        "enabled": true,
+        "base_url": "https://api.deepseek.com",
+        "base_url_env": "LS_LLM_BASE_URL",
+        "api_key_env": "DEEPSEEK_API_KEY",
+        "model": "deepseek-flash",
+        "model_env": "LS_LLM_MODEL",
+        "json_mode": true,
+        "timeout": 120
+      }
+    },
+    "min_transcript_chars": 30,
+    "max_transcript_chars": 50000,
+    "relevance_min_keyword_hits": 2
+  },
+  "session": {
+    "secret_key": "lingshi-demo-secret-change-me",
+    "cookie_name": "ls_dept_session"
+  },
+  "zip": {
+    "folders": {
+      "survey_result": "01_踏勘结果",
+      "value_card": "02_价值卡片",
+      "delivery": "03_交付内容",
+      "data_request": "04_提资清单"
+    },
+    "manifest_file": "manifest.json",
+    "readme_file": "README.txt"
+  }
+}

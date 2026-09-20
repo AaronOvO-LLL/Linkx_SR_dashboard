@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% block title %}{{ project.name }} · 项目概览{% endblock %}
+{% block content %}
+{% set step = step_of(3) %}
+
+<div class="card">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+    <h2 style="margin:0">{{ project.name }}</h2>
+    <span class="tag blue">{{ project.category }}</span>
+    <span class="tag">{{ project.status_label }} {{ project.progress }}%</span>
+    <a class="btn gray sm" style="margin-left:auto" href="{{ url_for('projects') }}">返回项目库</a>
+  </div>
+
+  <form method="post" action="{{ url_for('project_update', pid=project.id) }}">
+    <div class="grid2">
+      <label class="fld"><span>项目名称<span class="req">*</span></span>
+        <input type="text" name="name" value="{{ project.name }}" required></label>
+      <label class="fld"><span>客户名称</span>
+        <input type="text" name="customer_name" value="{{ project.customer_name }}"></label>
+      <label class="fld"><span>项目分类</span>
+        <select name="category">{% for c in categories %}
+          <option {% if c == project.category %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></label>
+      <label class="fld"><span>项目地点</span>
+        <input type="text" name="location" value="{{ project.location }}" placeholder="例如：苏州市吴中区"></label>
+      <label class="fld"><span>项目负责人</span>
+        <input type="text" name="owner" value="{{ project.owner }}" placeholder="我方负责人"></label>
+      <label class="fld"><span>联系人及联系方式</span>
+        <input type="text" name="contact" value="{{ project.contact }}" placeholder="例如：陈主任 138xxxx"></label>
+    </div>
+    <div class="btn-row">
+      <button class="btn" type="submit">保存项目信息</button>
+      <span class="hint">创建于 {{ project.created_at }} · 最近更新 {{ project.updated_at }}</span>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <h2>调研产品</h2>
+  <p class="sub">一个项目可包含多个产品，每个产品独立录入文字稿、独立生成材料。</p>
+
+  {% if not pps %}
+  <div class="empty"><b>尚未选择产品</b>请在下方产品目录中添加。</div>
+  {% else %}
+  <div class="prod-grid">
+    {% for pp in pps %}
+    <div class="prod">
+      <h4>{{ pp.cfg.name }} <span class="tag blue">v{{ pp.product_version }}</span></h4>
+      <p>{{ pp.cfg.short_desc }}</p>
+      <div class="proj-prog" style="margin-top:10px">
+        <div class="bar" style="flex:1"><i style="width:{{ pp.progress }}%"></i></div>
+        <span>{{ pp.status_label }} {{ pp.progress }}%</span>
+      </div>
+      <div class="proj-meta" style="margin:8px 0 10px">
+        <span>必填完成 {{ pp.stats.required_done }}/{{ pp.stats.required_total }}
+          {% if pp.stats.required_missing %}<span class="tag red">必填补填 {{ pp.stats.required_missing }}</span>{% endif %}
+          {% if pp.stats.pending_confirm %}<span class="tag orange">待确认 {{ pp.stats.pending_confirm }}</span>{% endif %}
+        </span>
+      </div>
+      <div class="foot">
+        <a class="btn sm" href="{{ url_for('survey', pp_id=pp.id) }}">
+          {{ '继续处理' if pp.progress > 10 else '开始调研录入' }}</a>
+        {% if pp.progress >= 30 %}
+        <a class="btn ghost sm" href="{{ url_for('review', pp_id=pp.id) }}">信息核对</a>
+        {% endif %}
+        {% if pp.progress >= 50 %}
+        <a class="btn ghost sm" href="{{ url_for('preview', pp_id=pp.id) }}">预览生成</a>
+        {% endif %}
+        {% if pp.progress >= 80 %}
+        <a class="btn ghost sm" href="{{ url_for('result', pp_id=pp.id) }}">结果中心</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+{% if planned %}
+<div class="card">
+  <h2>产品目录</h2>
+  <p class="sub">产品由稳定的 product_type 与版本号标识，新增产品只需在 config/products 下增加配置。</p>
+  <div class="prod-grid">
+    {% for c in planned %}
+    <div class="prod {% if c.is_planned %}planned{% endif %}">
+      <h4>{{ c.name }} {% if c.is_planned %}<span class="tag">规划中</span>{% endif %}</h4>
+      <p>{{ c.short_desc or c.get('desc','') }}</p>
+      <div class="foot">
+        {% if c.is_planned %}
+        <button class="btn gray sm" disabled>暂未开放</button>
+        {% else %}
+        <form method="post" action="{{ url_for('product_add', pid=project.id) }}">
+          <input type="hidden" name="product_type" value="{{ c.product_type }}">
+          <button class="btn sm" type="submit">添加到本项目</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,11 @@
+{
+  "default_password": "000000",
+  "must_change_hint": "初始默认密码为 000000，仅用于 Demo。正式使用前请修改。",
+  "departments": [
+    {"key": "dept1", "name": "一部", "password": "000000", "changed": false},
+    {"key": "dept2", "name": "二部", "password": "000000", "changed": false},
+    {"key": "dept3", "name": "三部", "password": "000000", "changed": false},
+    {"key": "dept4", "name": "四部", "password": "000000", "changed": false},
+    {"key": "dept5", "name": "五部", "password": "000000", "changed": false}
+  ]
+}

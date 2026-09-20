@@ -1,0 +1,266 @@
+{
+  "pack": "security_network",
+  "name": "安全网络与机柜",
+  "scope": "product",
+  "desc": "外网、交换机、拓扑、机柜放置条件——安全管家专有",
+  "groups": [
+    {
+      "key": "network",
+      "name": "网络配备情况",
+      "order": 6,
+      "desc": "外网、交换机、拓扑与网络管理员"
+    },
+    {
+      "key": "cabinet",
+      "name": "服务器机柜情况",
+      "order": 7,
+      "desc": "现场机柜与服务器放置条件"
+    }
+  ],
+  "fields": [
+    {
+      "key": "has_internet",
+      "label": "是否具备外网条件",
+      "group": "network",
+      "type": "select",
+      "required": true,
+      "remark": "如果没有外网，无法使用工单系统，价值卡片会有影响",
+      "options": [
+        {
+          "value": "有",
+          "synonyms": [
+            "有外网",
+            "可以上网",
+            "有网",
+            "外网",
+            "能上网",
+            "有宽带"
+          ]
+        },
+        {
+          "value": "无",
+          "synonyms": [
+            "无外网",
+            "没有网",
+            "没网",
+            "不能上网",
+            "纯内网"
+          ]
+        }
+      ],
+      "ai_hint": "判断现场是否具备外网条件",
+      "extract": {
+        "mode": "enum"
+      }
+    },
+    {
+      "key": "switch_brand",
+      "label": "交换机品牌",
+      "group": "network",
+      "type": "select",
+      "required": true,
+      "options": [
+        {
+          "value": "H3C",
+          "synonyms": [
+            "h3c",
+            "华三"
+          ]
+        },
+        {
+          "value": "华为",
+          "synonyms": []
+        },
+        {
+          "value": "锐捷",
+          "synonyms": []
+        },
+        {
+          "value": "其他",
+          "synonyms": []
+        }
+      ],
+      "ai_hint": "提取交换机品牌",
+      "extract": {
+        "mode": "enum"
+      }
+    },
+    {
+      "key": "switch_port_type",
+      "label": "交换机端口类型",
+      "group": "network",
+      "type": "select",
+      "required": true,
+      "options": [
+        {
+          "value": "百兆",
+          "synonyms": [
+            "百兆口",
+            "100M"
+          ]
+        },
+        {
+          "value": "千兆",
+          "synonyms": [
+            "千兆口",
+            "1000M",
+            "千兆网"
+          ]
+        },
+        {
+          "value": "万兆",
+          "synonyms": [
+            "万兆口",
+            "10G",
+            "万兆网"
+          ]
+        }
+      ],
+      "ai_hint": "提取交换机端口类型",
+      "extract": {
+        "mode": "enum"
+      }
+    },
+    {
+      "key": "switch_ports_free",
+      "label": "交换机剩余端口",
+      "group": "network",
+      "type": "number",
+      "required": true,
+      "unit": "个",
+      "remark": "需要大于等于3，如果不足需增加交换机",
+      "ai_hint": "提取交换机剩余可用端口数量",
+      "extract": {
+        "mode": "number",
+        "keywords": [
+          "交换机",
+          "剩余端口",
+          "端口",
+          "网口"
+        ],
+        "unit_hint": "个"
+      }
+    },
+    {
+      "key": "network_topo",
+      "label": "网络拓扑图",
+      "group": "network",
+      "type": "select",
+      "required": true,
+      "options": [
+        {
+          "value": "有",
+          "synonyms": [
+            "有拓扑",
+            "拓扑图有"
+          ]
+        },
+        {
+          "value": "无",
+          "synonyms": [
+            "没有拓扑",
+            "无拓扑图"
+          ]
+        }
+      ],
+      "ai_hint": "判断客户是否有网络拓扑图",
+      "extract": {
+        "mode": "enum"
+      }
+    },
+    {
+      "key": "network_admin",
+      "label": "网络管理员",
+      "group": "network",
+      "type": "text",
+      "required": true,
+      "help": "姓名与电话",
+      "placeholder": "姓名：　　电话：",
+      "ai_hint": "提取网络管理员的姓名与联系方式",
+      "extract": {
+        "mode": "sentence",
+        "keywords": [
+          "网络管理员",
+          "网管",
+          "IT",
+          "网络负责人"
+        ]
+      }
+    },
+    {
+      "key": "has_cabinet",
+      "label": "现场是否有机柜",
+      "group": "cabinet",
+      "type": "text",
+      "required": true,
+      "help": "机柜深度、剩余 U 数、供电插口等",
+      "ai_hint": "提取现场机柜有无及深度/剩余U/供电情况",
+      "extract": {
+        "mode": "sentence",
+        "keywords": [
+          "机柜",
+          "机房",
+          "弱电间",
+          "U",
+          "供电"
+        ]
+      }
+    },
+    {
+      "key": "cabinet_condition",
+      "label": "放置机柜条件（需新增）",
+      "group": "cabinet",
+      "type": "select",
+      "required": false,
+      "options": [
+        {
+          "value": "具备",
+          "synonyms": [
+            "有条件",
+            "能放"
+          ]
+        },
+        {
+          "value": "不具备",
+          "synonyms": [
+            "没条件",
+            "放不下"
+          ]
+        }
+      ],
+      "ai_hint": "判断新增机柜的放置条件",
+      "extract": {
+        "mode": "enum"
+      }
+    },
+    {
+      "key": "server_noise_ok",
+      "label": "能否接受服务器噪音",
+      "group": "cabinet",
+      "type": "select",
+      "required": false,
+      "options": [
+        {
+          "value": "能",
+          "synonyms": [
+            "能接受",
+            "可以",
+            "没问题"
+          ]
+        },
+        {
+          "value": "不能",
+          "synonyms": [
+            "不能接受",
+            "不行",
+            "嫌吵"
+          ]
+        }
+      ],
+      "ai_hint": "判断客户能否接受服务器噪音",
+      "extract": {
+        "mode": "enum"
+      }
+    }
+  ]
+}

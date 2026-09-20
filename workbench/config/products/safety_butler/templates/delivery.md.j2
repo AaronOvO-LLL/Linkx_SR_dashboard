@@ -1,0 +1,61 @@
+# {{ project.name }} · 安全管家交付内容
+
+## 一、交付范围
+
+- 项目：{{ display['project_name'] or '（未填写）' }}（{{ display['business_type'] or '业态未确认' }}）
+- 地址：{{ display['site_address'] or '（未填写）' }}
+- 建设类型：{{ display['build_type'] or '（未确认）' }}　|　建筑面积：{{ display['building_area'] or '（未填写）' }} m²
+- 物业合同时间：{{ display['contract_years'] or '（未填写）' }}
+
+## 二、设备与系统现状
+
+| 项目 | 内容 |
+|---|---|
+| 摄像头品牌 | {{ display['camera_brand'] or '（未确认）' }} |
+| 摄像头类型 | {{ display['camera_type'] or '（未确认）' }} |
+| 摄像头数量 | {{ display['camera_count'] or '（未确认）' }} 路 |
+| 存储设备品牌 | {{ display['storage_brand'] or '（未确认）' }} |
+| 存储设备类型 | {{ display['storage_type'] or '（未确认）' }} |
+| 存储设备型号 | {{ display['storage_model'] or '（未确认）' }} |
+| 存储设备数量 | {{ display['storage_count'] or '（未确认）' }} 台 |
+| 存储设备支持协议 | {{ display['storage_protocol'] or '（未确认）' }} |
+
+| 网络 | 内容 |
+|---|---|
+| 外网条件 | {{ display['has_internet'] or '（未确认）' }} |
+| 交换机品牌 | {{ display['switch_brand'] or '（未确认）' }} |
+| 交换机端口类型 | {{ display['switch_port_type'] or '（未确认）' }} |
+| 交换机剩余端口 | {{ display['switch_ports_free'] or '（未确认）' }} 个 |
+| 网络拓扑图 | {{ display['network_topo'] or '（未确认）' }} |
+| 网络管理员 | {{ display['network_admin'] or '（未确认）' }} |
+
+| 机柜 | 内容 |
+|---|---|
+| 现场机柜 | {{ display['has_cabinet'] or '（未确认）' }} |
+| 新增机柜条件 | {{ display['cabinet_condition'] or '（未确认）' }} |
+| 服务器噪音接受度 | {{ display['server_noise_ok'] or '（未确认）' }} |
+
+> 上表为踏勘确认的现状，最终设备清单以现场复勘为准；可复用设备将在正式方案中抵扣。
+
+## 三、实施步骤
+
+1. **现场复勘与点位确认** —— 核对重点位置、摄像头点位，输出点位图与设备布置方案。
+2. **方案与图纸确认** —— 与客户确认覆盖范围、设备选型、网络与供电方案。
+3. **设备到货与安装调试** —— 按实施窗口进场，完成安装、取电、联网与角度调试。
+4. **平台开通与算法配置** —— 开通平台租户，配置识别算法、告警规则与通知链路。
+5. **联调与试运行** —— 完成告警闭环演练，进入试运行并修正误报。
+6. **交付与培训** —— 交付账号与资料，对客户相关人员进行使用培训。
+7. **正式运营与月度复盘** —— 按服务项持续执行，每月输出安全报告并复盘。
+
+## 四、边界与特殊要求
+
+**特殊合规/安全/保密要求**：{{ display['compliance'] or '（未提及，默认按公司数据安全管理规范执行）' }}
+
+**亮点/标杆要求**：{{ display['highlights'] or '（未提及）' }}
+
+**采购与审批要求**：{{ display['procurement'] or '（未提及）' }}
+
+默认不包含：土建与装修施工、客户既有设备的维修更换（除非另行约定）、运营商专线资费、强电改造。
+
+---
+*生成时间：{{ meta.generated_at }}　|　模板版本：{{ meta.template_version }}*

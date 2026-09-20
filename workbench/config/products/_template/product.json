@@ -1,0 +1,14 @@
+{
+  "product_type": "REPLACE_ME",
+  "name": "产品中文名",
+  "version": "0.1.0",
+  "short_desc": "一句话说明这个产品卖的是什么。",
+  "coverage": "覆盖的业务范围。",
+  "status": "planned",
+  "capabilities": [
+    "text_input",
+    "field_extraction",
+    "artifact_generation"
+  ],
+  "planned_products": []
+}

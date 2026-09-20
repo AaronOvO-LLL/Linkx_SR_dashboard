@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+{% block title %}信息核对 · {{ project.name }}{% endblock %}
+{% block content %}
+{% set step = step_of(5) %}
+
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+  <a class="btn gray sm" href="{{ url_for('survey', pp_id=pp.id) }}">← 返回调研输入</a>
+  <h2 style="margin:0;font-size:17px">{{ project.name }} · {{ product.name }} · 信息核对</h2>
+  <span class="tag blue">模板 v{{ pp.template_version }}</span>
+</div>
+
+<div class="stat-bar">
+  <div class="stat green"><b id="sDone">{{ stats.required_done }}/{{ stats.required_total }}</b><span>必填已完成</span></div>
+  <div class="stat orange"><b id="sConfirm">{{ stats.pending_confirm }}</b><span>待确认</span></div>
+  <div class="stat red"><b id="sMissing">{{ stats.required_missing }}</b><span>必须补填</span></div>
+  <div class="stat"><b>{{ stats.filled }}/{{ stats.total }}</b><span>已填写字段</span></div>
+</div>
+
+{% if run %}
+<div class="card" style="padding:12px 18px">
+  <span class="hint">本次提取：{{ '内置规则引擎' if run.provider=='rule' else '大模型接口' }} ·
+    {{ run.started_at }} · 共 {{ run.input_chars }} 字 ·
+    命中 {{ run.stats_json|hit_count }}/{{ stats.total }} 个字段。</span>
+  <a class="btn ghost sm" style="margin-left:10px" href="{{ url_for('survey', pp_id=pp.id) }}">重新解析</a>
+</div>
+{% endif %}
+
+{% if not ok %}
+<div class="flash warn">
+  还有 <b id="warnMissing">{{ stats.required_missing }}</b> 项必填内容未补齐，补齐后才能进入生成步骤。
+  <a href="#firstMissing" style="margin-left:8px">定位到第一项 →</a>
+</div>
+{% endif %}
+
+<div class="filter-row">
+  <span class="hint">筛选：</span>
+  <button class="btn sm ghost filt on" data-f="all">全部</button>
+  <button class="btn sm ghost filt" data-f="pending_confirm">待确认</button>
+  <button class="btn sm ghost filt" data-f="required_missing">必须补填</button>
+  <button class="btn sm ghost filt" data-f="filled">已填写</button>
+  <span class="hint" style="margin-left:auto">修改任意字段会自动保存，并标记为「已人工确认」，后续重新解析时受保护。</span>
+</div>
+
+<div id="fieldArea">
+{% for g in groups %}
+<div class="grp">
+  <div class="grp-head" onclick="toggleGroup(this)">
+    <span class="nm">{{ g.def.name }}</span>
+    <span class="tag">{{ g['items']|length }} 项</span>
+    <span class="cnt">
+      {% if g.miss %}<span class="tag red">必填补填 {{ g.miss }}</span>{% endif %}
+      {% if g.conf %}<span class="tag orange">待确认 {{ g.conf }}</span>{% endif %}
+      ▾
+    </span>
+  </div>
+  <div class="grp-body">
+    {% for it in g['items'] %}
+    {% set f = it.def %}
+    {% set row = it.row %}
+    {% set st = row.status if row else 'optional_missing' %}
+    {% set val = row.value_json if row else '""' %}
+    <div class="fld-row {{ 'miss' if st=='required_missing' else ('confirm' if st=='pending_confirm' else '') }}"
+         data-status="{{ st }}" data-filled="{{ '1' if row and row.value_json not in ('""','[]','{}','null') else '0' }}">
+      <div class="fld-head">
+        <span class="lb">{{ f.label }}</span>
+        {% if f.required %}<span class="tag red">必填</span>{% endif %}
+        <span class="tag {{ tag_class(st) }}" data-role="status">{{ status_labels[st] }}</span>
+        {% if row and row.updated_by == 'human' %}<span class="tag green">人工</span>
+        {% elif row and row.updated_by == 'ai' %}<span class="tag">AI</span>{% endif %}
+        <span class="spacer"></span>
+        <span class="saved" data-role="saved">已保存</span>
+      </div>
+
+      {% if f.help %}<div class="hint" style="margin-bottom:5px">{{ f.help }}</div>{% endif %}
+
+      {% if f.type == 'text' %}
+        <input type="text" class="fi" data-key="{{ f.key }}" data-type="text"
+               value="{{ row.value_json|jval if row else '' }}" placeholder="{{ f.get('placeholder','') }}">
+      {% elif f.type == 'number' %}
+        <input type="number" class="fi" data-key="{{ f.key }}" data-type="number" step="any"
+               value="{{ row.value_json|jval if row else '' }}">
+        {% if f.unit %}<span class="hint">{{ f.unit }}</span>{% endif %}
+      {% elif f.type == 'date' %}
+        <input type="date" class="fi" data-key="{{ f.key }}" data-type="text"
+               value="{{ row.value_json|jval if row else '' }}">
+      {% elif f.type == 'textarea' %}
+        <textarea class="fi" data-key="{{ f.key }}" data-type="text" rows="3"
+                  placeholder="{{ f.get('placeholder','') }}">{{ row.value_json|jval if row else '' }}</textarea>
+      {% elif f.type == 'select' %}
+        <select class="fi" data-key="{{ f.key }}" data-type="text">
+          <option value="">— 请选择 —</option>
+          {% for o in f.options %}
+          <option value="{{ o.value }}" {% if row and row.value_json|jval == o.value %}selected{% endif %}>{{ o.value }}</option>
+          {% endfor %}
+        </select>
+      {% elif f.type == 'multiselect' %}
+        <div class="chk-group" data-key="{{ f.key }}" data-type="list">
+          {% for o in f.options %}
+          <label class="chk {% if row and o.value in (row.value_json|fromjson or []) %}on{% endif %}">
+            <input type="checkbox" value="{{ o.value }}" {% if row and o.value in (row.value_json|fromjson or []) %}checked{% endif %}>{{ o.value }}
+          </label>
+          {% endfor %}
+        </div>
+      {% elif f.type == 'table' %}
+        <table class="tbl" data-key="{{ f.key }}" data-type="table">
+          <thead><tr>{% for c in f.columns %}<th>{{ c.label }}</th>{% endfor %}<th style="width:60px">操作</th></tr></thead>
+          <tbody>
+          {% for r in (row.value_json|fromjson or []) if row %}
+            <tr>{% for c in f.columns %}<td><input value="{{ r.get(c.key,'') }}" data-col="{{ c.key }}"></td>{% endfor %}
+              <td><button class="btn danger sm" type="button" onclick="delRow(this)">删除</button></td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+        <button class="btn gray sm" type="button" style="margin-top:6px"
+                onclick="addRow(this,'{{ f.columns|map(attribute='key')|join(',') }}')">+ 添加一行</button>
+      {% endif %}
+
+      {% if row and row.source_quote %}
+      <div class="quote"><b>原文依据：</b>{{ row.source_quote }}</div>
+      {% elif st in ('required_missing','optional_missing') %}
+      <div class="quote">未在文字稿中找到该信息的依据，请人工补充。</div>
+      {% endif %}
+
+      {% for i in it.issues %}
+      <div class="issue {{ i.level }}">{{ i.message }}</div>
+      {% endfor %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endfor %}
+</div>
+
+<div class="card">
+  <h2>下一步</h2>
+  <p class="sub">确认无误后进入预览，勾选需要生成的材料。</p>
+  <div class="btn-row">
+    <a class="btn {% if not ok %}gray{% endif %}" id="nextBtn"
+       href="{{ url_for('preview', pp_id=pp.id) }}">进入预览与生成 →</a>
+    <a class="btn ghost" href="{{ url_for('survey', pp_id=pp.id) }}">返回查看原文</a>
+    <span class="hint" id="nextHint" style="align-self:center"></span>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+var SAVE_URL = "{{ url_for('save_field', pp_id=pp.id) }}";
+</script>
+{% endblock %}

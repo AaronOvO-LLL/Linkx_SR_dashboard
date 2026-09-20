@@ -1,0 +1,45 @@
+# {{ project.customer_name or project.name }} · 安全管家价值卡片
+
+## 一、客户现状
+
+{{ display['current_mode'] or '（未填写）' }}
+
+- 项目：{{ display['project_name'] or '（未填写）' }}（{{ display['business_type'] or '业态未确认' }}，建筑面积 {{ display['building_area'] or '?' }} m²）
+- 地址：{{ display['site_address'] or '（未填写）' }}
+- 物业公司：{{ display['property_company'] or '（未填写）' }}　|　项目业主：{{ display['project_owner'] or '（未填写）' }}
+- 现有监控：{{ display['camera_brand'] or '（未确认品牌）' }} 摄像头约 {{ display['camera_count'] or '?' }} 路{% if display['camera_type'] %}（{{ display['camera_type'] }}）{% endif %}
+- 现有人员：{{ display['current_staffing'] or '（未填写）' }}
+
+## 二、核心问题
+
+{{ display['main_risks'] or '（未填写）' }}
+
+## 三、方案价值
+
+针对上述现状，安全管家以「远程值守 + 智能识别 + 现场巡检」的组合方式补强现有安保体系：
+
+| 价值维度 | 具体说明 |
+|---|---|
+| 看得见 | 关键点位接入智能识别，替代人工盯屏，消除监控死角与疲劳漏看 |
+| 叫得应 | 告警自动推送与分级响应，缩短从发现到处置的时间 |
+| 管得住 | 隐患、事件、整改形成闭环台账，责任与时效可追溯 |
+| 说得清 | 月度安全报告沉淀数据，为管理层决策与合规留痕提供依据 |
+| 省得下 | 用少量技术投入替换或压缩高强度人力投入，人员可转向更高价值工作 |
+
+## 四、预期收益
+
+- **风险侧**：关键点位 7×24 在线看护，异常行为主动发现，降低失窃、闯入与违规作业的发生概率。
+- **效率侧**：告警直达责任人，减少中间传递环节；事件与隐患线上闭环，避免口头交接遗漏。
+- **管理侧**：形成可量化的安全运行数据，支撑月度复盘与年度考核。
+- **成本侧**：在不增加人力编制的前提下扩展看护覆盖面，单位面积安全投入下降。
+
+> 收益为基于同类场景的经验判断，具体指标需在实施后按实际运行数据复盘校准。
+
+## 五、适用场景
+
+- 客户诉求：{{ display['expectations'] or '（未填写）' }}
+- 期望上线：{{ display['expected_launch'] or '（未填写）' }}
+- 重点位置：{{ display['key_points'] or '（未填写）' }}
+
+---
+*生成时间：{{ meta.generated_at }}　|　模板版本：{{ meta.template_version }}*

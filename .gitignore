@@ -1,0 +1,41 @@
+# Secrets and local environment overrides
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Python caches and virtual environments
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Runtime data and generated artifacts
+workbench/data/
+workbench/*.log
+*.db
+*.db-shm
+*.db-wal
+*.log
+
+# Private/raw input media and local source documents
+record-test/
+资料输入区/*.xlsx
+
+# Local backups
+*.legacy-backup
+*.bak
+
+# Local assistant/workspace memory
+.workbuddy/
+
+# Editor and operating-system files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+Desktop.ini

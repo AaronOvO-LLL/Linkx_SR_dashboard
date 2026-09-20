@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}{{ app_cfg.app_name }}{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+</head>
+<body>
+{% if dept %}
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="{{ url_for('projects') }}">
+      <span class="brand-mark">灵石</span>
+      <span class="brand-text">解决方案工作台</span>
+    </a>
+    <nav class="topnav">
+      <a href="{{ url_for('projects') }}">项目中心</a>
+      <a href="{{ url_for('change_password') }}">修改密码</a>
+      <span class="dept-chip">{{ dept.name }}</span>
+      <a class="logout" href="{{ url_for('logout') }}">退出分部</a>
+    </nav>
+  </div>
+</header>
+{% endif %}
+
+{% if step %}
+<div class="stepbar">
+  <div class="stepbar-inner">
+    {% for name in step.names %}
+    <span class="step {% if loop.index == step.current %}on{% elif loop.index < step.current %}done{% endif %}">
+      <i>{{ loop.index }}</i>{{ name }}
+    </span>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<main class="page">
+  {% if flash_data %}
+  <div class="flash {{ flash_data.kind }}">{{ flash_data.msg }}</div>
+  {% endif %}
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="footer">
+  {{ app_cfg.app_name }} v{{ app_cfg.version }} · Demo 版本，数据保存在本机 data 目录
+</footer>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

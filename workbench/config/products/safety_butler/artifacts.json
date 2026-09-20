@@ -1,0 +1,49 @@
+{
+  "template_version": "0.2.0",
+  "artifacts": [
+    {
+      "key": "survey_result",
+      "name": "完整踏勘结果",
+      "purpose": "向内部与客户同步经确认的结构化调研内容，作为后续所有方案的事实基线。",
+      "includes": ["项目基本情况", "项目资料", "物业信息", "视频监控中心", "监控设备现状", "网络配备情况", "服务器机柜情况", "安全业务踏勘", "决策地图", "预期重点位置", "特殊要求"],
+      "template": "survey_result.md.j2",
+      "formats": ["md", "html"],
+      "folder_key": "survey_result",
+      "required_groups": ["basic", "docs", "property", "monitor", "devices", "network", "cabinet", "business", "decision", "keypoints", "special"],
+      "order": 1
+    },
+    {
+      "key": "value_card",
+      "name": "价值卡片",
+      "purpose": "一页纸讲清客户现状、核心问题、方案价值与预期收益，用于商务沟通。",
+      "includes": ["客户现状", "核心问题", "方案价值", "预期收益", "适用场景"],
+      "template": "value_card.md.j2",
+      "formats": ["md", "html"],
+      "folder_key": "value_card",
+      "required_groups": ["basic", "property", "business", "decision"],
+      "order": 2
+    },
+    {
+      "key": "delivery",
+      "name": "交付内容",
+      "purpose": "界定交付范围、服务项、设备与系统、实施步骤、边界与验收说明。",
+      "includes": ["交付范围", "服务项清单", "设备与系统", "实施步骤", "边界说明", "验收说明"],
+      "template": "delivery.md.j2",
+      "formats": ["md", "html"],
+      "folder_key": "delivery",
+      "required_groups": ["devices", "network", "cabinet", "special"],
+      "order": 3
+    },
+    {
+      "key": "data_request",
+      "name": "提资基础内容",
+      "purpose": "明确需要客户提供的信息、资料、接口、现场条件与责任人，减少来回沟通。",
+      "includes": ["需提供的资料", "接口与权限", "现场条件", "责任人与分工", "时间要求"],
+      "template": "data_request.md.j2",
+      "formats": ["md", "html"],
+      "folder_key": "data_request",
+      "required_groups": ["docs", "network"],
+      "order": 4
+    }
+  ]
+}

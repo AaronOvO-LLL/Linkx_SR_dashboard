@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% block title %}转写预览 · {{ project.name }}{% endblock %}
+{% block content %}
+{% set step = step_of(4) %}
+<div class="page-head">
+  <a class="btn gray sm" href="{{ url_for('survey', pp_id=pp.id) }}">← 返回调研输入</a>
+  <h2>{{ project.name }} · 转写预览</h2><span class="tag blue">{{ job.original_name }}</span>
+</div>
+<div class="card">
+  <div class="flow-strip"><span><i>1</i>选择输入</span><b>→</b><span class="on"><i>2</i>预览确认</span><b>→</b><span><i>3</i>大模型梳理</span><b>→</b><span><i>4</i>信息核对</span></div>
+  <div class="job-hero"><div>
+    <span id="jobTag" class="tag {{ 'green' if job.status in ('awaiting_preview','approved') else ('red' if job.status=='failed' else 'blue') }}">
+      {{ {'pending':'等待中','uploading':'上传中','submitted':'已提交','transcribing':'转写中','awaiting_preview':'待预览','approved':'已确认','failed':'失败'}.get(job.status, job.status) }}</span>
+    <h2>{{ job.original_name }}</h2><p class="sub" id="jobMessage">{{ job.status_message }}</p>
+  </div><div class="job-meta">{{ (job.file_size / 1024 / 1024)|round(1) }} MB{% if job.audio_duration %} · {{ (job.audio_duration / 60)|round(1) }} 分钟{% endif %}</div></div>
+  {% if job.status not in ('awaiting_preview','approved','failed') %}
+  <div class="processing"><i></i><span>后台处理中，可关闭本页。重新进入后会自动恢复查询。</span></div>
+  {% elif job.status == 'failed' %}
+  <div class="flash warn">{{ job.error or '转写失败，请检查云端配置后重试。' }}</div>
+  <form method="post" action="{{ url_for('audio_retry', pp_id=pp.id, job_id=job.id) }}"><button class="btn" type="submit">重新转写</button></form>
+  {% endif %}
+</div>
+{% if job.status in ('awaiting_preview','approved') %}
+<div class="grid2 transcription-grid">
+  <div class="card"><h2>录音回听</h2><p class="sub">预览转写时可随时回听原录音。</p>
+    <audio controls preload="metadata" style="width:100%"><source src="{{ url_for('audio_file', pp_id=pp.id, job_id=job.id) }}"></audio>
+    <h3>分段结果</h3><div class="segment-list">{% for s in segments %}<div class="segment">
+      <span class="segment-time">{{ s.start_ms|ms_time }} – {{ s.end_ms|ms_time }}</span>
+      <b>说话人 {{ s.speaker_id if s.speaker_id is not none else '?' }}</b><p>{{ s.text }}</p>
+    </div>{% else %}<p class="hint">厂商未返回分段信息，右侧仍可预览完整文字稿。</p>{% endfor %}</div>
+  </div>
+  <div class="card"><h2>确认转写文字</h2><p class="sub">系统已应用 {{ corrections|length }} 条术语纠错命中。可直接修改明显错字，无需逐字校对。</p>
+    <form method="post" action="{{ url_for('audio_approve', pp_id=pp.id, job_id=job.id) }}">
+      <textarea name="transcript" rows="22" required>{{ job.corrected_transcript }}</textarea>
+      <div class="model-ready"><span class="dot {{ 'ok' if llm_status.configured else 'bad' }}"></span>
+        下一步：{{ llm_status.label }} · {{ llm_status.model }} · {{ '已配置' if llm_status.configured else '未配置' }}</div>
+      <div class="btn-row"><button class="btn" type="submit" {% if not llm_status.configured %}disabled{% endif %}>确认并开始大模型结构化梳理</button></div>
+    </form>
+    <details class="raw-details"><summary>查看未修正的 ASR 原文</summary><pre>{{ job.raw_transcript }}</pre></details>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+{% block scripts %}{% if job.status not in ('awaiting_preview','approved','failed') %}
+<script>(function poll(){fetch('{{ url_for('audio_job_status', pp_id=pp.id, job_id=job.id) }}').then(function(r){return r.json()}).then(function(x){
+  if(!x.ok)return;document.getElementById('jobMessage').textContent=x.message||'';
+  if(x.preview_url||x.status==='failed')location.reload();else setTimeout(poll,5000);
+}).catch(function(){setTimeout(poll,8000)})})();</script>
+{% endif %}{% endblock %}

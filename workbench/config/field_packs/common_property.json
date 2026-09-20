@@ -1,0 +1,197 @@
+{
+  "pack": "common_property",
+  "name": "物业信息",
+  "scope": "common",
+  "desc": "物业合同、物业公司、业主、服务类型与收费模式",
+  "groups": [
+    {
+      "key": "property",
+      "name": "物业信息",
+      "order": 3,
+      "desc": "物业合同、公司、业主与服务范围"
+    }
+  ],
+  "fields": [
+    {
+      "key": "contract_years",
+      "label": "物业合同时间",
+      "group": "property",
+      "type": "text",
+      "required": true,
+      "help": "物业合同服务期，用于判断服务周期与交付安排",
+      "placeholder": "例如：新签合同，服务期3年",
+      "ai_hint": "提取物业合同签订情况与服务期年限",
+      "extract": {
+        "mode": "sentence",
+        "keywords": [
+          "物业合同",
+          "合同",
+          "服务期",
+          "签了",
+          "年限",
+          "年"
+        ]
+      }
+    },
+    {
+      "key": "property_company",
+      "label": "物业公司名称",
+      "group": "property",
+      "type": "text",
+      "required": true,
+      "ai_hint": "提取物业公司全称",
+      "extract": {
+        "mode": "entity",
+        "keywords": [
+          "物业公司",
+          "物业",
+          "物业方"
+        ],
+        "entity_suffix": [
+          "物业",
+          "公司",
+          "服务"
+        ]
+      }
+    },
+    {
+      "key": "project_owner",
+      "label": "项目业主",
+      "group": "property",
+      "type": "text",
+      "required": true,
+      "ai_hint": "提取项目业主或甲方单位全称",
+      "extract": {
+        "mode": "entity",
+        "keywords": [
+          "业主",
+          "甲方",
+          "客户全称",
+          "委托方",
+          "产权方"
+        ],
+        "entity_suffix": [
+          "公司",
+          "集团",
+          "大学",
+          "医院",
+          "管委会",
+          "厂",
+          "院"
+        ]
+      }
+    },
+    {
+      "key": "service_type",
+      "label": "服务类型",
+      "group": "property",
+      "type": "select",
+      "required": true,
+      "options": [
+        {
+          "value": "FM",
+          "synonyms": [
+            "设施管理",
+            "物业管理",
+            "物业"
+          ]
+        },
+        {
+          "value": "PF",
+          "synonyms": [
+            "产业服务",
+            "园区服务"
+          ]
+        }
+      ],
+      "ai_hint": "判断服务类型是 FM 还是 PF",
+      "extract": {
+        "mode": "enum"
+      }
+    },
+    {
+      "key": "business_desc",
+      "label": "业态补充描述",
+      "group": "property",
+      "type": "textarea",
+      "required": true,
+      "help": "例如：2-5层公寓，5-22层酒店，23-30层写字楼",
+      "ai_hint": "提取业态构成的补充描述",
+      "extract": {
+        "mode": "sentence",
+        "keywords": [
+          "业态",
+          "楼层",
+          "公寓",
+          "酒店",
+          "写字楼",
+          "厂房",
+          "宿舍"
+        ]
+      }
+    },
+    {
+      "key": "fee_mode",
+      "label": "物业收费模式",
+      "group": "property",
+      "type": "select",
+      "required": true,
+      "options": [
+        {
+          "value": "包干制",
+          "synonyms": [
+            "包干",
+            "包干制"
+          ]
+        },
+        {
+          "value": "酬金制",
+          "synonyms": [
+            "酬金",
+            "酬金制"
+          ]
+        },
+        {
+          "value": "其他",
+          "synonyms": []
+        }
+      ],
+      "ai_hint": "判断物业收费模式",
+      "extract": {
+        "mode": "enum"
+      }
+    },
+    {
+      "key": "mgmt_scope",
+      "label": "物业管理范围",
+      "group": "property",
+      "type": "select",
+      "required": true,
+      "options": [
+        {
+          "value": "大物业",
+          "synonyms": [
+            "大物业"
+          ]
+        },
+        {
+          "value": "小物业",
+          "synonyms": [
+            "小物业"
+          ]
+        },
+        {
+          "value": "全委",
+          "synonyms": [
+            "全委",
+            "全面委托"
+          ]
+        }
+      ],
+      "ai_hint": "判断物业管理范围",
+      "extract": {
+        "mode": "enum"
+      }
+    }
+  ]
+}

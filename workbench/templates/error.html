@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block title %}{{ code }} · {{ app_cfg.app_name }}{% endblock %}
+{% block content %}
+<div style="max-width:520px;margin:6vh auto">
+  <div class="card" style="text-align:center;padding:36px 24px">
+    <div style="font-size:44px;font-weight:700;color:#c9d6ee">{{ code }}</div>
+    <p style="color:var(--muted);margin:10px 0 22px">{{ msg }}</p>
+    <a class="btn" href="{{ url_for('projects') }}">返回项目库</a>
+  </div>
+</div>
+{% endblock %}

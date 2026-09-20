@@ -1,0 +1,18 @@
+{
+  "provider": "tencent",
+  "enabled": true,
+  "allowed_extensions": ["wav", "mp3", "m4a", "flv", "mp4", "wma", "3gp", "amr", "aac", "ogg", "flac"],
+  "max_file_mb": 500,
+  "engine_model_type": "16k_zh_en_2.0",
+  "speaker_diarization": true,
+  "poll_seconds": 8,
+  "timeout_minutes": 180,
+  "delete_cos_after_completion": true,
+  "credentials": {
+    "secret_id_env": "TENCENTCLOUD_SECRET_ID",
+    "secret_key_env": "TENCENTCLOUD_SECRET_KEY",
+    "bucket_env": "TENCENT_COS_BUCKET",
+    "region_env": "TENCENT_COS_REGION",
+    "prefix_env": "TENCENT_COS_PREFIX"
+  }
+}
