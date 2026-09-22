@@ -1,0 +1,365 @@
+{
+  "schema_version": "1.0",
+  "version": "1.0.0",
+  "status": "draft",
+  "scope": "project_global",
+  "sources": [
+    "safety_butler"
+  ],
+  "_note": "项目级 ASR 词表：录音转写发生在选择产品之前，运行时只读本文件。当前内容来自 safety_butler 词表；fire_butler 尚无词表。各产品目录下的 asr_terms.json 仅作词表素材，需要新增词条时先改产品素材再合并到这里。",
+  "provider": {
+    "name": "tencent",
+    "engine_model_type": "16k_zh_en_2.0",
+    "vocab_name": "灵石踏勘_项目级_v1",
+    "vocab_id": "be8cb8f5b40211f1a0c5a4ae11f66ba3",
+    "default_state": 0,
+    "generated_file": "tencent_hotwords_v1.txt",
+    "weight_policy": {
+      "normal_range": "1-10",
+      "super_hotword": 11,
+      "forced_homophone_weight": null,
+      "note": "当前使用 16k_zh_en_2.0，不启用仅适用于 8k_zh/16k_zh 的权重 100。"
+    },
+    "_vocab_todo": "vocab_id 暂沿用安全管家踏勘词表，属过渡值。合并词表定稿后需在腾讯云控制台新建并回填新的 vocab_id。"
+  },
+  "hotwords": [
+    {
+      "term": "安全管家",
+      "weight": 11,
+      "category": "product",
+      "source": "产品名称"
+    },
+    {
+      "term": "消控室",
+      "weight": 11,
+      "category": "place",
+      "source": "现有字段配置；长录音实测"
+    },
+    {
+      "term": "消防控制室",
+      "weight": 10,
+      "category": "place",
+      "source": "消防领域标准称谓"
+    },
+    {
+      "term": "消防主机",
+      "weight": 10,
+      "category": "device",
+      "source": "长录音实测高频"
+    },
+    {
+      "term": "周界入侵",
+      "weight": 11,
+      "category": "scenario",
+      "source": "现有字段配置；长录音出现错识别"
+    },
+    {
+      "term": "明火监测",
+      "weight": 11,
+      "category": "scenario",
+      "source": "长录音实测"
+    },
+    {
+      "term": "烟火识别",
+      "weight": 9,
+      "category": "scenario",
+      "source": "安全业务场景"
+    },
+    {
+      "term": "人员晕倒",
+      "weight": 10,
+      "category": "scenario",
+      "source": "长录音实测"
+    },
+    {
+      "term": "人员摔倒",
+      "weight": 9,
+      "category": "scenario",
+      "source": "长录音实测"
+    },
+    {
+      "term": "人员聚集",
+      "weight": 9,
+      "category": "scenario",
+      "source": "安全业务场景"
+    },
+    {
+      "term": "人员逗留",
+      "weight": 9,
+      "category": "scenario",
+      "source": "安全业务场景"
+    },
+    {
+      "term": "抽烟识别",
+      "weight": 9,
+      "category": "scenario",
+      "source": "长录音实测"
+    },
+    {
+      "term": "违停识别",
+      "weight": 9,
+      "category": "scenario",
+      "source": "长录音实测"
+    },
+    {
+      "term": "高空抛物",
+      "weight": 11,
+      "category": "scenario",
+      "source": "长录音出现重复字错识别"
+    },
+    {
+      "term": "补盲",
+      "weight": 11,
+      "category": "survey",
+      "source": "长录音出现同音错识别"
+    },
+    {
+      "term": "点位",
+      "weight": 8,
+      "category": "survey",
+      "source": "需求文档；长录音实测"
+    },
+    {
+      "term": "踏勘",
+      "weight": 11,
+      "category": "survey",
+      "source": "需求文档；核心业务动作"
+    },
+    {
+      "term": "提资",
+      "weight": 10,
+      "category": "survey",
+      "source": "需求文档"
+    },
+    {
+      "term": "算力卡",
+      "weight": 11,
+      "category": "device",
+      "source": "需求文档"
+    },
+    {
+      "term": "机柜",
+      "weight": 8,
+      "category": "device",
+      "source": "需求文档；现有字段配置"
+    },
+    {
+      "term": "交换机",
+      "weight": 8,
+      "category": "device",
+      "source": "需求文档；现有字段配置"
+    },
+    {
+      "term": "网络拓扑",
+      "weight": 9,
+      "category": "network",
+      "source": "现有字段配置"
+    },
+    {
+      "term": "弱电间",
+      "weight": 9,
+      "category": "place",
+      "source": "现有字段配置"
+    },
+    {
+      "term": "道闸",
+      "weight": 10,
+      "category": "device",
+      "source": "需求文档"
+    },
+    {
+      "term": "门禁",
+      "weight": 9,
+      "category": "device",
+      "source": "需求文档"
+    },
+    {
+      "term": "能耗配电",
+      "weight": 10,
+      "category": "solution",
+      "source": "需求文档"
+    },
+    {
+      "term": "中央空调节能",
+      "weight": 10,
+      "category": "solution",
+      "source": "需求文档"
+    },
+    {
+      "term": "维保单位",
+      "weight": 9,
+      "category": "role",
+      "source": "需求文档"
+    },
+    {
+      "term": "项目经理",
+      "weight": 8,
+      "category": "role",
+      "source": "需求文档"
+    },
+    {
+      "term": "压力传感器",
+      "weight": 10,
+      "category": "device",
+      "source": "长录音实测"
+    },
+    {
+      "term": "强排风机",
+      "weight": 10,
+      "category": "device",
+      "source": "长录音实测"
+    },
+    {
+      "term": "天地伟业",
+      "weight": 11,
+      "category": "brand",
+      "source": "现有字段说明"
+    },
+    {
+      "term": "海康威视",
+      "weight": 10,
+      "category": "brand",
+      "source": "现有字段配置"
+    },
+    {
+      "term": "大华",
+      "weight": 7,
+      "category": "brand",
+      "source": "现有字段配置；长录音实测"
+    },
+    {
+      "term": "宇视",
+      "weight": 10,
+      "category": "brand",
+      "source": "现有字段配置"
+    },
+    {
+      "term": "华三",
+      "weight": 9,
+      "category": "brand",
+      "source": "现有字段配置"
+    },
+    {
+      "term": "锐捷",
+      "weight": 10,
+      "category": "brand",
+      "source": "现有字段配置"
+    },
+    {
+      "term": "IP摄像头",
+      "weight": 10,
+      "category": "device",
+      "source": "现有字段配置"
+    },
+    {
+      "term": "NVR",
+      "weight": 10,
+      "category": "device",
+      "source": "现有字段配置"
+    },
+    {
+      "term": "CVR",
+      "weight": 10,
+      "category": "device",
+      "source": "现有字段配置"
+    },
+    {
+      "term": "DVR",
+      "weight": 10,
+      "category": "device",
+      "source": "现有字段配置"
+    },
+    {
+      "term": "GB28181",
+      "weight": 11,
+      "category": "protocol",
+      "source": "现有字段配置"
+    },
+    {
+      "term": "ONVIF",
+      "weight": 10,
+      "category": "protocol",
+      "source": "现有字段配置"
+    },
+    {
+      "term": "H3C",
+      "weight": 10,
+      "category": "brand",
+      "source": "现有字段配置"
+    },
+    {
+      "term": "PA",
+      "weight": 9,
+      "category": "role",
+      "source": "需求文档"
+    },
+    {
+      "term": "恒益",
+      "weight": 11,
+      "category": "business_name",
+      "source": "需求文档"
+    }
+  ],
+  "corrections": [
+    {
+      "from": "究界入侵",
+      "to": "周界入侵",
+      "mode": "literal",
+      "enabled": true,
+      "source": "长录音 20260919_160036_32ee0dda"
+    },
+    {
+      "from": "洲际入侵",
+      "to": "周界入侵",
+      "mode": "literal",
+      "enabled": true,
+      "source": "长录音 20260919_160036_32ee0dda"
+    },
+    {
+      "from": "高空抛抛物",
+      "to": "高空抛物",
+      "mode": "literal",
+      "enabled": true,
+      "source": "长录音 20260919_160036_32ee0dda"
+    },
+    {
+      "from": "组盲",
+      "to": "补盲",
+      "mode": "literal",
+      "enabled": true,
+      "source": "长录音 20260919_160036_32ee0dda"
+    }
+  ],
+  "pending_review": [
+    {
+      "observed": "安伟",
+      "candidate": "安防",
+      "reason": "需回听原音，不能仅凭上下文自动替换"
+    },
+    {
+      "observed": "风击",
+      "candidate": "风机",
+      "reason": "单独全局替换风险较高，后续应增加上下文规则"
+    },
+    {
+      "observed": "感器",
+      "candidate": "传感器",
+      "reason": "单独全局替换风险较高，后续应增加上下文规则"
+    },
+    {
+      "observed": "通天地",
+      "candidate": null,
+      "reason": "疑似项目或客户专有名词，需确认正式写法以及是否只在单项目生效"
+    },
+    {
+      "observed": "火灾同能时",
+      "candidate": null,
+      "reason": "无法仅凭文字稿可靠判断原词，需回听"
+    }
+  ],
+  "postprocess_policy": {
+    "keep_original_transcript": true,
+    "write_hit_log": true,
+    "only_apply_enabled_rules": true
+  }
+}

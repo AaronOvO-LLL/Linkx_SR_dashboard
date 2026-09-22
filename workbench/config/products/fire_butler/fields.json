@@ -1,0 +1,22 @@
+{
+  "template_version": "0.2.0",
+  "product_type": "fire_butler",
+  "note": "来源：踏勘要求的项目具体内容.xlsx。共用行4-20；消防行63-76。行66、68为重复填报示例，分别合并为逐消控室多行字段。按键单选补充有损坏状态用于记录异常。 2026-09-21：按用户授权将适合的文本字段改为选择题，字段 key 与必填范围保留，历史文字兼容显示。",
+  "packs": [
+    "common_project",
+    "common_docs",
+    "common_property",
+    "fire_survey"
+  ],
+  "group_order": [
+    "basic",
+    "docs",
+    "property",
+    "fire_control",
+    "fire_maintenance",
+    "fire_cost"
+  ],
+  "overrides": {},
+  "extra_fields": [],
+  "remove_fields": []
+}

@@ -1,0 +1,47 @@
+{% set choice = choice_state(f, row.value_json if row else none) %}
+<fieldset class="choice-field" data-key="{{ f.key }}" data-type="{{ 'choice-list' if f.type == 'multiselect' else 'choice-single' }}" {% if f.get('require_other_detail') %}data-require-other-detail="true"{% endif %}>
+  <legend class="choice-legend">{{ f.label }} · {{ '可多选' if f.type == 'multiselect' else '单选' }}</legend>
+  {% if f.type == 'multiselect' or choice.inline %}
+  <div class="choice-options">
+    {% for o in f.options %}
+    <label class="chk {{ 'on' if o.value in choice.selected else '' }}">
+      <input type="{{ 'checkbox' if f.type == 'multiselect' else 'radio' }}" name="choice-{{ f.key }}" value="{{ o.value }}" {% if o.value in choice.selected %}checked{% endif %}>{{ o.value }}
+    </label>
+    {% endfor %}
+    {% if f.type == 'select' and (f.get('allow_custom') or choice.custom) %}
+    <label class="chk {{ 'on' if choice.custom else '' }}">
+      <input type="radio" name="choice-{{ f.key }}" data-custom-toggle value="" {% if choice.custom %}checked{% endif %}>其他 / 详细说明
+    </label>
+    {% endif %}
+  </div>
+  {% else %}
+  <select class="choice-select" aria-label="{{ f.label }}">
+    <option value="">— 请选择 —</option>
+    {% for o in f.options %}<option value="{{ o.value }}" {% if o.value in choice.selected %}selected{% endif %}>{{ o.value }}</option>{% endfor %}
+    {% if f.get('allow_custom') or choice.custom %}<option value="__custom__" data-custom-toggle {% if choice.custom %}selected{% endif %}>其他 / 详细说明</option>{% endif %}
+  </select>
+  {% endif %}
+  {% if f.type == 'multiselect' %}
+    {% if f.get('require_other_detail') %}
+    <label class="choice-other" {% if '其他' not in choice.selected and not choice.custom %}hidden{% endif %}>
+      <span class="hint">其他品牌名称（选择“其他”时必填，多个品牌可用顿号分隔）</span>
+      <textarea class="choice-note" rows="2" aria-label="{{ f.label }}其他品牌名称" placeholder="请填写具体品牌名称">{{ choice.custom|join('、') }}</textarea>
+    </label>
+    {% else %}
+    {% for text in choice.custom %}
+    <label class="chk choice-legacy on"><input type="checkbox" name="choice-{{ f.key }}" value="{{ text }}" checked><span>保留原有说明：{{ text }}</span></label>
+    {% endfor %}
+    {% if f.get('allow_custom') %}
+    <details class="choice-detail"><summary>补充说明（可选）</summary>
+      <label><span class="hint">其他情况、具体位置或优先级</span><textarea class="choice-note" rows="2" placeholder="仅在选项无法完整表达时补充"></textarea></label>
+    </details>
+    {% endif %}
+    {% endif %}
+  {% elif f.get('allow_custom') or choice.custom %}
+    <label class="choice-custom" {% if not choice.custom %}hidden{% endif %}>
+      <span class="hint">详细说明{% if choice.custom %}（原有文字已保留，更换选项会替换当前答案）{% endif %}</span>
+      <textarea class="choice-note" rows="2" placeholder="填写具体情况">{{ choice.custom|join('；') }}</textarea>
+    </label>
+  {% endif %}
+  <button type="button" class="choice-clear">清空此题</button>
+</fieldset>

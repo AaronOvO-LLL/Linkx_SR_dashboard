@@ -9,64 +9,43 @@
   <span class="tag blue">v{{ product.version }}</span>
 </div>
 
+{% include '_input_modes.html' %}
 <div class="card">
-  <div class="flow-strip">
-    <span class="on"><i>1</i>选择输入</span><b>→</b>
-    <span><i>2</i>预览确认</span><b>→</b>
-    <span><i>3</i>大模型梳理</span><b>→</b>
-    <span><i>4</i>信息核对</span>
-  </div>
-  <h2>选择调研资料</h2>
-  <p class="sub">录音和文字稿二选一。录音会先经腾讯云转写，确认预览后再交给大模型结构化梳理。</p>
-
-  <div class="input-tabs" role="tablist">
-    {% if has_capability(pp.product_type, 'audio_asr') %}
-    <button class="input-tab on" type="button" data-pane="audioPane">
-      <strong>上传录音</strong><small>ASR + COS 自动转写</small>
-    </button>
-    {% endif %}
-    <button class="input-tab {% if not has_capability(pp.product_type, 'audio_asr') %}on{% endif %}" type="button" data-pane="textPane">
-      <strong>粘贴文字稿</strong><small>已有文字时直接录入</small>
-    </button>
-  </div>
+  <h2>调研资料</h2>
+  <p class="sub">已有逐字稿可以直接粘贴或选择文字文件，也可导入项目转写稿。不需要文字稿时，点击上方「直接手动填写」即可开始。</p>
 
   {% if has_capability(pp.product_type, 'audio_asr') %}
-  <section class="input-pane on" id="audioPane">
-    <div class="config-line">
-      <span class="dot {{ 'ok' if asr_status.configured else 'bad' }}"></span>
-      腾讯 ASR + 私有 COS：{{ '已配置' if asr_status.configured else '未配置' }}
-      <span class="sep">·</span>支持单文件最大 500MB
-    </div>
-    <form method="post" action="{{ url_for('audio_upload', pp_id=pp.id) }}"
-          enctype="multipart/form-data" id="audioForm">
-      <label class="dropzone" for="audioInput">
-        <input id="audioInput" name="audio" type="file"
-               accept=".wav,.mp3,.m4a,.flv,.mp4,.wma,.3gp,.amr,.aac,.ogg,.flac" required>
-        <span class="drop-icon">↑</span>
-        <strong id="audioName">选择录音文件</strong>
-        <small>mp3 / m4a / wav / amr / aac 等；上传后可离开页面</small>
-      </label>
-      <div class="btn-row">
-        <button class="btn" type="submit" {% if not asr_status.configured %}disabled{% endif %}>上传并开始转写</button>
-        {% if not asr_status.configured %}<span class="hint">请先配置腾讯云环境变量与 ASR 依赖。</span>{% endif %}
-      </div>
+  <div class="action-card" style="border:1px solid var(--line);border-radius:11px;padding:14px 16px;margin-bottom:18px">
+    {% if transcript %}
+    <div><h2 style="font-size:15px">项目转写稿已就绪</h2>
+      <p class="sub">{{ transcript.char_count }} 字 · 确认于 {{ transcript.created_at }}。导入后仍可在下方修改，不影响其他产品。</p></div>
+    <form method="post" action="{{ url_for('import_transcript', pp_id=pp.id) }}">
+      <button class="btn" type="submit"
+              onclick="return confirm('导入会用项目转写稿覆盖当前产品的文字稿。已人工确认的字段不受影响。')">导入项目转写稿</button>
     </form>
-  </section>
+    {% else %}
+    <div><h2 style="font-size:15px">还没有项目转写稿</h2>
+      <p class="sub">上传录音并确认转写后，即可一键导入本产品。</p></div>
+    <a class="btn gray" href="{{ url_for('project_detail', pid=project.id) }}">去项目概览上传录音</a>
+    {% endif %}
+  </div>
   {% endif %}
 
-  <section class="input-pane {% if not has_capability(pp.product_type, 'audio_asr') %}on{% endif %}" id="textPane">
-    <form method="post" id="transcriptForm">
-      <label class="fld">
-        <span>调研文字稿<span class="req">*</span>（{{ limits.min_transcript_chars }} – {{ limits.max_transcript_chars }} 字）</span>
-        <textarea name="transcript" id="transcript" rows="14"
-          placeholder="把现场访谈的文字稿粘贴到这里。口语化、有冗余都没关系。" required>{{ source.content if source }}</textarea>
-      </label>
-      <div class="row" style="align-items:center">
-        <span class="hint" id="charCount">已输入 0 字</span><div class="spacer" style="flex:1"></div>
-        <button class="btn" type="submit">保存文字稿</button>
-      </div>
-    </form>
-  </section>
+  <form method="post" id="transcriptForm" data-draft-key="survey-draft:{{ pp.id }}" data-source-id="{{ source.id if source else '' }}">
+    <label class="fld"><span>从文字文件导入（可选，TXT / Markdown）</span>
+      <input type="file" id="transcriptFile" accept=".txt,.md,text/plain,text/markdown">
+    </label>
+    <label class="fld">
+      <span>调研文字稿<span class="req">*</span>（{{ limits.min_transcript_chars }} – {{ limits.max_transcript_chars }} 字）</span>
+      <textarea name="transcript" id="transcript" rows="14"
+        placeholder="把现场访谈的文字稿粘贴到这里，或从上方导入项目转写稿。口语化、有冗余都没关系。" required>{{ source.content if source }}</textarea>
+    </label>
+    <div class="row" style="align-items:center">
+      <span class="hint" id="charCount">已输入 0 字</span><div class="spacer" style="flex:1"></div>
+      <button class="btn" type="submit">保存文字稿</button>
+    </div>
+    <p class="hint" id="draftHint" role="status">切换页面时，未提交的文字会在当前浏览器标签页保留为草稿。</p>
+  </form>
 </div>
 
 {% if source %}
@@ -84,39 +63,22 @@
 </div>
 {% endif %}
 
-{% if audio_jobs %}
-<div class="card"><h2>录音转写记录</h2><p class="sub">任务在后台执行，离开页面不会丢失进度。</p>
-  <div class="job-list">{% for j in audio_jobs %}
-    <a class="job-row" href="{{ url_for('transcription_preview', pp_id=pp.id, job_id=j.id) }}">
-      <div><strong>{{ j.original_name }}</strong><small>{{ (j.file_size / 1024 / 1024)|round(1) }} MB · {{ j.created_at }}</small></div>
-      <span class="tag {{ 'green' if j.status in ('awaiting_preview','approved') else ('red' if j.status=='failed' else 'blue') }}">
-        {{ {'pending':'等待中','uploading':'上传中','submitted':'已提交','transcribing':'转写中','awaiting_preview':'待预览','approved':'已确认','failed':'失败'}.get(j.status, j.status) }}
-      </span><span>查看 →</span>
-    </a>{% endfor %}</div>
-</div>
-{% endif %}
-
 {% if runs %}
 <div class="card"><h2>结构化梳理记录</h2>
+  <div class="table-scroll" role="region" aria-label="结构化梳理记录，可横向滚动" tabindex="0">
   <table class="tbl"><thead><tr><th>时间</th><th>引擎</th><th>字数</th><th>状态</th><th>说明</th></tr></thead>
     <tbody>{% for r in runs %}<tr><td>{{ r.started_at }}</td>
       <td>{{ '内置规则引擎' if r.provider == 'rule' else 'DeepSeek 大模型' }}</td><td>{{ r.input_chars }}</td>
       <td><span class="tag {{ 'green' if r.status=='success' else 'red' }}">{{ '成功' if r.status=='success' else '失败' }}</span></td>
       <td>{{ r.message or ('命中 ' + (r.stats_json|hit_count|string) + ' 个字段' if r.status=='success' else '') }}</td>
     </tr>{% endfor %}</tbody></table>
+  </div>
 </div>
 {% endif %}
 {% endblock %}
 
 {% block scripts %}
 <script>
-document.querySelectorAll('.input-tab').forEach(function(tab){tab.addEventListener('click',function(){
-  document.querySelectorAll('.input-tab,.input-pane').forEach(function(x){x.classList.remove('on')});
-  tab.classList.add('on');document.getElementById(tab.dataset.pane).classList.add('on');
-})});
-var ai=document.getElementById('audioInput');if(ai)ai.addEventListener('change',function(){
-  document.getElementById('audioName').textContent=ai.files[0]?ai.files[0].name:'选择录音文件';
-});
 function updateCount(){var el=document.getElementById('transcript');if(el)document.getElementById('charCount').textContent='已输入 '+el.value.length+' 字';}
 var ta=document.getElementById('transcript');if(ta){ta.addEventListener('input',updateCount);updateCount();}
 </script>

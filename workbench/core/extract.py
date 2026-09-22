@@ -19,7 +19,7 @@ import urllib.request
 import urllib.error
 from datetime import datetime
 
-from .config import app_config, field_config
+from .config import app_config, field_config, product_config
 from .runtime_env import read_env
 
 CONF_ORDER = {'high': 3, 'medium': 2, 'low': 1}
@@ -315,8 +315,18 @@ def extract_money(sentences, spec, text):
     for s in sentences:
         if not any(k in s for k in kws):
             continue
-        if MONEY_PATTERN.search(s):
+        match = MONEY_PATTERN.search(s)
+        if match:
+            if spec.get('numeric_value'):
+                value = cn2num(match.group(1))
+                if match.group(2) in ('万元', '万'):
+                    value *= 10000
+                return value, clean_quote(s), 'medium'
             return norm_space(s), clean_quote(s), 'medium'
+        if spec.get('numeric_value'):
+            value, quote, confidence = extract_number([s], spec, s)
+            if value is not None:
+                return value, quote, confidence
     return None, '', 'low'
 
 
@@ -355,6 +365,29 @@ def _score_options(sentences, field, guard=True):
 
 
 def extract_enum(sentences, spec, field, text):
+    if spec.get('context_keywords'):
+        sentences = [s for s in sentences if any(k in s for k in spec['context_keywords'])]
+    if spec.get('prefer_longest_match'):
+        winners = set()
+        for sentence in sentences:
+            if any(word in sentence for word in ('是否', '不确定', '不清楚', '待核实')):
+                return None, '', 'low'
+            matches = [(m.start(), m.end(), option['value'], term)
+                       for option in field.get('options', [])
+                       for term in [option['value']] + option.get('synonyms', []) if term
+                       for m in re.finditer(re.escape(term), sentence)]
+            for start, end, value, term in matches:
+                if any(left <= start and right >= end and right - left > end - start
+                       for left, right, _, _ in matches):
+                    continue
+                if negated(sentence, term):
+                    return None, '', 'low'
+                winners.add(value)
+        if len(winners) == 1:
+            value = next(iter(winners))
+            return value, _quote_for(sentences, field, value), 'high'
+        # Conflicts are not guessed; the caller retains the source as custom text.
+        return None, '', 'low'
     guard = spec.get('negation_guard', True)
     scored = _score_options(sentences, field, guard)
     if not scored:
@@ -369,12 +402,14 @@ def extract_enum(sentences, spec, field, text):
 
 
 def extract_list(sentences, spec, field, text):
+    if spec.get('context_keywords'):
+        sentences = [s for s in sentences if any(k in s for k in spec['context_keywords'])]
     guard = spec.get('negation_guard', True)
     scored = _score_options(sentences, field, guard)
     if not scored:
         return None, '', 'low'
     values = [v for s_, v in scored if s_ > 0]
-    return values[:6], clean_quote('；'.join(values[:3])), 'high'
+    return values, clean_quote('；'.join(_quote_for(sentences, field, v) for v in values)), 'high'
 
 
 def _quote_for(sentences, field, value):
@@ -455,6 +490,17 @@ def _run_rule_engine(text, product_type, protected_keys):
         else:
             value, quote, conf = extract_sentence(sentences, spec)
 
+        if f.get('allow_custom') and spec.get('fallback_text'):
+            relevant = [s for s in sentences if any(k in s for k in spec.get('context_keywords', []))]
+            original = '；'.join(relevant)
+            if original and value in (None, '', [], {}):
+                value = [original] if f['type'] == 'multiselect' else original
+                quote, conf = clean_quote(original), 'low'
+            elif original and f['type'] == 'multiselect' and spec.get('preserve_details'):
+                if original not in value:
+                    value = value + [original]
+                quote = clean_quote(original)
+
         empty = value in (None, '', [], {})
         if empty:
             status = 'required_missing' if f.get('required') else 'optional_missing'
@@ -470,7 +516,7 @@ def _run_rule_engine(text, product_type, protected_keys):
 
 # ------------------------------------------------------------------ LLM provider
 
-LLM_SYSTEM = """你是资深安全服务方案顾问，负责把现场踏勘口语文字稿整理为结构化字段。
+LLM_SYSTEM = """你是资深服务方案顾问，负责按当前产品的字段定义把现场踏勘口语文字稿整理为结构化字段。
 严格按 JSON 输出，不要编造。无法确定就留空字符串。"""
 
 
@@ -503,10 +549,11 @@ def _normalize_llm_value(field, value):
         return None
     if ftype == 'select':
         allowed = {o.get('value') for o in field.get('options', [])}
-        return value if isinstance(value, str) and value in allowed else None
+        return value.strip() if isinstance(value, str) and (value in allowed or field.get('allow_custom')) else None
     if ftype == 'multiselect':
         allowed = {o.get('value') for o in field.get('options', [])}
-        return [x for x in value if x in allowed] if isinstance(value, list) else None
+        return list(dict.fromkeys(x.strip() for x in value if isinstance(x, str) and x.strip()
+                                 and (x in allowed or field.get('allow_custom')))) if isinstance(value, list) else None
     if ftype in ('text', 'textarea', 'date'):
         return str(value).strip() if not isinstance(value, (list, dict)) else None
     return value
@@ -527,6 +574,7 @@ def _run_llm_engine(text, product_type, protected_keys):
                 'required': bool(f.get('required')), 'hint': f.get('ai_hint', '')}
         if f.get('options'):
             item['options'] = [o['value'] for o in f['options']]
+            item['allow_custom'] = bool(f.get('allow_custom'))
         schema.append(item)
 
     prompt = (
@@ -538,7 +586,9 @@ def _run_llm_engine(text, product_type, protected_keys):
         '1. 值必须与字段 type 匹配（number 用数字，multiselect 用数组）。\n'
         '2. 找不到就给空值，禁止臆测。\n'
         '3. 存在歧义或冲突时 confidence 给 low。\n'
-        '4. quote 必须是原文中真实存在的片段。\n\n'
+        '4. quote 必须是原文中真实存在的片段。\n'
+        '5. 选择题优先使用 options；只有 allow_custom=true 时允许补充原文连续片段，不能编写新的选项。\n'
+        '6. 多选的具体楼层、点位、数量和优先级等细节请以原文片段追加到数组中。\n\n'
         '文字稿：\n' + text)
 
     body = {
@@ -573,6 +623,12 @@ def _run_llm_engine(text, product_type, protected_keys):
     for f in fields:
         got = (data.get('fields') or {}).get(f['key']) or {}
         value = _normalize_llm_value(f, got.get('value'))
+        if f.get('allow_custom') and f['type'] in ('select', 'multiselect'):
+            allowed = {o['value'] for o in f.get('options', [])}
+            if isinstance(value, list):
+                value = [v for v in value if v in allowed or v in text]
+            elif value and value not in allowed and value not in text:
+                value = None
         empty = value in (None, '', [], {})
         if empty:
             status = 'required_missing' if f.get('required') else 'optional_missing'
@@ -596,7 +652,7 @@ def _run_llm_engine(text, product_type, protected_keys):
 # ------------------------------------------------------------------ 对外入口
 
 def relevance_check(text, product_type):
-    """判断文字稿与安全管家是否相关，避免无意义解析。"""
+    """判断文字稿与当前产品是否相关，避免无意义解析。"""
     cfg = app_config()['extraction']
     hits = 0
     for f in field_config(product_type)['fields']:
@@ -626,8 +682,8 @@ def run_extraction(text, product_type, protected_keys=None, provider=None):
     ok, hits = relevance_check(text, product_type)
     if not ok:
         raise ExtractionError(
-            '文字稿内容与「安全管家」业务关联度过低（仅命中 %d 个字段线索）。'
-            '请确认粘贴的是安全调研相关的访谈内容。' % hits)
+            '文字稿内容与「%s」业务关联度过低（仅命中 %d 个字段线索）。'
+            '请确认粘贴的是该产品调研相关的访谈内容。' % (product_config(product_type)['name'], hits))
 
     if provider == 'llm':
         result, hit_fields = _run_llm_engine(text, product_type, protected_keys)

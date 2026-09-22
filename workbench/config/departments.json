@@ -1,6 +1,5 @@
 {
-  "default_password": "000000",
-  "must_change_hint": "初始默认密码为 000000，仅用于 Demo。正式使用前请修改。",
+  "_说明": "初始种子。仅当 data/departments.json 不存在时用于生成运行时凭据，生成后口令即被哈希保存；此后再改本文件不会生效。",
   "departments": [
     {"key": "dept1", "name": "一部", "password": "000000", "changed": false},
     {"key": "dept2", "name": "二部", "password": "000000", "changed": false},

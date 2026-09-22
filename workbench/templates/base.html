@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block title %}{{ app_cfg.app_name }}{% endblock %}</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='responsive.css') }}">
 </head>
 <body>
 {% if dept %}
@@ -14,7 +15,8 @@
       <span class="brand-mark">灵石</span>
       <span class="brand-text">解决方案工作台</span>
     </a>
-    <nav class="topnav">
+    <button class="nav-toggle" type="button" aria-controls="mainNav" aria-expanded="false" hidden>菜单</button>
+    <nav class="topnav" id="mainNav" aria-label="主导航">
       <a href="{{ url_for('projects') }}">项目中心</a>
       <a href="{{ url_for('change_password') }}">修改密码</a>
       <span class="dept-chip">{{ dept.name }}</span>
@@ -47,6 +49,7 @@
   {{ app_cfg.app_name }} v{{ app_cfg.version }} · Demo 版本，数据保存在本机 data 目录
 </footer>
 <script src="{{ url_for('static', filename='app.js') }}"></script>
+<script src="{{ url_for('static', filename='responsive.js') }}"></script>
 {% block scripts %}{% endblock %}
 </body>
 </html>

@@ -3,7 +3,7 @@
 {% block content %}
 {% set step = step_of(6) %}
 
-<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+<div class="page-head">
   <a class="btn gray sm" href="{{ url_for('review', pp_id=pp.id) }}">← 返回信息核对</a>
   <h2 style="margin:0;font-size:17px">{{ project.name }} · {{ product.name }} · 预览与生成</h2>
 </div>
@@ -39,11 +39,11 @@
   <p class="sub">以下内容为将用于生成的最终数据，按业务章节展示。</p>
   {% for g in groups %}
   <h3>{{ loop.index }}. {{ g.name }} <span class="tag">{{ g.desc }}</span></h3>
-  <table class="tbl">
+  <table class="tbl summary-table">
     <tbody>
     {% for f in g.fields %}
       <tr>
-        <th style="width:170px">{{ f.label }}</th>
+        <th scope="row">{{ f.label }}</th>
         <td>
           {% if f.text %}{{ f.text|replace('\n',' ')|truncate(200) }}
             {% if f.unit %}<span class="tag" style="margin-left:6px">{{ f.unit }}</span>{% endif %}

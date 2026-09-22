@@ -1,0 +1,99 @@
+<Slide style={{ width: 1280, height: 720, padding: '20px 64px', flexDirection: 'column', background: '#FFFFFF', fontFamily: 'Microsoft YaHei' }}>
+    {/* A · 标题块 */}
+    <Box style={{ height: 108, flexDirection: 'column', justifyContent: 'center' }}>
+        <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#2F5597', letterSpacing: 2 }}>成果 · DELIVERED</Text>
+        <Text style={{ fontSize: 34, fontWeight: 'bold', color: '#1F2937', marginTop: 10 }}>从踏勘到材料，一条闭环已经可用</Text>
+    </Box>
+
+    {/* B · 内容区 */}
+    <Box style={{ height: 524, flexDirection: 'row', gap: 28 }}>
+        {/* 左标题栏 32% */}
+        <Box style={{ flex: 32, background: '#2F5597', borderRadius: 8, padding: 28, flexDirection: 'column' }}>
+            <Text style={{ fontSize: 13, fontWeight: 'bold', color: 'rgba(255,255,255,0.62)', letterSpacing: 3 }}>已交付</Text>
+            <Text style={{ fontSize: 26, fontWeight: 'bold', color: '#FFFFFF', lineHeight: 1.4, marginTop: 16 }}>一条闭环，<br />今天就能走完</Text>
+
+            <Box style={{ flexDirection: 'row', gap: 16, marginTop: 34 }}>
+                <Box style={{ flex: 1, flexDirection: 'column' }}>
+                    <Text style={{ fontSize: 38, fontWeight: 'bold', color: '#FFFFFF', lineHeight: 1.1 }}>2</Text>
+                    <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.70)', marginTop: 6 }}>产品已上线</Text>
+                </Box>
+                <Box style={{ flex: 1, flexDirection: 'column' }}>
+                    <Text style={{ fontSize: 38, fontWeight: 'bold', color: '#FFFFFF', lineHeight: 1.1 }}>49</Text>
+                    <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.70)', marginTop: 6 }}>踏勘字段</Text>
+                </Box>
+            </Box>
+
+            <Box style={{ flexDirection: 'row', gap: 16, marginTop: 22 }}>
+                <Box style={{ flex: 1, flexDirection: 'column' }}>
+                    <Text style={{ fontSize: 38, fontWeight: 'bold', color: '#FFFFFF', lineHeight: 1.1 }}>11</Text>
+                    <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.70)', marginTop: 6 }}>字段分组</Text>
+                </Box>
+                <Box style={{ flex: 1, flexDirection: 'column' }}>
+                    <Text style={{ fontSize: 38, fontWeight: 'bold', color: '#FFFFFF', lineHeight: 1.1 }}>4</Text>
+                    <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.70)', marginTop: 6 }}>类交付材料</Text>
+                </Box>
+            </Box>
+
+            <Box style={{ marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.22)', paddingTop: 16 }}>
+                <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.82)', lineHeight: 1.6 }}>新增一个产品 = 改 2 个配置文件，代码不动。</Text>
+            </Box>
+        </Box>
+
+        {/* 右内容区 68% */}
+        <Box style={{ flex: 68, flexDirection: 'column', justifyContent: 'space-between' }}>
+            <Box style={{ flexDirection: 'row', gap: 14 }}>
+                <FAIcon name='check-circle' style={{ fill: '#2F5597', width: 22, height: 22 }} />
+                <Box style={{ flexDirection: 'column', gap: 4 }}>
+                    <Text style={{ fontSize: 19, fontWeight: 'bold', color: '#1F2937' }}>一条闭环已跑通</Text>
+                    <Text style={{ fontSize: 16, color: 'rgba(31,41,55,0.66)' }}>项目 → 录音/文字稿 → AI 提字段 → 人工确认 → 生成材料 → 打包 ZIP</Text>
+                </Box>
+            </Box>
+
+            <Box style={{ flexDirection: 'row', gap: 14 }}>
+                <FAIcon name='check-circle' style={{ fill: '#2F5597', width: 22, height: 22 }} />
+                <Box style={{ flexDirection: 'column', gap: 4 }}>
+                    <Text style={{ fontSize: 19, fontWeight: 'bold', color: '#1F2937' }}>2 个产品已上线</Text>
+                    <Text style={{ fontSize: 16, color: 'rgba(31,41,55,0.66)' }}>安全管家、消防管家；能源管家与设备管家已排入产品路线</Text>
+                </Box>
+            </Box>
+
+            <Box style={{ flexDirection: 'row', gap: 14 }}>
+                <FAIcon name='check-circle' style={{ fill: '#2F5597', width: 22, height: 22 }} />
+                <Box style={{ flexDirection: 'column', gap: 4 }}>
+                    <Text style={{ fontSize: 19, fontWeight: 'bold', color: '#1F2937' }}>49 个踏勘字段，与一线收资表逐条对齐</Text>
+                    <Text style={{ fontSize: 16, color: 'rgba(31,41,55,0.66)' }}>11 个分组、34 个必填项，字段口径不再由各分部自行发挥</Text>
+                </Box>
+            </Box>
+
+            <Box style={{ flexDirection: 'row', gap: 14 }}>
+                <FAIcon name='check-circle' style={{ fill: '#2F5597', width: 22, height: 22 }} />
+                <Box style={{ flexDirection: 'column', gap: 4 }}>
+                    <Text style={{ fontSize: 19, fontWeight: 'bold', color: '#1F2937' }}>4 类交付材料，一次勾选生成</Text>
+                    <Text style={{ fontSize: 16, color: 'rgba(31,41,55,0.66)' }}>完整踏勘结果、价值卡片、交付内容、提资基础内容</Text>
+                </Box>
+            </Box>
+
+            <Box style={{ flexDirection: 'row', gap: 14 }}>
+                <FAIcon name='check-circle' style={{ fill: '#2F5597', width: 22, height: 22 }} />
+                <Box style={{ flexDirection: 'column', gap: 4 }}>
+                    <Text style={{ fontSize: 19, fontWeight: 'bold', color: '#1F2937' }}>每个字段可追溯</Text>
+                    <Text style={{ fontSize: 16, color: 'rgba(31,41,55,0.66)' }}>记录来源、置信度、确认状态与版本；人工确认过的值不会被再次解析覆盖</Text>
+                </Box>
+            </Box>
+
+            <Box style={{ flexDirection: 'row', gap: 14 }}>
+                <FAIcon name='check-circle' style={{ fill: '#2F5597', width: 22, height: 22 }} />
+                <Box style={{ flexDirection: 'column', gap: 4 }}>
+                    <Text style={{ fontSize: 19, fontWeight: 'bold', color: '#1F2937' }}>质量门禁常态化</Text>
+                    <Text style={{ fontSize: 16, color: 'rgba(31,41,55,0.66)' }}>配置校验、单元测试、主流程自测三条线，每次改动都要跑通</Text>
+                </Box>
+            </Box>
+        </Box>
+    </Box>
+
+    {/* C · 页脚条 */}
+    <Box style={{ height: 48, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Text style={{ fontSize: 14, color: 'rgba(31,41,55,0.45)' }}>灵石解决方案工作台 · 进展汇报</Text>
+        <Text style={{ fontSize: 14, color: 'rgba(31,41,55,0.45)' }}>03 / 12</Text>
+    </Box>
+</Slide>

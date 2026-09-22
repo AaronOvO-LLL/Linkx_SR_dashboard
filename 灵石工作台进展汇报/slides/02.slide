@@ -1,0 +1,64 @@
+<Slide style={{ width: 1280, height: 720, padding: '20px 64px', flexDirection: 'column', background: '#FFFFFF', fontFamily: 'Microsoft YaHei' }}>
+    {/* A · 标题块 108px */}
+    <Box style={{ height: 108, flexDirection: 'column', justifyContent: 'center' }}>
+        <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#2F5597', letterSpacing: 2 }}>现状 · PROBLEM</Text>
+        <Text style={{ fontSize: 34, fontWeight: 'bold', color: '#1F2937', marginTop: 10 }}>三条现状，把方案产出卡在同一个环节</Text>
+    </Box>
+
+    {/* B · 内容区 524px */}
+    <Box style={{ height: 524, flexDirection: 'row', gap: 32 }}>
+        {/* 左栏 65% */}
+        <Box style={{ flex: 65, flexDirection: 'column', justifyContent: 'space-between' }}>
+            <Box style={{ flexDirection: 'row', gap: 20 }}>
+                <Text style={{ fontSize: 44, fontWeight: 'bold', color: 'rgba(47,85,151,0.28)', lineHeight: 1 }}>01</Text>
+                <Box style={{ flexDirection: 'column', gap: 10 }}>
+                    <Text style={{ fontSize: 22, fontWeight: 'bold', color: '#1F2937' }}>2 小时录音，半天到一天整理</Text>
+                    <Text style={{ fontSize: 18, color: 'rgba(31,41,55,0.68)', lineHeight: 1.65 }}>一次踏勘录 2 小时，先转文字、再整理成踏勘表，一名方案人员要花半天到一天。整理质量还取决于当天状态。</Text>
+                </Box>
+            </Box>
+
+            <Box style={{ flexDirection: 'row', gap: 20 }}>
+                <Text style={{ fontSize: 44, fontWeight: 'bold', color: 'rgba(47,85,151,0.28)', lineHeight: 1 }}>02</Text>
+                <Box style={{ flexDirection: 'column', gap: 10 }}>
+                    <Text style={{ fontSize: 22, fontWeight: 'bold', color: '#1F2937' }}>口径不统一，漏填错填反复发生</Text>
+                    <Text style={{ fontSize: 18, color: 'rgba(31,41,55,0.68)', lineHeight: 1.65 }}>五个分部各写各的，必填项与影响报价的项缺少统一约束。漏填往往要到方案评审或报价环节才被发现，返工成本高。</Text>
+                </Box>
+            </Box>
+
+            <Box style={{ flexDirection: 'row', gap: 20 }}>
+                <Text style={{ fontSize: 44, fontWeight: 'bold', color: 'rgba(47,85,151,0.28)', lineHeight: 1 }}>03</Text>
+                <Box style={{ flexDirection: 'column', gap: 10 }}>
+                    <Text style={{ fontSize: 22, fontWeight: 'bold', color: '#1F2937' }}>四份材料互相独立，每次从零重写</Text>
+                    <Text style={{ fontSize: 18, color: 'rgba(31,41,55,0.68)', lineHeight: 1.65 }}>踏勘结果、价值卡片、交付内容、提资清单彼此独立，同一批信息被反复誊抄。材料出得慢，商机响应就被拖慢。</Text>
+                </Box>
+            </Box>
+        </Box>
+
+        {/* 右栏 35% */}
+        <Box style={{ flex: 35, flexDirection: 'column', background: '#E8EEF7', borderRadius: 8, padding: 26 }}>
+            <Text style={{ fontSize: 22, fontWeight: 'bold', color: '#1F2937', lineHeight: 1.4 }}>把 4 步人工<br />压到 2 步</Text>
+
+            <Box style={{ flexDirection: 'column', gap: 7, marginTop: 22 }}>
+                <Text style={{ fontSize: 15, fontWeight: 'bold', color: 'rgba(31,41,55,0.52)', letterSpacing: 1 }}>现状</Text>
+                <Text style={{ fontSize: 17, color: 'rgba(31,41,55,0.72)', lineHeight: 1.55 }}>人工听录音　→　人工整理<br />→　人工誊抄进表</Text>
+            </Box>
+
+            <Box style={{ height: 1, background: 'rgba(47,85,151,0.18)', marginTop: 20 }} />
+
+            <Box style={{ flexDirection: 'column', gap: 7, marginTop: 20 }}>
+                <Text style={{ fontSize: 15, fontWeight: 'bold', color: '#2F5597', letterSpacing: 1 }}>改造后</Text>
+                <Text style={{ fontSize: 17, color: 'rgba(31,41,55,0.78)', lineHeight: 1.55 }}>自动转写　→　自动提字段<br />人工只做校对与补齐</Text>
+            </Box>
+
+            <Box style={{ flexDirection: 'column', marginTop: 'auto', borderLeft: '3px solid #E2703A', paddingLeft: 14 }}>
+                <Text style={{ fontSize: 16, color: '#1F2937', lineHeight: 1.6 }}>瓶颈不在人不够，而在「口语 → 结构化」这一段全靠手工。</Text>
+            </Box>
+        </Box>
+    </Box>
+
+    {/* C · 页脚条 48px */}
+    <Box style={{ height: 48, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Text style={{ fontSize: 14, color: 'rgba(31,41,55,0.45)' }}>灵石解决方案工作台 · 进展汇报</Text>
+        <Text style={{ fontSize: 14, color: 'rgba(31,41,55,0.45)' }}>02 / 12</Text>
+    </Box>
+</Slide>

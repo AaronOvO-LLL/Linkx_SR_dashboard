@@ -4,7 +4,7 @@
 {% set step = step_of(3) %}
 
 <div class="card">
-  <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+  <div class="page-head">
     <h2 style="margin:0">{{ project.name }}</h2>
     <span class="tag blue">{{ project.category }}</span>
     <span class="tag">{{ project.status_label }} {{ project.progress }}%</span>
@@ -35,6 +35,62 @@
 </div>
 
 <div class="card">
+  <h2>开始 / 继续调研</h2>
+  <p class="sub">无需先转写录音或输入逐字稿。可直接填表，也可随时补充文字稿；人工确认的内容优先保留。</p>
+  {% for pp in pps %}
+  <div class="btn-row">
+    <strong>{{ pp.cfg.name }}</strong>
+    <a class="btn sm" href="{{ url_for('review', pp_id=pp.id) }}">直接手动填写</a>
+    <a class="btn ghost sm" href="{{ url_for('survey', pp_id=pp.id) }}">导入 / 编辑文字稿</a>
+  </div>
+  {% else %}<a class="btn" href="#products">先添加调研产品</a>{% endfor %}
+</div>
+
+<div class="card" id="audio">
+  <h2>录音转写（可选）</h2>
+  <p class="sub">转写属于项目级：一份录音只转写一次，确认后的转写稿可供本项目下所有产品导入使用。</p>
+
+  <div class="config-line">
+    <span class="dot {{ 'ok' if asr_status.configured else 'bad' }}"></span>
+    腾讯 ASR + 私有 COS：{{ '已配置' if asr_status.configured else '未配置' }}
+    <span class="sep">·</span>支持单文件最大 500MB
+  </div>
+  <form method="post" action="{{ url_for('audio_upload', pid=project.id) }}"
+        enctype="multipart/form-data" id="audioForm">
+    <label class="dropzone" for="audioInput">
+      <input id="audioInput" name="audio" type="file"
+             accept=".wav,.mp3,.m4a,.flv,.mp4,.wma,.3gp,.amr,.aac,.ogg,.flac" required>
+      <span class="drop-icon">↑</span>
+      <strong id="audioName">选择录音文件</strong>
+      <small>mp3 / m4a / wav / amr / aac 等；上传后可离开页面</small>
+    </label>
+    <div class="btn-row">
+      <button class="btn" type="submit" {% if not asr_status.configured %}disabled{% endif %}>上传并开始转写</button>
+      {% if not asr_status.configured %}<span class="hint">请先配置腾讯云环境变量与 ASR 依赖。</span>{% endif %}
+    </div>
+  </form>
+
+  {% if transcript %}
+  <div class="action-card" style="margin-top:16px;border-top:1px solid var(--line);padding-top:14px">
+    <div><h2 style="font-size:15px">项目转写稿已就绪</h2>
+      <p class="sub">{{ transcript.char_count }} 字 · 确认于 {{ transcript.created_at }}</p></div>
+    <div class="hint">在各产品的调研输入页点击「导入项目转写稿」即可使用。</div>
+  </div>
+  {% endif %}
+
+  {% if audio_jobs %}
+  <h3 style="margin-top:18px">转写记录</h3>
+  <p class="sub">任务在后台执行，离开页面不会丢失进度。</p>
+  <div class="job-list">{% for j in audio_jobs %}
+    <a class="job-row" href="{{ url_for('transcription_preview', pid=project.id, job_id=j.id) }}">
+      <div><strong>{{ j.original_name }}</strong><small>{{ (j.file_size / 1024 / 1024)|round(1) }} MB · {{ j.created_at }}</small></div>
+      <span class="tag {{ audio_status_tag(j.status) }}">{{ audio_status_label(j.status) }}</span>
+      <span>查看 →</span>
+    </a>{% endfor %}</div>
+  {% endif %}
+</div>
+
+<div class="card" id="products">
   <h2>调研产品</h2>
   <p class="sub">一个项目可包含多个产品，每个产品独立录入文字稿、独立生成材料。</p>
 
@@ -55,13 +111,14 @@
           {% if pp.stats.required_missing %}<span class="tag red">必填补填 {{ pp.stats.required_missing }}</span>{% endif %}
           {% if pp.stats.pending_confirm %}<span class="tag orange">待确认 {{ pp.stats.pending_confirm }}</span>{% endif %}
         </span>
+        {% if transcript and pp.source_kind != 'audio_transcript' and has_capability(pp.product_type, 'audio_asr') %}
+        <span style="color:#b45309">转写稿未导入</span>
+        {% endif %}
       </div>
       <div class="foot">
         <a class="btn sm" href="{{ url_for('survey', pp_id=pp.id) }}">
           {{ '继续处理' if pp.progress > 10 else '开始调研录入' }}</a>
-        {% if pp.progress >= 30 %}
-        <a class="btn ghost sm" href="{{ url_for('review', pp_id=pp.id) }}">信息核对</a>
-        {% endif %}
+        <a class="btn ghost sm" href="{{ url_for('review', pp_id=pp.id) }}">手动填写 / 信息核对</a>
         {% if pp.progress >= 50 %}
         <a class="btn ghost sm" href="{{ url_for('preview', pp_id=pp.id) }}">预览生成</a>
         {% endif %}
@@ -99,4 +156,12 @@
   </div>
 </div>
 {% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+var ai=document.getElementById('audioInput');if(ai)ai.addEventListener('change',function(){
+  document.getElementById('audioName').textContent=ai.files[0]?ai.files[0].name:'选择录音文件';
+});
+</script>
 {% endblock %}

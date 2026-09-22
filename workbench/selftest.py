@@ -56,10 +56,18 @@ def main():
     os.makedirs(paths.OUTPUT_DIR, exist_ok=True)
     os.makedirs(paths.EXPORT_DIR, exist_ok=True)
 
+    # 分部凭据同样隔离：改密会真实落盘，不能动到本机演示用的 data/departments.json。
+    # 用种子强制重建一份专用凭据，保证下面的 '000000' 登录始终成立。
+    from core import departments
+    departments.RUNTIME_PATH = os.path.join(paths.DATA_DIR, 'departments_selftest.json')
+    departments.ensure_initialized(force=True)
+
     client = web.app.test_client()
 
     # ---------------------------------------------------------------- 登录
     section('步骤 1 · 分部入口')
+    r = client.get('/login')
+    check('登录页不回显初始口令', '000000' not in r.data.decode('utf-8'))
     r = client.post('/login', data={'dept_key': 'dept1', 'password': 'wrong'})
     check('错误密码被拒绝', b'\xe5\xaf\x86\xe7\xa0\x81\xe4\xb8\x8d\xe6\xad\xa3\xe7\xa1\xae' in r.data
           or '不正确' in r.data.decode('utf-8'))
@@ -78,12 +86,19 @@ def main():
 
     pid = db.query("SELECT id FROM projects WHERE name LIKE '自测-%'")[0]['id']
     pps = repo.list_products(pid)
-    check('新建项目时已选择产品并进入录入', len(pps) == 1 and
-          pps[0]['product_type'] == 'safety_butler' and '选择调研资料' in html)
+    check('新建项目后进入项目概览', len(pps) == 1 and
+          pps[0]['product_type'] == 'safety_butler' and '录音转写' in html)
     pp_id = pps[0]['id']
 
+    # ---------------------------------------------------------------- 项目级转写
+    section('项目级录音转写（先于产品）')
+    overview = client.get('/projects/%s' % pid).data.decode('utf-8')
+    check('项目概览提供录音上传入口', '上传并开始转写' in overview)
+    check('产品调研页不再出现 ASR 上传模块',
+          '上传并开始转写' not in client.get('/p/%s/survey' % pp_id).data.decode('utf-8'))
+
     # 不调用云端，用一条已完成的模拟任务验证“转写结果必须先预览”的页面契约。
-    audio_job = repo.create_audio_job(pp_id, '虚构测试录音.m4a', 'Z:\\not-real\\audio.m4a', 1024)
+    audio_job = repo.create_audio_job(pid, '虚构测试录音.m4a', 'Z:\\not-real\\audio.m4a', 1024)
     repo.update_audio_job(
         audio_job['id'], status='awaiting_preview', status_message='转写完成，请预览并确认',
         raw_transcript='现场要做洲际入侵。', corrected_transcript='现场要做周界入侵。',
@@ -92,10 +107,33 @@ def main():
                                   'text': '现场要做周界入侵。'}], ensure_ascii=False),
         corrections_json=json.dumps([{'from': '洲际入侵', 'to': '周界入侵',
                                       'count': 1, 'segment': 1}], ensure_ascii=False))
-    r = client.get('/p/%s/audio/%s' % (pp_id, audio_job['id']))
+    check('转写任务归属项目而非产品',
+          audio_job['project_id'] == pid and audio_job['project_product_id'] == '')
+    r = client.get('/projects/%s/audio/%s' % (pid, audio_job['id']))
     preview = r.data.decode('utf-8')
     check('转写结果先进入预览页', r.status_code == 200 and
-          '确认并开始大模型结构化梳理' in preview and '现场要做周界入侵' in preview)
+          '确认转写稿（项目共享）' in preview and '现场要做周界入侵' in preview)
+    check('转写任务不再挂在产品路由下',
+          client.get('/p/%s/audio/%s' % (pp_id, audio_job['id'])).status_code == 404)
+
+    approved_text = '现场要做周界入侵，另外高空抛物识别需要补盲，摄像头点位还要再确认一遍。'
+    r = client.post('/projects/%s/audio/%s/approve' % (pid, audio_job['id']),
+                    data={'transcript': approved_text}, follow_redirects=True)
+    check('确认后回到项目概览', r.status_code == 200 and '项目转写稿已就绪' in r.data.decode('utf-8'))
+    shared = repo.latest_project_transcript(pid)
+    check('确认生成项目级共享转写稿',
+          shared is not None and shared['content'] == approved_text
+          and shared['char_count'] == len(approved_text),
+          '%d 字' % (shared['char_count'] if shared else 0))
+    check('确认不会替任何产品触发提取', repo.latest_extraction_run(pp_id) is None)
+
+    client.post('/p/%s/import-transcript' % pp_id, follow_redirects=True)
+    imported = repo.latest_source(pp_id)
+    check('产品可一键导入项目转写稿',
+          imported is not None and imported['kind'] == 'audio_transcript'
+          and imported['content'] == approved_text)
+    check('导入后调研页标注来源为录音转写',
+          '来源：录音转写' in client.get('/p/%s/survey' % pp_id).data.decode('utf-8'))
 
     # ---------------------------------------------------------------- 场景 A：完整主流程
     section('场景 A · 完整主流程')
@@ -114,7 +152,7 @@ def main():
     r = client.get('/p/%s/review' % pp_id)
     check('核对页可访问', r.status_code == 200)
     fs = repo.field_stats(pp_id, 'safety_butler')
-    check('必填字段共 34 项', fs['required_total'] == 34, '必填 %d 项' % fs['required_total'])
+    check('必填字段共 20 项', fs['required_total'] == 20, '必填 %d 项' % fs['required_total'])
 
     # ---------------------------------------------------------------- 场景 C：低置信度
     section('场景 C · 低置信度内容')
@@ -145,7 +183,8 @@ def main():
     ok2, issues2 = validate(pp2, 'safety_butler')
     check('残缺样例校验不通过', not ok2)
     errs = [i for i in issues2 if i['level'] == 'error']
-    check('明确指出必须补填项', len(errs) >= 20, '%d 项 error' % len(errs))
+    check('明确指出必须补填项', len(errs) == repo.field_stats(pp2, 'safety_butler')['required_missing'] > 0,
+          '%d 项 error' % len(errs))
 
     r = client.post('/p/%s/generate' % pp2, data={'artifacts': ['value_card']},
                     follow_redirects=True)
@@ -158,14 +197,14 @@ def main():
         'land_area': 80000, 'building_area': 50000,
         'site_address': '苏州市相城区测试路 1 号',
         'contract_years': '新签合同，服务期3年', 'property_company': '测试物业服务有限公司',
-        'project_owner': '测试业主有限公司', 'service_type': 'FM',
-        'business_desc': '1-3层厂房，4层办公', 'fee_mode': '包干制',
+        'project_owner': '测试业主有限公司',
+        'business_desc': ['厂房', '办公', '1-3层厂房，4层办公'], 'fee_mode': '包干制',
         'mgmt_scope': '全委',
         'monitor_center_count': 1,
-        'camera_brand': '海康', 'camera_type': '数字摄像头', 'camera_count': 68,
-        'storage_brand': '海康', 'storage_type': 'NVR', 'storage_model': 'DS-8664N',
-        'storage_count': 2, 'storage_protocol': 'GB/T28181-2022',
-        'has_internet': '有', 'switch_brand': '华为', 'switch_port_type': '千兆',
+        'camera_brand': ['海康'], 'camera_type': '数字摄像头', 'camera_count': 68,
+        'storage_brand': ['海康'], 'storage_type': 'NVR', 'storage_model': 'DS-8664N',
+        'storage_count': 2, 'storage_protocol': '是',
+        'has_internet': '有', 'switch_brand': ['华为'], 'switch_port_type': '千兆',
         'switch_ports_free': 8, 'network_topo': '有', 'network_admin': '王工 13900000000',
         'has_cabinet': '有（机柜深度1米，剩余20U，供电插口8个）',
         'expected_launch': '下个月底', 'decision_maker': '李总', 'customer_contact': '陈主任',
@@ -269,7 +308,10 @@ def main():
         check('副本复制了结构化内容', len(repo.field_values(cpp['id'])) >= 40,
               '%d 个字段' % len(repo.field_values(cpp['id'])))
         check('副本复制了原始文字稿', repo.latest_source(cpp['id']) is not None)
+        check('副本不携带项目级转写任务', repo.list_audio_jobs(cid) == [])
         repo.purge_project(cid)
+    repo.create_audio_job(pid2, '待清理.m4a', 'Z:\\not-real\\b.m4a', 10)
+    repo.save_project_transcript(pid2, '', '需要随项目一起彻底清理的项目级转写稿内容。')
     client.post('/projects/%s/archive' % pid2, follow_redirects=True)
     check('归档后不在默认列表',
           all(p['id'] != pid2 for p in repo.list_projects('dept1')))
@@ -279,6 +321,8 @@ def main():
     client.post('/projects/%s/restore' % pid2, follow_redirects=True)
     repo.purge_project(pid2)
     check('彻底删除清理干净', repo.get_project(pid2) is None)
+    check('彻底删除同时清理项目级录音与转写稿',
+          repo.list_audio_jobs(pid2) == [] and repo.latest_project_transcript(pid2) is None)
 
     # ---------------------------------------------------------------- 全路由冒烟
     section('页面冒烟（每个 GET 路由至少 200 一次）')
@@ -287,6 +331,7 @@ def main():
         ('修改分部密码页', '/password'),
         ('项目中心', '/projects'),
         ('项目概览', '/projects/%s' % pid),
+        ('转写预览', '/projects/%s/audio/%s' % (pid, audio_job['id'])),
         ('调研输入', '/p/%s/survey' % pp_id),
         ('信息核对', '/p/%s/review' % pp_id),
         ('预览与生成', '/p/%s/preview' % pp_id),
@@ -310,30 +355,33 @@ def main():
     r = client.get('/p/%s/file/survey_result/%s' % (pp_id, fn), follow_redirects=True)
     check('单文件预览/下载可访问', r.status_code == 200, fn)
 
-    # 改密会真实写入 config/departments.json，先备份、测完还原
-    from core.paths import CONFIG_DIR as _CD
-    dept_file = os.path.join(_CD, 'departments.json')
-    dept_bak = open(dept_file, encoding='utf-8').read()
-    try:
-        r = client.post('/password', data={'old_password': '000000',
-                                           'new_password': '123456',
-                                           'confirm_password': '654321'},
-                        follow_redirects=True)
-        check('两次新密码不一致被拒绝', '不一致' in r.data.decode('utf-8'))
-        client.post('/password', data={'old_password': '000000',
+    # 改密写入的是开头隔离出来的 departments_selftest.json，不会污染真实凭据
+    r = client.post('/password', data={'old_password': 'wrong-old',
                                        'new_password': '123456',
                                        'confirm_password': '123456'},
                     follow_redirects=True)
-        client.get('/logout', follow_redirects=True)
-        r = client.post('/login', data={'dept_key': 'dept1', 'password': '000000'},
-                        follow_redirects=True)
-        check('旧密码失效', '不正确' in r.data.decode('utf-8'))
-        r = client.post('/login', data={'dept_key': 'dept1', 'password': '123456'},
-                        follow_redirects=True)
-        check('新密码可登录', '项目' in r.data.decode('utf-8') or r.status_code == 200)
-    finally:
-        with open(dept_file, 'w', encoding='utf-8') as f:
-            f.write(dept_bak)
+    check('错误原密码被拒绝', '原密码不正确' in r.data.decode('utf-8'))
+    r = client.post('/password', data={'old_password': '000000',
+                                       'new_password': '123456',
+                                       'confirm_password': '654321'},
+                    follow_redirects=True)
+    check('两次新密码不一致被拒绝', '不一致' in r.data.decode('utf-8'))
+    client.post('/password', data={'old_password': '000000',
+                                   'new_password': '123456',
+                                   'confirm_password': '123456'},
+                follow_redirects=True)
+    with open(departments.RUNTIME_PATH, encoding='utf-8') as f:
+        d1 = next(d for d in json.load(f)['departments'] if d['key'] == 'dept1')
+    check('口令以哈希落盘，无明文字段',
+          'password' not in d1 and d1.get('password_hash', '').startswith('pbkdf2:sha256:'))
+    check('改密后标记为已修改', d1.get('changed') is True)
+    client.get('/logout', follow_redirects=True)
+    r = client.post('/login', data={'dept_key': 'dept1', 'password': '000000'},
+                    follow_redirects=True)
+    check('旧密码失效', '不正确' in r.data.decode('utf-8'))
+    r = client.post('/login', data={'dept_key': 'dept1', 'password': '123456'},
+                    follow_redirects=True)
+    check('新密码可登录', '项目' in r.data.decode('utf-8') or r.status_code == 200)
 
     # ---------------------------------------------------------------- 汇总
     section('自测汇总')

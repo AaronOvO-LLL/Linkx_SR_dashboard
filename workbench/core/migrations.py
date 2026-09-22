@@ -60,9 +60,68 @@ def _add_audio_transcription_jobs(conn):
            ON audio_transcription_jobs(project_product_id, created_at)""")
 
 
+def _column_names(conn, table):
+    return {row[1] for row in conn.execute('PRAGMA table_info(%s)' % table).fetchall()}
+
+
+def _add_project_level_audio(conn):
+    """把录音转写从产品级提升为项目级。
+
+    一次踏勘通常只录一份音，但可能同时评估多个产品；挂在产品下会导致同一段
+    录音被重复上传、重复转写、重复计费。改为项目级后，转写稿由项目下所有产品
+    共享导入。
+
+    历史任务通过 project_products 反查回填 project_id，保证老记录仍可查、可回听；
+    project_product_id 列保留不删，作为"当时在哪个产品下转写"的审计信息。
+    """
+    if 'project_id' not in _column_names(conn, 'audio_transcription_jobs'):
+        conn.execute(
+            "ALTER TABLE audio_transcription_jobs ADD COLUMN project_id TEXT NOT NULL DEFAULT ''")
+    conn.execute(
+        """UPDATE audio_transcription_jobs
+           SET project_id = (SELECT project_id FROM project_products
+                             WHERE project_products.id = audio_transcription_jobs.project_product_id)
+           WHERE project_id = '' AND project_product_id <> ''
+             AND EXISTS (SELECT 1 FROM project_products
+                         WHERE project_products.id = audio_transcription_jobs.project_product_id)""")
+    conn.execute(
+        """CREATE INDEX IF NOT EXISTS idx_audio_jobs_project
+           ON audio_transcription_jobs(project_id, created_at)""")
+
+    conn.execute(
+        """CREATE TABLE IF NOT EXISTS project_transcripts (
+            id                  TEXT PRIMARY KEY,
+            project_id          TEXT NOT NULL,
+            audio_job_id        TEXT NOT NULL DEFAULT '',
+            content             TEXT NOT NULL DEFAULT '',
+            char_count          INTEGER NOT NULL DEFAULT 0,
+            created_at          TEXT NOT NULL
+        )""")
+    conn.execute(
+        """CREATE INDEX IF NOT EXISTS idx_project_transcripts
+           ON project_transcripts(project_id, created_at)""")
+
+    # 已经人工确认过的历史转写稿提升为项目级共享稿，老项目升级后不必重新转写。
+    # 未确认的任务不提升：只有人工预览确认过的文本才有资格成为产品的提取来源。
+    rows = conn.execute(
+        """SELECT id, project_id, corrected_transcript, approved_at
+           FROM audio_transcription_jobs
+           WHERE status = 'approved' AND project_id <> '' AND corrected_transcript <> ''""",
+    ).fetchall()
+    for row in rows:
+        conn.execute(
+            """INSERT INTO project_transcripts
+               (id, project_id, audio_job_id, content, char_count, created_at)
+               VALUES (?,?,?,?,?,?)""",
+            ('pt_%s' % row['id'][-12:], row['project_id'], row['id'],
+             row['corrected_transcript'], len(row['corrected_transcript']),
+             row['approved_at']))
+
+
 MIGRATIONS = [
     (1, 'remove_pricing_settings', _remove_pricing_settings),
     (2, 'add_audio_transcription_jobs', _add_audio_transcription_jobs),
+    (3, 'add_project_level_audio', _add_project_level_audio),
 ]
 
 

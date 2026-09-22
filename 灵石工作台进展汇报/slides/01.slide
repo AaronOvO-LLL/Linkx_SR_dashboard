@@ -1,0 +1,24 @@
+<Slide style={{ width: 1280, height: 720, position: 'relative', overflow: 'hidden', background: '#1F2937', fontFamily: 'Microsoft YaHei' }}>
+    {/* L1 全幅主视觉 */}
+    <Image src='assets/cover_control_room.png' style={{ position: 'absolute', top: 0, left: 0, width: 1280, height: 720, objectFit: 'cover' }} />
+
+    {/* 左侧压暗层，保证文字可读 */}
+    <Box style={{ position: 'absolute', top: 0, left: 0, width: 1280, height: 720, background: 'linear-gradient(90deg, rgba(47,85,151,0.95) 0%, rgba(47,85,151,0.72) 44%, rgba(47,85,151,0.14) 100%)' }} />
+
+    {/* 骑线文字 */}
+    <Box style={{ position: 'absolute', left: 84, top: 158, width: 640, flexDirection: 'column' }}>
+        <Text style={{ fontSize: 15, fontWeight: 'bold', color: '#E2703A', letterSpacing: 4 }}>
+            灵石解决方案工作台 · LINX WORKBENCH
+        </Text>
+        <Text style={{ fontSize: 76, fontWeight: 'bold', color: '#FFFFFF', lineHeight: 1.15, marginTop: 26 }}>
+            从现场录音<br />到标准方案材料
+        </Text>
+        <Box style={{ width: 108, height: 4, background: '#E2703A', marginTop: 30 }} />
+        <Text style={{ fontSize: 22, color: 'rgba(255,255,255,0.90)', lineHeight: 1.65, marginTop: 28 }}>
+            一份 66 分钟的踏勘录音，2 分钟变成结构化方案材料。
+        </Text>
+        <Text style={{ fontSize: 15, color: 'rgba(255,255,255,0.66)', marginTop: 34 }}>
+            进展汇报 · 技术栈与上线路径　｜　2026-09-21
+        </Text>
+    </Box>
+</Slide>

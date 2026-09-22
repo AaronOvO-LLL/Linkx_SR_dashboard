@@ -1,0 +1,125 @@
+/* Shared constraints keep long names and nested cards inside their columns. */
+.page,.card,.grp,.grp-body,.proj,.prod,.fld-row{min-width:0;overflow-wrap:anywhere}
+.grid2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.grid2>*,.row>*,.page-head>*,.proj-top>*,.job-row>*,.job-hero>*,.art>*,.res>*{min-width:0}
+.proj-grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr))}
+.prod-grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr))}
+.prod .foot,.proj-acts{flex-wrap:wrap}
+.btn{justify-content:center;text-align:center;max-width:100%;overflow-wrap:anywhere}
+.page-head>.btn{flex-shrink:0}
+input,select,textarea,audio{max-width:100%;min-width:0}
+input[type=file]{width:100%}
+.project-search{display:flex;gap:8px;min-width:0}
+.project-search input[type=text]{min-width:0;flex:1}
+.project-search .btn{flex-shrink:0}
+.nav-toggle{display:none}
+.brand-mark{flex-shrink:0}
+.res{flex-wrap:wrap}
+.res .files{min-width:0}
+.summary-table{table-layout:fixed}
+.summary-table th{width:170px}
+.table-scroll{max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;margin-top:8px}
+.table-scroll .tbl{min-width:560px}
+.table-scroll .tbl[data-type=table] input{min-width:120px}
+.table-scroll:focus-visible,.btn:focus-visible,.nav-toggle:focus-visible,.topnav a:focus-visible{
+  outline:3px solid #6597eb;outline-offset:3px}
+.dropzone:focus-within{outline:3px solid #6597eb;outline-offset:3px}
+.choice-field{border:0;min-width:0;margin:6px 0 0}
+.choice-legend{font-size:12px;color:var(--muted);margin-bottom:8px}
+.choice-options{display:flex;flex-wrap:wrap;gap:8px}
+.choice-field .chk{min-height:44px;border-radius:9px;white-space:normal}
+.choice-field .chk:focus-within{outline:2px solid var(--brand);outline-offset:2px}
+.choice-field input[type=radio],.choice-field input[type=checkbox]{accent-color:var(--brand);flex-shrink:0}
+.choice-custom{display:block;margin-top:10px}
+.choice-custom[hidden]{display:none}
+.choice-detail{margin-top:10px}
+.choice-detail summary{cursor:pointer;color:var(--brand);padding:8px 0;min-height:44px}
+.choice-legacy{display:flex;align-items:flex-start;margin-top:8px;overflow-wrap:anywhere}
+.choice-clear{background:transparent;color:var(--muted);text-decoration:underline;font-size:12px;min-height:44px;padding:8px 0}
+
+/* Tablet and narrower: keep every navigation item available in a disclosure. */
+@media(max-width:860px){
+  .grid2{grid-template-columns:minmax(0,1fr)}
+  .topbar-inner{height:auto;min-height:56px;flex-wrap:wrap;gap:8px;padding:8px 20px}
+  .brand{min-width:0;flex:1}
+  .topnav{width:100%;flex-wrap:wrap;gap:8px;padding:8px 0;border-top:1px solid rgba(255,255,255,.2)}
+  .topnav a{display:flex;align-items:center;min-height:44px;padding:6px 12px;border-radius:8px;background:rgba(255,255,255,.08)}
+  .dept-chip{flex-basis:100%;order:-1;border-radius:6px}
+  .nav-ready .nav-toggle{display:inline-flex;align-items:center;justify-content:center;min-height:44px;
+    padding:8px 12px;border:1px solid rgba(255,255,255,.4);border-radius:8px;background:transparent;color:#fff;font-size:14px}
+  .nav-ready:not(.nav-open) .topnav{display:none}
+}
+
+/* Phone: single-column tasks, comfortable controls, and readable summaries. */
+@media(max-width:680px){
+  body{font-size:15px}
+  .page{padding:16px 12px 32px}
+  .topbar-inner{padding:8px 12px}
+  .brand{font-size:15px;gap:6px}
+  .brand-mark{padding:3px 7px}
+  .card{padding:16px 14px;margin-bottom:12px}
+  .footer{padding:16px 12px;font-size:11px}
+  .page-head{align-items:flex-start;gap:8px}
+  .page-head h2{flex-basis:100%;order:1;line-height:1.5}
+  .stepbar-inner{padding:10px 12px;gap:8px}
+  .step{font-size:11px}
+  .proj-grid,.prod-grid,.input-tabs{grid-template-columns:minmax(0,1fr)}
+  .proj,.prod{padding:14px}
+  .project-create{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
+  .project-create>.fld:last-child>span{display:none}
+  .project-create .btn{width:100%}
+  .toolbar{gap:12px}
+  .project-search{width:100%}
+  .toolbar>.spacer{display:none}
+  .seg{display:flex;width:100%}
+  .seg a{flex:1;text-align:center;min-height:44px;display:flex;align-items:center;justify-content:center;padding:8px}
+  input[type=text],input[type=password],input[type=number],input[type=date],select,textarea{
+    font-size:16px;padding:10px 11px;min-height:44px}
+  input[type=checkbox],input[type=radio]{width:18px;height:18px;flex-shrink:0;accent-color:var(--brand)}
+  .btn,.btn.sm{min-height:44px;font-size:14px;padding:10px 12px}
+  .btn-row{gap:8px;margin-top:14px}
+  .btn-row>.btn,.btn-row>form{flex:1 1 160px}
+  .btn-row>form>.btn{width:100%}
+  .btn-row>.hint,.btn-row>strong{flex-basis:100%}
+  .prod .foot>.btn{flex:1 1 150px}
+  .proj-acts{gap:8px}
+  .proj-acts>.btn,.proj-acts>form{flex:1 1 60px}
+  .proj-acts>form>.btn{width:100%}
+  .login-wrap{margin:3vh auto}
+  .login-brand{margin-bottom:18px}
+  .dept-opt{flex-wrap:wrap;padding:12px;min-height:48px}
+  .dept-opt .hint{margin-left:28px}
+  .stat-bar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .stat{min-width:0;padding:12px 8px}
+  .filter-row{gap:6px}
+  .filter-row>.hint{flex-basis:100%}
+  .filter-row>.btn{flex:1 1 calc(50% - 6px)}
+  .grp-head{flex-wrap:wrap;gap:6px;padding:12px}
+  .grp-head .cnt{flex-basis:100%;margin-left:0}
+  .grp-body{padding:4px 12px 12px}
+  .fld-row{padding:16px 0}
+  .fld-head .lb{flex-basis:100%;font-size:15px}
+  .chk{min-height:44px;padding:9px 12px;font-size:14px}
+  .quote{padding:8px;font-size:12px}
+  .summary-table,.summary-table tbody,.summary-table tr,.summary-table th,.summary-table td{display:block;width:100%}
+  .summary-table tr{border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:10px}
+  .summary-table th,.summary-table td{border:0;padding:9px 12px}
+  .summary-table th{font-size:13px;color:var(--ink)}
+  .summary-table td{font-size:14px}
+  .res{align-items:flex-start;gap:8px;padding:14px}
+  .res .nm,.res .st,.res .files{width:100%;min-width:0;margin-left:0}
+  .res .files>.btn{flex:1 1 110px}
+  .res .files>.hint{flex-basis:100%}
+  .download-actions{flex-direction:column;align-items:stretch}
+  .download-actions>.btn{flex:auto;width:100%}
+  .job-row{grid-template-columns:minmax(0,1fr);gap:6px;padding:14px 0}
+  .job-row>.tag{justify-self:start}
+  .job-hero{flex-direction:column;gap:6px}
+  .action-card{gap:12px}
+  .action-card>form,.action-card>.btn{width:100%}
+  .action-card>form>.btn{width:100%}
+  .dropzone{padding:22px 12px;text-align:center}
+  .processing i{flex-shrink:0}
+  .segment-list{max-height:320px}
+  .preview-box{padding:14px;max-height:none}
+}

@@ -1,0 +1,14 @@
+{
+  "product_type": "fire_butler",
+  "name": "消防管家",
+  "version": "0.1.0",
+  "short_desc": "围绕消控室、消防主机与维保现状开展踏勘，形成消防服务方案基础材料。",
+  "coverage": "覆盖消控室信号传输、主机主从关系、维保信息及一次性改造费用。",
+  "status": "active",
+  "capabilities": [
+    "text_input",
+    "audio_asr",
+    "field_extraction",
+    "artifact_generation"
+  ]
+}

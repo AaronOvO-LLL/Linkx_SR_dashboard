@@ -2,7 +2,8 @@
 
 from core import extract, repo
 from core.capabilities import require_capability
-from core.config import app_config, field_map, product_config
+from core.config import app_config, field_map, field_config
+from core.choices import normalize_manual_choice
 from core.runtime_env import read_env
 from core.validate import validate
 
@@ -24,15 +25,24 @@ def save_transcript(pp, project, text):
     return repo.save_source(pp['id'], text, kind='transcript')
 
 
-def save_audio_transcript(pp, project, text):
-    """把人工预览确认后的转写稿提升为正式提取来源。"""
+def import_project_transcript(pp, project):
+    """把项目级共享转写稿导入为当前产品的提取来源。
+
+    采用复制而非引用：产品导入后可以独立微调文字、独立保留自己的提取历史，
+    多个产品之间不会互相覆盖。重复导入会以最新一份项目稿重新覆盖当前产品的
+    来源，已人工确认的字段仍由 extract_latest_source 保护。
+    """
     require_capability(pp['product_type'], 'audio_asr')
+    row = repo.latest_project_transcript(project['id'])
+    text = (row['content'] if row else '') or ''
+    if not text.strip():
+        raise SurveyServiceError('项目还没有已确认的录音转写稿，请先在项目概览中上传并确认。')
     limits = app_config()['extraction']
-    if len((text or '').strip()) < limits['min_transcript_chars']:
+    if len(text.strip()) < limits['min_transcript_chars']:
         raise SurveyServiceError('转写稿过短，暂时无法进行结构化梳理。')
     source_id = repo.save_source(pp['id'], text, kind='audio_transcript')
     repo.touch_project(project['id'])
-    return source_id
+    return source_id, row
 
 
 def extract_latest_source(pp, project, provider=None):
@@ -47,7 +57,7 @@ def extract_latest_source(pp, project, provider=None):
         raise SurveyServiceError('请先保存文字稿。')
 
     protected = [k for k, v in repo.field_values(pp['id']).items() if v['protected']]
-    template_version = product_config(pp['product_type'])['version']
+    template_version = field_config(pp['product_type'])['template_version']
     provider = provider or read_env('LS_FORCE_EXTRACTION_PROVIDER',
                                     app_config()['extraction']['provider'])
     run_id = repo.start_extraction_run(
@@ -59,8 +69,11 @@ def extract_latest_source(pp, project, provider=None):
         repo.finish_extraction_run(run_id, 'failed', {}, str(exc))
         raise SurveyServiceError(str(exc)) from exc
 
+    # 模型运行期间用户也可能在填表，写回前再次检查人工确认状态。
+    current_values = repo.field_values(pp['id'])
+    protected = [k for k, v in current_values.items() if v['protected']]
     for key, item in result.items():
-        if item['protected']:
+        if item['protected'] or key in protected:
             continue
         repo.upsert_field_value(
             pp['id'], key, repo.json.dumps(item['value'], ensure_ascii=False),
@@ -80,8 +93,13 @@ def save_field_value(pp, project, data):
         raise SurveyServiceError('未知字段')
 
     value = data.get('value')
-    is_empty = value in (None, '', [], {})
     field = fmap[key]
+    if field['type'] in ('select', 'multiselect'):
+        try:
+            value = normalize_manual_choice(field, value)
+        except ValueError as exc:
+            raise SurveyServiceError(str(exc)) from exc
+    is_empty = value in (None, '', [], {})
     if is_empty:
         status = 'required_missing' if field.get('required') else 'optional_missing'
         protected, updated_by = 0, 'ai'
@@ -90,7 +108,8 @@ def save_field_value(pp, project, data):
 
     repo.upsert_field_value(
         pp['id'], key, repo.json.dumps(value, ensure_ascii=False), status,
-        None, data.get('quote', ''), updated_by, pp['template_version'], protected)
+        None, data.get('quote', ''), updated_by,
+        field_config(pp['product_type'])['template_version'], protected)
     repo.touch_project(project['id'])
     ok, _ = validate(pp['id'], pp['product_type'])
     stats = repo.field_stats(pp['id'], pp['product_type'])

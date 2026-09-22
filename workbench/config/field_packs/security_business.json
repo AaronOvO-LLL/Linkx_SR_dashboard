@@ -22,12 +22,12 @@
       "key": "current_mode",
       "label": "当前安全管理模式",
       "group": "business",
-      "type": "textarea",
+      "type": "multiselect",
       "required": false,
-      "help": "现在是靠人巡、靠物业，还是已有外包",
-      "ai_hint": "概括客户当前的安全管理方式，保留关键事实",
+      "help": "选择已采用的方式，可多选；人员数量、班次仍在“当前人员与岗位安排”中填写。",
+      "ai_hint": "选择已采用的方式，可多选；人员数量、班次仍在“当前人员与岗位安排”中填写。 优先使用候选项；选项无法表达的具体事实可保留原文，不得推测。",
       "extract": {
-        "mode": "sentence",
+        "mode": "list",
         "keywords": [
           "现在",
           "目前",
@@ -39,8 +39,57 @@
           "人防",
           "没有系统",
           "人工"
-        ]
-      }
+        ],
+        "context_keywords": [
+          "现在",
+          "目前",
+          "当前",
+          "保安",
+          "物业",
+          "巡检",
+          "值班",
+          "人防",
+          "没有系统",
+          "人工"
+        ],
+        "fallback_text": true,
+        "preserve_details": true
+      },
+      "options": [
+        {
+          "value": "人工巡检",
+          "synonyms": [
+            "人工巡逻",
+            "人防"
+          ]
+        },
+        {
+          "value": "监控值守",
+          "synonyms": [
+            "监控值班"
+          ]
+        },
+        {
+          "value": "远程值守",
+          "synonyms": []
+        },
+        {
+          "value": "智能识别辅助",
+          "synonyms": [
+            "智能识别",
+            "AI识别",
+            "视频分析"
+          ]
+        },
+        {
+          "value": "第三方安保服务",
+          "synonyms": [
+            "安保外包",
+            "第三方安保"
+          ]
+        }
+      ],
+      "allow_custom": true
     },
     {
       "key": "current_staffing",
@@ -70,12 +119,12 @@
       "key": "main_risks",
       "label": "主要问题/风险",
       "group": "business",
-      "type": "textarea",
+      "type": "multiselect",
       "required": false,
-      "help": "客户主动提到的痛点或事故",
-      "ai_hint": "提取客户提到的安全隐患、事件与风险点，逐条列出",
+      "help": "仅选择现场已发现或客户明确提到的问题，可多选；具体事件可补充说明。",
+      "ai_hint": "仅选择现场已发现或客户明确提到的问题，可多选；具体事件可补充说明。 优先使用候选项；选项无法表达的具体事实可保留原文，不得推测。",
       "extract": {
-        "mode": "sentence",
+        "mode": "list",
         "keywords": [
           "问题",
           "隐患",
@@ -92,19 +141,87 @@
           "起火",
           "烟感",
           "投诉"
-        ]
-      }
+        ],
+        "context_keywords": [
+          "问题",
+          "隐患",
+          "风险",
+          "事故",
+          "丢",
+          "偷",
+          "闯入",
+          "翻墙",
+          "没发现",
+          "死角",
+          "看不到",
+          "来不及",
+          "起火",
+          "烟感",
+          "投诉"
+        ],
+        "fallback_text": true,
+        "preserve_details": true
+      },
+      "options": [
+        {
+          "value": "人员入侵",
+          "synonyms": [
+            "闯入",
+            "翻墙",
+            "非法入侵"
+          ]
+        },
+        {
+          "value": "财物失窃",
+          "synonyms": [
+            "偷盗",
+            "盗窃",
+            "失窃"
+          ]
+        },
+        {
+          "value": "监控盲区",
+          "synonyms": [
+            "监控死角",
+            "看不到",
+            "盲区"
+          ]
+        },
+        {
+          "value": "火情隐患",
+          "synonyms": [
+            "起火",
+            "火灾隐患"
+          ]
+        },
+        {
+          "value": "响应不及时",
+          "synonyms": [
+            "来不及",
+            "响应慢",
+            "发现不及时"
+          ]
+        },
+        {
+          "value": "人员离岗",
+          "synonyms": [
+            "离岗",
+            "脱岗"
+          ]
+        }
+      ],
+      "allow_custom": true
     },
     {
       "key": "expectations",
       "label": "客户期望与优先级",
       "group": "business",
-      "type": "textarea",
+      "type": "multiselect",
       "required": false,
-      "help": "最想先解决什么",
-      "ai_hint": "提取客户希望达成的目标与优先顺序",
+      "help": "可多选；选项顺序不代表优先级，请在补充说明中写明最优先目标。",
+      "ai_hint": "可多选；选项顺序不代表优先级，请在补充说明中写明最优先目标。 优先使用候选项；选项无法表达的具体事实可保留原文，不得推测。",
       "extract": {
-        "mode": "sentence",
+        "mode": "list",
         "keywords": [
           "希望",
           "想要",
@@ -115,19 +232,70 @@
           "关键是",
           "重点",
           "目的"
-        ]
-      }
+        ],
+        "context_keywords": [
+          "希望",
+          "想要",
+          "期望",
+          "需求",
+          "最好",
+          "优先",
+          "关键是",
+          "重点",
+          "目的"
+        ],
+        "fallback_text": true,
+        "preserve_details": true
+      },
+      "options": [
+        {
+          "value": "及时发现风险",
+          "synonyms": [
+            "及时发现",
+            "提前预警"
+          ]
+        },
+        {
+          "value": "缩短响应时间",
+          "synonyms": [
+            "快速响应",
+            "及时响应"
+          ]
+        },
+        {
+          "value": "减少值守投入",
+          "synonyms": [
+            "减少值守",
+            "减少人力"
+          ]
+        },
+        {
+          "value": "统一集中管理",
+          "synonyms": [
+            "集中管理",
+            "统一管理"
+          ]
+        },
+        {
+          "value": "处置闭环可追溯",
+          "synonyms": [
+            "闭环",
+            "可追溯"
+          ]
+        }
+      ],
+      "allow_custom": true
     },
     {
       "key": "key_points",
       "label": "重点位置",
       "group": "keypoints",
-      "type": "textarea",
+      "type": "multiselect",
       "required": false,
       "remark": "每个重点位置对应多种重点事件，对应多种算法",
-      "ai_hint": "提取需要重点监控/看护的具体点位，逐条列出",
+      "ai_hint": "选择位置类型；请在补充说明中注明具体楼栋、编号及其对应事件，避免丢失位置关系。 优先使用候选项；选项无法表达的具体事实可保留原文，不得推测。",
       "extract": {
-        "mode": "sentence",
+        "mode": "list",
         "keywords": [
           "点位",
           "重点",
@@ -142,18 +310,84 @@
           "危化",
           "配电",
           "机房"
-        ]
-      }
+        ],
+        "context_keywords": [
+          "点位",
+          "重点",
+          "门口",
+          "大门",
+          "仓库",
+          "通道",
+          "周界",
+          "围墙",
+          "电梯",
+          "装卸",
+          "危化",
+          "配电",
+          "机房"
+        ],
+        "fallback_text": true,
+        "preserve_details": true
+      },
+      "options": [
+        {
+          "value": "出入口",
+          "synonyms": [
+            "门口",
+            "大门"
+          ]
+        },
+        {
+          "value": "周界围墙",
+          "synonyms": [
+            "周界",
+            "围墙"
+          ]
+        },
+        {
+          "value": "仓库",
+          "synonyms": []
+        },
+        {
+          "value": "通道",
+          "synonyms": []
+        },
+        {
+          "value": "电梯",
+          "synonyms": []
+        },
+        {
+          "value": "装卸区",
+          "synonyms": [
+            "装卸"
+          ]
+        },
+        {
+          "value": "危化区域",
+          "synonyms": [
+            "危化"
+          ]
+        },
+        {
+          "value": "配电房或机房",
+          "synonyms": [
+            "配电",
+            "机房"
+          ]
+        }
+      ],
+      "allow_custom": true,
+      "help": "选择位置类型；请在补充说明中注明具体楼栋、编号及其对应事件，避免丢失位置关系。"
     },
     {
       "key": "key_events",
       "label": "重点事件",
       "group": "keypoints",
-      "type": "textarea",
+      "type": "multiselect",
       "required": false,
-      "ai_hint": "提取需要识别的重点事件类型",
+      "ai_hint": "可多选；只记录客户关注的事件，不代表已承诺对应算法能力。具体位置和要求可补充。 优先使用候选项；选项无法表达的具体事实可保留原文，不得推测。",
       "extract": {
-        "mode": "sentence",
+        "mode": "list",
         "keywords": [
           "事件",
           "报警",
@@ -163,8 +397,64 @@
           "闯入",
           "偷盗",
           "离岗"
-        ]
-      }
+        ],
+        "context_keywords": [
+          "事件",
+          "报警",
+          "识别",
+          "翻墙",
+          "抽烟",
+          "闯入",
+          "偷盗",
+          "离岗"
+        ],
+        "fallback_text": true,
+        "preserve_details": true
+      },
+      "options": [
+        {
+          "value": "人员入侵",
+          "synonyms": [
+            "闯入",
+            "翻墙"
+          ]
+        },
+        {
+          "value": "吸烟",
+          "synonyms": [
+            "抽烟"
+          ]
+        },
+        {
+          "value": "财物盗窃",
+          "synonyms": [
+            "偷盗",
+            "盗窃"
+          ]
+        },
+        {
+          "value": "人员离岗",
+          "synonyms": [
+            "离岗",
+            "脱岗"
+          ]
+        },
+        {
+          "value": "烟火异常",
+          "synonyms": [
+            "烟火",
+            "火情"
+          ]
+        },
+        {
+          "value": "通道占用",
+          "synonyms": [
+            "通道堵塞"
+          ]
+        }
+      ],
+      "allow_custom": true,
+      "help": "可多选；只记录客户关注的事件，不代表已承诺对应算法能力。具体位置和要求可补充。"
     },
     {
       "key": "algorithms",

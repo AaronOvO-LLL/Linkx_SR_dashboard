@@ -1,0 +1,34 @@
+<Slide style={{ width: 1280, height: 720, padding: '72px 84px', flexDirection: 'column', background: '#2F5597', fontFamily: 'Microsoft YaHei' }}>
+    <Text style={{ fontSize: 14, fontWeight: 'bold', color: 'rgba(255,255,255,0.60)', letterSpacing: 4 }}>下一步 · NEXT</Text>
+
+    <Text style={{ fontSize: 60, fontWeight: 'bold', color: '#FFFFFF', lineHeight: 1.2, marginTop: 28 }}>
+        先把一个分部的踏勘链路跑顺，<br />再谈规模化
+    </Text>
+
+    <Box style={{ width: 108, height: 4, background: '#E2703A', marginTop: 36 }} />
+
+    <Box style={{ flexDirection: 'row', gap: 48, marginTop: 46 }}>
+        <Box style={{ flex: 1, flexDirection: 'column', borderTop: '2px solid rgba(255,255,255,0.30)', paddingTop: 20 }}>
+            <Text style={{ fontSize: 13, fontWeight: 'bold', color: 'rgba(255,255,255,0.62)', letterSpacing: 2 }}>短期 · 1 个月内</Text>
+            <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#FFFFFF', marginTop: 10 }}>内网部署 + 分部试点</Text>
+            <Text style={{ fontSize: 16, color: 'rgba(255,255,255,0.82)', lineHeight: 1.6, marginTop: 10 }}>选 1–2 个分部试用真实踏勘；换掉初始口令，配齐密钥环境变量。</Text>
+        </Box>
+
+        <Box style={{ flex: 1, flexDirection: 'column', borderTop: '2px solid rgba(255,255,255,0.30)', paddingTop: 20 }}>
+            <Text style={{ fontSize: 13, fontWeight: 'bold', color: 'rgba(255,255,255,0.62)', letterSpacing: 2 }}>中期 · 本季度</Text>
+            <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#FFFFFF', marginTop: 10 }}>补齐字段 + 扩展产品</Text>
+            <Text style={{ fontSize: 16, color: 'rgba(255,255,255,0.82)', lineHeight: 1.6, marginTop: 10 }}>补上接入可行性与需求意向两类字段，扩展能源管家与设备管家。</Text>
+        </Box>
+
+        <Box style={{ flex: 1, flexDirection: 'column', borderTop: '2px solid rgba(255,255,255,0.30)', paddingTop: 20 }}>
+            <Text style={{ fontSize: 13, fontWeight: 'bold', color: 'rgba(255,255,255,0.62)', letterSpacing: 2 }}>长期 · 视条件推进</Text>
+            <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#FFFFFF', marginTop: 10 }}>现场图片 + 报价能力</Text>
+            <Text style={{ fontSize: 16, color: 'rgba(255,255,255,0.82)', lineHeight: 1.6, marginTop: 10 }}>接入现场照片与点位图；等真实价格表到位后恢复报价能力。</Text>
+        </Box>
+    </Box>
+
+    <Box style={{ marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.24)', paddingTop: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Text style={{ fontSize: 17, color: 'rgba(255,255,255,0.90)' }}>本次汇报到此，请就三条决策给出结论，我即可推进试点部署。</Text>
+        <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.52)' }}>12 / 12</Text>
+    </Box>
+</Slide>

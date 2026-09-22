@@ -1,0 +1,83 @@
+<Slide style={{ width: 1280, height: 720, padding: '20px 64px', flexDirection: 'column', background: '#FFFFFF', fontFamily: 'Microsoft YaHei' }}>
+    {/* A · 标题块 */}
+    <Box style={{ height: 108, flexDirection: 'column', justifyContent: 'center' }}>
+        <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#2F5597', letterSpacing: 2 }}>技术栈 · STACK</Text>
+        <Text style={{ fontSize: 34, fontWeight: 'bold', color: '#1F2937', marginTop: 10 }}>技术栈只有 4 个依赖，选型全部为了「好改」</Text>
+    </Box>
+
+    {/* B · 内容区 */}
+    <Box style={{ height: 524, flexDirection: 'row', gap: 36 }}>
+        {/* 左窄栏 38%：技术分层阶梯 */}
+        <Box style={{ flex: 38, flexDirection: 'column' }}>
+            <Box style={{ borderLeft: '3px solid rgba(47,85,151,0.22)', paddingLeft: 16, flexDirection: 'column' }}>
+                <Text style={{ fontSize: 13, fontWeight: 'bold', color: 'rgba(31,41,55,0.48)', letterSpacing: 1 }}>前端</Text>
+                <Text style={{ fontSize: 19, fontWeight: 'bold', color: '#1F2937', marginTop: 5 }}>原生 HTML / CSS / JS</Text>
+            </Box>
+
+            <Box style={{ borderLeft: '3px solid rgba(47,85,151,0.22)', paddingLeft: 16, flexDirection: 'column', marginTop: 26 }}>
+                <Text style={{ fontSize: 13, fontWeight: 'bold', color: 'rgba(31,41,55,0.48)', letterSpacing: 1 }}>接入层</Text>
+                <Text style={{ fontSize: 19, fontWeight: 'bold', color: '#1F2937', marginTop: 5 }}>Python 3 + Flask 路由</Text>
+            </Box>
+
+            <Box style={{ borderLeft: '3px solid rgba(47,85,151,0.22)', paddingLeft: 16, flexDirection: 'column', marginTop: 26 }}>
+                <Text style={{ fontSize: 13, fontWeight: 'bold', color: 'rgba(31,41,55,0.48)', letterSpacing: 1 }}>页面渲染</Text>
+                <Text style={{ fontSize: 19, fontWeight: 'bold', color: '#1F2937', marginTop: 5 }}>Jinja2 模板</Text>
+            </Box>
+
+            <Box style={{ borderLeft: '3px solid rgba(47,85,151,0.22)', paddingLeft: 16, flexDirection: 'column', marginTop: 26 }}>
+                <Text style={{ fontSize: 13, fontWeight: 'bold', color: 'rgba(31,41,55,0.48)', letterSpacing: 1 }}>领域与配置</Text>
+                <Text style={{ fontSize: 19, fontWeight: 'bold', color: '#1F2937', marginTop: 5 }}>core 能力层 + JSON 配置</Text>
+            </Box>
+
+            <Box style={{ borderLeft: '3px solid #2F5597', paddingLeft: 16, flexDirection: 'column', marginTop: 26 }}>
+                <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#2F5597', letterSpacing: 1 }}>数据</Text>
+                <Text style={{ fontSize: 19, fontWeight: 'bold', color: '#1F2937', marginTop: 5 }}>SQLite（WAL 模式）</Text>
+            </Box>
+
+            <Box style={{ marginTop: 'auto', background: '#E8EEF7', borderRadius: 8, padding: '14px 18px' }}>
+                <Text style={{ fontSize: 15, color: '#1F2937', lineHeight: 1.55 }}>生产依赖仅 4 个包：Flask · Waitress · 腾讯云 COS SDK · 腾讯云 ASR SDK</Text>
+            </Box>
+        </Box>
+
+        {/* 右宽栏 62%：选型约束 */}
+        <Box style={{ flex: 62, flexDirection: 'column', justifyContent: 'space-between' }}>
+            <Box style={{ flexDirection: 'column', gap: 6 }}>
+                <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#2F5597' }}>不引入 Vue / React</Text>
+                <Text style={{ fontSize: 17, color: 'rgba(31,41,55,0.72)', lineHeight: 1.6 }}>当前交互复杂度不值得背上前端构建链。页面由服务端模板渲染，浏览器端只有少量原生 JavaScript 做自动保存。加一页不用改构建流程。</Text>
+            </Box>
+
+            <Box style={{ flexDirection: 'column', gap: 6 }}>
+                <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#2F5597' }}>业务知识全部外置到配置</Text>
+                <Text style={{ fontSize: 17, color: 'rgba(31,41,55,0.72)', lineHeight: 1.6 }}>字段、生成物、部门、材料目录全部由 JSON 定义，代码里没有业务硬编码。字段模型按「公共字段包 + 产品组装」组织，同一批字段能被多个产品复用。</Text>
+            </Box>
+
+            <Box style={{ flexDirection: 'column', gap: 6 }}>
+                <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#2F5597' }}>外部能力全部走接口</Text>
+                <Text style={{ fontSize: 17, color: 'rgba(31,41,55,0.72)', lineHeight: 1.6 }}>语音识别、对象存储、大模型都封装成厂商无关的接口。将来换厂商，只换一个实现文件，业务代码零改动。</Text>
+            </Box>
+
+            <Box style={{ flexDirection: 'column', gap: 6 }}>
+                <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#2F5597' }}>密钥绝不落库</Text>
+                <Text style={{ fontSize: 17, color: 'rgba(31,41,55,0.72)', lineHeight: 1.6 }}>所有密钥只从环境变量读取，不写进配置文件、数据库、日志或页面；页面只显示「已配置 / 未配置」。</Text>
+            </Box>
+
+            <Box style={{ flexDirection: 'row', gap: 12 }}>
+                <Box style={{ background: '#E8EEF7', borderRadius: 20, padding: '10px 18px' }}>
+                    <Text style={{ fontSize: 15, fontWeight: 'bold', color: '#2F5597' }}>腾讯云 ASR</Text>
+                </Box>
+                <Box style={{ background: '#E8EEF7', borderRadius: 20, padding: '10px 18px' }}>
+                    <Text style={{ fontSize: 15, fontWeight: 'bold', color: '#2F5597' }}>腾讯云 COS</Text>
+                </Box>
+                <Box style={{ background: '#E8EEF7', borderRadius: 20, padding: '10px 18px' }}>
+                    <Text style={{ fontSize: 15, fontWeight: 'bold', color: '#2F5597' }}>DeepSeek 大模型</Text>
+                </Box>
+            </Box>
+        </Box>
+    </Box>
+
+    {/* C · 页脚条 */}
+    <Box style={{ height: 48, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Text style={{ fontSize: 14, color: 'rgba(31,41,55,0.45)' }}>灵石解决方案工作台 · 进展汇报</Text>
+        <Text style={{ fontSize: 14, color: 'rgba(31,41,55,0.45)' }}>05 / 12</Text>
+    </Box>
+</Slide>

@@ -5,9 +5,9 @@
 
 <div class="card">
   <h2>{{ dept.name }} · 项目库</h2>
-  <p class="sub">创建或选择一个项目开始。项目数据保存在本机，除非主动删除，否则长期保留。</p>
+  <p class="sub">创建或选择一个项目开始，随后可在项目概览中上传录音转写，再进入各产品录入。项目数据保存在本机，除非主动删除，否则长期保留。</p>
 
-  <form class="row" method="post" action="{{ url_for('project_create') }}">
+  <form class="row project-create" method="post" action="{{ url_for('project_create') }}">
     <label class="fld" style="flex:2 1 240px;margin-bottom:0">
       <span>项目名称<span class="req">*</span></span>
       <input type="text" name="name" placeholder="例如：新宇精密安全管家项目" required>
@@ -30,13 +30,13 @@
     </label>
     <label class="fld" style="flex:0 0 auto;margin-bottom:0">
       <span>&nbsp;</span>
-      <button class="btn" type="submit">新建并开始录入</button>
+      <button class="btn" type="submit">新建项目</button>
     </label>
   </form>
 </div>
 
 <div class="toolbar">
-  <form method="get" style="display:flex;gap:8px">
+  <form method="get" class="project-search">
     <input type="text" name="q" value="{{ kw }}" placeholder="搜索项目名称或客户名称">
     <input type="hidden" name="view" value="{{ view }}">
     <button class="btn ghost" type="submit">搜索</button>

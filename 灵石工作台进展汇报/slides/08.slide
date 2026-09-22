@@ -1,0 +1,69 @@
+<Slide style={{ width: 1280, height: 720, padding: '20px 64px', flexDirection: 'column', background: '#FFFFFF', fontFamily: 'Microsoft YaHei' }}>
+    {/* A · 标题块 */}
+    <Box style={{ height: 108, flexDirection: 'column', justifyContent: 'center' }}>
+        <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#2F5597', letterSpacing: 2 }}>部署 · DEPLOYMENT</Text>
+        <Text style={{ fontSize: 34, fontWeight: 'bold', color: '#1F2937', marginTop: 10 }}>同一份代码，三档环境，改造量全部在配置</Text>
+    </Box>
+
+    {/* B · 内容区 */}
+    <Box style={{ height: 524, flexDirection: 'row', gap: 28 }}>
+        {/* 左标题栏 30% */}
+        <Box style={{ flex: 30, background: '#2F5597', borderRadius: 8, padding: 28, flexDirection: 'column' }}>
+            <Text style={{ fontSize: 13, fontWeight: 'bold', color: 'rgba(255,255,255,0.62)', letterSpacing: 3 }}>部署策略</Text>
+            <Text style={{ fontSize: 26, fontWeight: 'bold', color: '#FFFFFF', lineHeight: 1.4, marginTop: 16 }}>本机能跑，<br />服务器也能跑</Text>
+            <Text style={{ fontSize: 15, color: 'rgba(255,255,255,0.84)', lineHeight: 1.65, marginTop: 20 }}>环境差异全部由环境变量决定。本机与线上共用同一套代码，从演示走到试点不需要重写。</Text>
+
+            <Box style={{ marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.22)', paddingTop: 16 }}>
+                <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.86)', lineHeight: 1.6 }}>上线前必做：五个分部的初始口令全部更换，并配齐密钥环境变量。</Text>
+            </Box>
+        </Box>
+
+        {/* 右内容区 70% */}
+        <Box style={{ flex: 70, flexDirection: 'column', justifyContent: 'space-between' }}>
+            <Box style={{ height: 164, background: '#E8EEF7', borderRadius: 8, padding: 22, flexDirection: 'row', gap: 18 }}>
+                <Box style={{ width: 44, height: 44, borderRadius: 22, background: '#2F5597', justifyContent: 'center', alignItems: 'center' }}>
+                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#FFFFFF' }}>A</Text>
+                </Box>
+                <Box style={{ flexDirection: 'column', gap: 6 }}>
+                    <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#1F2937' }}>本机演示（当前状态）</Text>
+                    <Box style={{ background: '#FFFFFF', borderRadius: 4, padding: '6px 12px' }}>
+                        <Text style={{ fontSize: 15, color: '#2F5597' }}>双击「启动 Demo.bat」→ http://127.0.0.1:8770</Text>
+                    </Box>
+                    <Text style={{ fontSize: 15, color: 'rgba(31,41,55,0.66)', lineHeight: 1.5 }}>自动检查依赖、自动打开浏览器。给领导和同事现场演示用，零配置。</Text>
+                </Box>
+            </Box>
+
+            <Box style={{ height: 164, background: '#E8EEF7', borderRadius: 8, padding: 22, flexDirection: 'row', gap: 18 }}>
+                <Box style={{ width: 44, height: 44, borderRadius: 22, background: '#2F5597', justifyContent: 'center', alignItems: 'center' }}>
+                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#FFFFFF' }}>B</Text>
+                </Box>
+                <Box style={{ flexDirection: 'column', gap: 6 }}>
+                    <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#1F2937' }}>生产模式本机验证</Text>
+                    <Box style={{ background: '#FFFFFF', borderRadius: 4, padding: '6px 12px' }}>
+                        <Text style={{ fontSize: 15, color: '#2F5597' }}>「启动 生产模式测试.bat」→ 生产 WSGI 服务器承载</Text>
+                    </Box>
+                    <Text style={{ fontSize: 15, color: 'rgba(31,41,55,0.66)', lineHeight: 1.5 }}>上线前在本机跑一遍线上模式，验证生产服务器与登录链路是否正常。</Text>
+                </Box>
+            </Box>
+
+            <Box style={{ height: 164, background: '#E8EEF7', borderRadius: 8, padding: 22, flexDirection: 'row', gap: 18 }}>
+                <Box style={{ width: 44, height: 44, borderRadius: 22, background: '#E2703A', justifyContent: 'center', alignItems: 'center' }}>
+                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#FFFFFF' }}>C</Text>
+                </Box>
+                <Box style={{ flexDirection: 'column', gap: 6 }}>
+                    <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#1F2937' }}>线上部署（本轮要批的事）</Text>
+                    <Box style={{ background: '#FFFFFF', borderRadius: 4, padding: '6px 12px' }}>
+                        <Text style={{ fontSize: 15, color: '#2F5597' }}>腾讯云轻量应用服务器 · Ubuntu 22.04 LTS</Text>
+                    </Box>
+                    <Text style={{ fontSize: 15, color: 'rgba(31,41,55,0.66)', lineHeight: 1.5 }}>对外由反向代理承接，对内由生产服务器与守护进程承载。配置与两阶段方案见下一页。</Text>
+                </Box>
+            </Box>
+        </Box>
+    </Box>
+
+    {/* C · 页脚条 */}
+    <Box style={{ height: 48, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Text style={{ fontSize: 14, color: 'rgba(31,41,55,0.45)' }}>灵石解决方案工作台 · 进展汇报</Text>
+        <Text style={{ fontSize: 14, color: 'rgba(31,41,55,0.45)' }}>08 / 12</Text>
+    </Box>
+</Slide>

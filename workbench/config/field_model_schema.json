@@ -1,7 +1,6 @@
 {
-  "schema_version": "1.0.0",
+  "schema_version": "1.1.0",
   "note": "字段模型的元定义（契约）。它不描述业务，只描述『字段模型可以怎么写』。新增产品、新增字段前先读这份文件；写完用 `python check_config.py` 校验。",
-
   "layers": [
     {
       "file": "config/field_model_schema.json",
@@ -19,7 +18,6 @@
       "edit_by": "新增产品、调整分组顺序、对某产品单独改写个别字段时改这里。"
     }
   ],
-
   "pack_file_format": {
     "pack": "字段包标识，须与文件名一致（snake_case）",
     "name": "字段包中文名",
@@ -28,7 +26,6 @@
     "groups": "分组定义数组，元素见 group_attributes",
     "fields": "字段定义数组，元素见 field_attributes"
   },
-
   "manifest_file_format": {
     "template_version": "本产品字段模型版本号，改字段就升版本（数据留痕）",
     "product_type": "必须与所在目录名一致",
@@ -39,87 +36,335 @@
     "extra_fields": "本产品独有的字段，直接内联，格式同字段包里的 fields 元素",
     "remove_fields": "要从所引用字段包中剔除的字段 key 数组"
   },
-
   "group_attributes": [
-    {"key": "key", "type": "string", "required": true, "desc": "分组标识，snake_case，产品内不可重复。字段用 group 指向它。"},
-    {"key": "name", "type": "string", "required": true, "desc": "分组显示名，出现在信息核对页与踏勘结果文档的章节标题。"},
-    {"key": "order", "type": "number", "required": false, "desc": "包内默认排序权重。清单声明了 group_order 时以清单为准。"},
-    {"key": "desc", "type": "string", "required": false, "desc": "分组说明，渲染为踏勘结果文档章节下的引用块。", "consumed_by": "core/generate.py"}
+    {
+      "key": "key",
+      "type": "string",
+      "required": true,
+      "desc": "分组标识，snake_case，产品内不可重复。字段用 group 指向它。"
+    },
+    {
+      "key": "name",
+      "type": "string",
+      "required": true,
+      "desc": "分组显示名，出现在信息核对页与踏勘结果文档的章节标题。"
+    },
+    {
+      "key": "order",
+      "type": "number",
+      "required": false,
+      "desc": "包内默认排序权重。清单声明了 group_order 时以清单为准。"
+    },
+    {
+      "key": "desc",
+      "type": "string",
+      "required": false,
+      "desc": "分组说明，渲染为踏勘结果文档章节下的引用块。",
+      "consumed_by": "core/generate.py"
+    }
   ],
-
   "field_types": {
-    "text":       {"enabled": true,  "value_shape": "字符串",       "ui": "单行输入框", "note": "最通用。地址、型号、联系人等。"},
-    "textarea":   {"enabled": true,  "value_shape": "字符串（可含换行）", "ui": "多行输入框", "note": "访谈要点、风险清单等长文本。"},
-    "number":     {"enabled": true,  "value_shape": "数字",         "ui": "数字输入框", "note": "建议同时给 unit。规则引擎可解析中文数字。"},
-    "date":       {"enabled": true,  "value_shape": "YYYY-MM-DD",  "ui": "日期选择器", "note": "值一律存 ISO 格式。"},
-    "select":     {"enabled": true,  "value_shape": "字符串",       "ui": "下拉选择",   "require": ["options"], "note": "选项必须来自 options。"},
-    "multiselect":{"enabled": true,  "value_shape": "字符串数组",   "ui": "多选标签",   "require": ["options"], "note": "值存 JSON 数组。"},
-    "table":      {"enabled": true,  "value_shape": "对象数组",     "ui": "可增删行表格", "require": ["columns"], "note": "用于设备清单类结构化的多行数据。"}
+    "text": {
+      "enabled": true,
+      "value_shape": "字符串",
+      "ui": "单行输入框",
+      "note": "最通用。地址、型号、联系人等。"
+    },
+    "textarea": {
+      "enabled": true,
+      "value_shape": "字符串（可含换行）",
+      "ui": "多行输入框",
+      "note": "访谈要点、风险清单等长文本。"
+    },
+    "number": {
+      "enabled": true,
+      "value_shape": "数字",
+      "ui": "数字输入框",
+      "note": "建议同时给 unit。规则引擎可解析中文数字。"
+    },
+    "date": {
+      "enabled": true,
+      "value_shape": "YYYY-MM-DD",
+      "ui": "日期选择器",
+      "note": "值一律存 ISO 格式。"
+    },
+    "select": {
+      "enabled": true,
+      "value_shape": "字符串",
+      "ui": "5项及以下平铺单选，更多选项下拉选择",
+      "require": [
+        "options"
+      ],
+      "note": "默认只接受 options；allow_custom=true 可填写原文详细说明。"
+    },
+    "multiselect": {
+      "enabled": true,
+      "value_shape": "字符串数组",
+      "ui": "多选标签",
+      "require": [
+        "options"
+      ],
+      "note": "值存 JSON 数组；allow_custom=true 可含补充原文，兼容旧版文字值。"
+    },
+    "table": {
+      "enabled": true,
+      "value_shape": "对象数组",
+      "ui": "可增删行表格",
+      "require": [
+        "columns"
+      ],
+      "note": "用于设备清单类结构化的多行数据。"
+    }
   },
-
   "extract_modes": {
-    "sentence": {"enabled": true, "note": "摘取命中 keywords 的原句，多句用「；」连接。缺省模式。", "require": ["keywords"]},
-    "entity":   {"enabled": true, "note": "抽取机构/人名/地址类实体。建议配 keywords + entity_suffix；抽不到合法实体时留空，不编造。", "require": ["keywords"]},
-    "enum":     {"enabled": true, "note": "在 options 上打分，含同义词与否定语境判定。依赖字段的 options。", "require": ["options"]},
-    "list":     {"enabled": true, "note": "同 enum，但返回全部正分选项组成的数组。依赖字段的 options。", "require": ["options"]},
-    "number":   {"enabled": true, "note": "抽数量。优先取含「一共/总共」的总量句；同口径多值判为自我更正，取最后一次并标低置信。", "require": ["keywords"]},
-    "money":    {"enabled": true, "note": "抽含金额表述的句子，避免把预算编成精确数字。", "require": ["keywords"]},
-    "phone":    {"enabled": true, "note": "正则抽取手机号或固话，字段自带 keywords 无效。"},
-    "date":     {"enabled": true, "note": "正则抽取日期并归一为 YYYY-MM-DD。"},
-    "table":    {"enabled": true, "note": "按内置设备词表（摄像头/门禁/烟感…）扫出多行结构。词表在 core/extract.py，暂未配置化。"}
+    "sentence": {
+      "enabled": true,
+      "note": "摘取命中 keywords 的原句，多句用「；」连接。缺省模式。",
+      "require": [
+        "keywords"
+      ]
+    },
+    "entity": {
+      "enabled": true,
+      "note": "抽取机构/人名/地址类实体。建议配 keywords + entity_suffix；抽不到合法实体时留空，不编造。",
+      "require": [
+        "keywords"
+      ]
+    },
+    "enum": {
+      "enabled": true,
+      "note": "在 options 上打分，含同义词与否定语境判定。依赖字段的 options。",
+      "require": [
+        "options"
+      ]
+    },
+    "list": {
+      "enabled": true,
+      "note": "同 enum，但返回全部正分选项组成的数组。依赖字段的 options。",
+      "require": [
+        "options"
+      ]
+    },
+    "number": {
+      "enabled": true,
+      "note": "抽数量。优先取含「一共/总共」的总量句；同口径多值判为自我更正，取最后一次并标低置信。",
+      "require": [
+        "keywords"
+      ]
+    },
+    "money": {
+      "enabled": true,
+      "note": "抽含金额表述的句子，避免把预算编成精确数字。",
+      "require": [
+        "keywords"
+      ]
+    },
+    "phone": {
+      "enabled": true,
+      "note": "正则抽取手机号或固话，字段自带 keywords 无效。"
+    },
+    "date": {
+      "enabled": true,
+      "note": "正则抽取日期并归一为 YYYY-MM-DD。"
+    },
+    "table": {
+      "enabled": true,
+      "note": "按内置设备词表（摄像头/门禁/烟感…）扫出多行结构。词表在 core/extract.py，暂未配置化。"
+    }
   },
-
   "field_attributes": [
-    {"key": "key", "type": "string", "required": true, "consumed_by": "全链路",
-     "desc": "字段唯一标识，snake_case。是已入库数据的锚点——一旦有真实数据进来，改名等于断链，只能新增不能改名。"},
-    {"key": "label", "type": "string", "required": true, "consumed_by": "core/generate.py, templates/*.j2",
-     "desc": "字段显示名，出现在信息核对页和生成材料。"},
-    {"key": "group", "type": "string", "required": true, "consumed_by": "core/config.py::fields_by_group",
-     "desc": "所属分组 key，必须在某个字段包里定义过该分组。"},
-    {"key": "type", "type": "enum", "required": true, "consumed_by": "templates/review.html",
-     "desc": "取值见 field_types。决定前端渲染成什么控件、值怎么存。", "enum_ref": "field_types"},
-    {"key": "required", "type": "boolean", "required": false, "default": false,
-     "consumed_by": "core/extract.py（状态判定）, templates/review.html, app.py（必填统计）, core/validate.py",
-     "desc": "true = 必填。抽不到时状态为「必须补填」而不是「可选缺失」。"},
-    {"key": "remark", "type": "string", "required": false,
-     "consumed_by": "产品规则与生成模板",
-     "desc": "业务规则原文（如「超过300路需增加服务器或算力卡」），用于保留字段背后的判断依据。"},
-    {"key": "help", "type": "string", "required": false, "consumed_by": "templates/review.html",
-     "desc": "填写提示，显示在字段标题下方。"},
-    {"key": "placeholder", "type": "string", "required": false, "consumed_by": "templates/review.html",
-     "desc": "输入框占位文本，给一个符合本业务习惯的示例。"},
-    {"key": "unit", "type": "string", "required": false, "consumed_by": "templates/review.html, survey_result.md.j2",
-     "desc": "计量单位（m² / 路 / 台 / 个）。number 类型建议必给。"},
-    {"key": "options", "type": "array", "required": false, "consumed_by": "templates/review.html, core/extract.py, core/extract.py::relevance_check",
-     "desc": "select / multiselect 的选项表。每项 {value, synonyms}；synonyms 是口语同义词，规则引擎与关联度检查都靠它。"},
-    {"key": "columns", "type": "array", "required": false, "consumed_by": "templates/review.html",
-     "desc": "table 的列定义，每项 {key, label}。"},
-    {"key": "validate", "type": "object", "required": false, "consumed_by": "core/validate.py",
-     "desc": "取值约束：{min, max, pattern, message}。min/max 限数值，pattern 是正则，message 是失败提示。"},
-    {"key": "ai_hint", "type": "string", "required": false, "consumed_by": "core/extract.py::_run_llm_engine（LLM 通道）",
-     "desc": "给大模型的提取说明。换到 llm 通道时才会生效，rule 通道忽略。"},
-    {"key": "extract", "type": "object", "required": false, "consumed_by": "core/extract.py::_run_rule_engine（rule 通道）",
-     "desc": "规则引擎抽取配置。子属性见 extract_attributes；不写则按 sentence 模式处理。"},
-    {"key": "extract.mode", "type": "enum", "required": false, "default": "sentence",
-     "consumed_by": "core/extract.py", "enum_ref": "extract_modes",
-     "desc": "抽取方式，取值见 extract_modes。"},
-    {"key": "extract.keywords", "type": "array", "required": false,
-     "consumed_by": "core/extract.py, relevance_check",
-     "desc": "触发词。规则引擎靠它定位句子；同时也是「这段文字稿跟本产品有没有关系」的判据。"},
-    {"key": "extract.entity_suffix", "type": "array", "required": false, "consumed_by": "core/extract.py::extract_entity",
-     "desc": "仅 entity 模式。合法实体应以此结尾（公司/集团/物业/园…）。配了却抽不到合法实体时宁可留空——这是防编造的闸门。"},
-    {"key": "extract.negation_guard", "type": "boolean", "required": false, "default": true,
-     "consumed_by": "core/extract.py",
-     "desc": "是否启用否定语境判定。保持 true —— 关掉会让「不需要驻场」被读成「需要驻场」。"},
-    {"key": "extract.max_sentences", "type": "number", "required": false, "default": 3,
-     "consumed_by": "core/extract.py::extract_sentence",
-     "desc": "最多拼接几句原文。"},
-    {"key": "extract.default", "type": "string", "required": false, "consumed_by": "core/extract.py::extract_enum",
-     "desc": "enum 模式抽不到时的兜底值（低置信、待确认）。慎用——兜底值会掩盖「没问到」这个事实。"},
-    {"key": "extract.unit_hint", "type": "string", "required": false, "consumed_by": "（暂无消费方，预留）",
-     "desc": "曾经想用于单位换算提示，规则引擎目前未读取。先留着，等换算逻辑落地再用。"}
+    {
+      "key": "key",
+      "type": "string",
+      "required": true,
+      "consumed_by": "全链路",
+      "desc": "字段唯一标识，snake_case。是已入库数据的锚点——一旦有真实数据进来，改名等于断链，只能新增不能改名。"
+    },
+    {
+      "key": "label",
+      "type": "string",
+      "required": true,
+      "consumed_by": "core/generate.py, templates/*.j2",
+      "desc": "字段显示名，出现在信息核对页和生成材料。"
+    },
+    {
+      "key": "group",
+      "type": "string",
+      "required": true,
+      "consumed_by": "core/config.py::fields_by_group",
+      "desc": "所属分组 key，必须在某个字段包里定义过该分组。"
+    },
+    {
+      "key": "type",
+      "type": "enum",
+      "required": true,
+      "consumed_by": "templates/review.html",
+      "desc": "取值见 field_types。决定前端渲染成什么控件、值怎么存。",
+      "enum_ref": "field_types"
+    },
+    {
+      "key": "required",
+      "type": "boolean",
+      "required": false,
+      "default": false,
+      "consumed_by": "core/extract.py（状态判定）, templates/review.html, app.py（必填统计）, core/validate.py",
+      "desc": "true = 必填。抽不到时状态为「必须补填」而不是「可选缺失」。"
+    },
+    {
+      "key": "remark",
+      "type": "string",
+      "required": false,
+      "consumed_by": "产品规则与生成模板",
+      "desc": "业务规则原文（如「超过300路需增加服务器或算力卡」），用于保留字段背后的判断依据。"
+    },
+    {
+      "key": "help",
+      "type": "string",
+      "required": false,
+      "consumed_by": "templates/review.html",
+      "desc": "填写提示，显示在字段标题下方。"
+    },
+    {
+      "key": "placeholder",
+      "type": "string",
+      "required": false,
+      "consumed_by": "templates/review.html",
+      "desc": "输入框占位文本，给一个符合本业务习惯的示例。"
+    },
+    {
+      "key": "unit",
+      "type": "string",
+      "required": false,
+      "consumed_by": "templates/review.html, survey_result.md.j2",
+      "desc": "计量单位（m² / 路 / 台 / 个）。number 类型建议必给。"
+    },
+    {
+      "key": "options",
+      "type": "array",
+      "required": false,
+      "consumed_by": "templates/review.html, core/extract.py, core/extract.py::relevance_check",
+      "desc": "select / multiselect 的选项表。每项 {value, synonyms}；synonyms 是口语同义词，规则引擎与关联度检查都靠它。"
+    },
+    {
+      "key": "columns",
+      "type": "array",
+      "required": false,
+      "consumed_by": "templates/review.html",
+      "desc": "table 的列定义，每项 {key, label}。"
+    },
+    {
+      "key": "validate",
+      "type": "object",
+      "required": false,
+      "consumed_by": "core/validate.py",
+      "desc": "取值约束：{min, max, pattern, message}。min/max 限数值，pattern 是正则，message 是失败提示。"
+    },
+    {
+      "key": "ai_hint",
+      "type": "string",
+      "required": false,
+      "consumed_by": "core/extract.py::_run_llm_engine（LLM 通道）",
+      "desc": "给大模型的提取说明。换到 llm 通道时才会生效，rule 通道忽略。"
+    },
+    {
+      "key": "extract",
+      "type": "object",
+      "required": false,
+      "consumed_by": "core/extract.py::_run_rule_engine（rule 通道）",
+      "desc": "规则引擎抽取配置。子属性见 extract_attributes；不写则按 sentence 模式处理。"
+    },
+    {
+      "key": "extract.mode",
+      "type": "enum",
+      "required": false,
+      "default": "sentence",
+      "consumed_by": "core/extract.py",
+      "enum_ref": "extract_modes",
+      "desc": "抽取方式，取值见 extract_modes。"
+    },
+    {
+      "key": "extract.keywords",
+      "type": "array",
+      "required": false,
+      "consumed_by": "core/extract.py, relevance_check",
+      "desc": "触发词。规则引擎靠它定位句子；同时也是「这段文字稿跟本产品有没有关系」的判据。"
+    },
+    {
+      "key": "extract.entity_suffix",
+      "type": "array",
+      "required": false,
+      "consumed_by": "core/extract.py::extract_entity",
+      "desc": "仅 entity 模式。合法实体应以此结尾（公司/集团/物业/园…）。配了却抽不到合法实体时宁可留空——这是防编造的闸门。"
+    },
+    {
+      "key": "extract.negation_guard",
+      "type": "boolean",
+      "required": false,
+      "default": true,
+      "consumed_by": "core/extract.py",
+      "desc": "是否启用否定语境判定。保持 true —— 关掉会让「不需要驻场」被读成「需要驻场」。"
+    },
+    {
+      "key": "extract.max_sentences",
+      "type": "number",
+      "required": false,
+      "default": 3,
+      "consumed_by": "core/extract.py::extract_sentence",
+      "desc": "最多拼接几句原文。"
+    },
+    {
+      "key": "extract.default",
+      "type": "string",
+      "required": false,
+      "consumed_by": "core/extract.py::extract_enum",
+      "desc": "enum 模式抽不到时的兜底值（低置信、待确认）。慎用——兜底值会掩盖「没问到」这个事实。"
+    },
+    {
+      "key": "extract.unit_hint",
+      "type": "string",
+      "required": false,
+      "consumed_by": "（暂无消费方，预留）",
+      "desc": "曾经想用于单位换算提示，规则引擎目前未读取。先留着，等换算逻辑落地再用。"
+    },
+    {
+      "key": "allow_custom",
+      "type": "boolean",
+      "required": false,
+      "default": false,
+      "desc": "选择题允许详细说明；保留旧文字，不自动映射或重写历史数据。"
+    },
+    {
+      "key": "extract.context_keywords",
+      "type": "array",
+      "required": false,
+      "desc": "枚举/多选只在含这些关键词的句子中匹配。"
+    },
+    {
+      "key": "extract.fallback_text",
+      "type": "boolean",
+      "required": false,
+      "desc": "仅 allow_custom 选择题：匹配不到标准选项时保留命中原句并标记待确认。"
+    },
+    {
+      "key": "extract.prefer_longest_match",
+      "type": "boolean",
+      "required": false,
+      "desc": "状态题优先最长明确短语，避免没有机柜误命中有机柜；不同答案冲突时保留原文待确认。"
+    },
+    {
+      "key": "extract.preserve_details",
+      "type": "boolean",
+      "required": false,
+      "desc": "多选提取后保留命中原句为补充项，避免楼层/位置/优先级细节丢失。"
+    },
+    {
+      "key": "require_other_detail",
+      "type": "boolean",
+      "required": false,
+      "default": false,
+      "desc": "允许自定义的多选品牌题选择其他时，必须包含非候选项的具体品牌名称；页面、保存接口及生成校验共用此约束。"
+    }
   ],
-
   "rules": [
     "字段 key 全局唯一（跨所有引用的字段包）。",
     "字段 key 使用 snake_case，且发布后不得改名——它是已入库数据的锚点。",

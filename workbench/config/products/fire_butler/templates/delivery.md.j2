@@ -1,0 +1,22 @@
+# {{ project.name }} · 消防管家交付内容
+
+## 交付范围与现场基线
+
+{% for g in groups if g.key in ['fire_control', 'fire_maintenance', 'fire_cost'] %}
+### {{ g.name }}
+
+{% for f in g.fields %}
+- {{ f.label }}：{{ f.text or '待确认' }}{% if f.unit %} {{ f.unit }}{% endif %}
+{% endfor %}
+
+{% endfor %}
+## 实施步骤
+
+1. 按消控室核对主机数量、品牌、主从关系与信号传输条件。
+2. 与合同签约方及维保单位确认职责、现场改造范围与实施安排。
+3. 完成经确认的改造与接入，核对点位编码表并进行联调。
+4. 按双方确认的范围验收并移交资料。
+
+## 费用与验收说明
+
+恒益报价一次性改造费用：{{ display.fire_renovation_cost or '0' }} 元。后续消防管家报价应引用该费用，完整服务价格、实施范围与验收标准另行确认。

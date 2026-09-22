@@ -113,12 +113,12 @@
       "key": "business_desc",
       "label": "业态补充描述",
       "group": "property",
-      "type": "textarea",
+      "type": "multiselect",
       "required": true,
-      "help": "例如：2-5层公寓，5-22层酒店，23-30层写字楼",
-      "ai_hint": "提取业态构成的补充描述",
+      "help": "可多选；楼层分布、用途和特殊区域请在补充说明中填写。",
+      "ai_hint": "可多选；楼层分布、用途和特殊区域请在补充说明中填写。 优先使用候选项；选项无法表达的具体事实可保留原文，不得推测。",
       "extract": {
-        "mode": "sentence",
+        "mode": "list",
         "keywords": [
           "业态",
           "楼层",
@@ -127,8 +127,61 @@
           "写字楼",
           "厂房",
           "宿舍"
-        ]
-      }
+        ],
+        "context_keywords": [
+          "业态",
+          "楼层",
+          "公寓",
+          "酒店",
+          "写字楼",
+          "厂房",
+          "宿舍"
+        ],
+        "fallback_text": true,
+        "preserve_details": true
+      },
+      "options": [
+        {
+          "value": "厂房",
+          "synonyms": [
+            "生产车间"
+          ]
+        },
+        {
+          "value": "仓储",
+          "synonyms": [
+            "仓库"
+          ]
+        },
+        {
+          "value": "办公",
+          "synonyms": [
+            "写字楼",
+            "办公楼"
+          ]
+        },
+        {
+          "value": "住宅",
+          "synonyms": [
+            "小区"
+          ]
+        },
+        {
+          "value": "公寓",
+          "synonyms": []
+        },
+        {
+          "value": "酒店",
+          "synonyms": []
+        },
+        {
+          "value": "商业配套",
+          "synonyms": [
+            "商铺"
+          ]
+        }
+      ],
+      "allow_custom": true
     },
     {
       "key": "fee_mode",

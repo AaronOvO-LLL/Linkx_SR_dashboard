@@ -4,6 +4,7 @@
   "status": "draft",
   "product_type": "safety_butler",
   "scope": "product_global",
+  "_note": "本文件是产品词表素材，仅供 tools/tencent_asr_hotwords.py 生成与校验厂商热词表；运行时转写只读项目级 config/asr_terms.json。新增词条后需要同步合并到项目级词表。",
   "provider": {
     "name": "tencent",
     "engine_model_type": "16k_zh_en_2.0",

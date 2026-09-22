@@ -1,0 +1,18 @@
+# {{ project.name }} · 消防管家提资基础内容
+
+## 资料及现场信息
+
+{% for g in groups if g.key in ['docs', 'fire_control', 'fire_maintenance', 'fire_cost'] %}
+### {{ g.name }}
+
+{% for f in g.fields %}
+- {{ f.label }}：{{ f.text or '待提供' }}{% if f.unit %} {{ f.unit }}{% endif %}
+{% endfor %}
+
+{% endfor %}
+## 责任人与安排
+
+- 合同签约方（甲方）：{{ display.fire_contract_party or '待确认' }}
+- 维保联系人：{{ display.fire_maintenance_contact or '待确认' }}
+- 主机数量与品牌信息须按消控室逐行提供，并标明主从关系。
+- 资料提交时间、现场核查及联调安排由甲方与维保单位共同确认。

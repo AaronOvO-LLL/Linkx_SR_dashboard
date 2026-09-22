@@ -1,0 +1,65 @@
+<Slide style={{ width: 1280, height: 720, padding: '20px 64px', flexDirection: 'column', background: '#FFFFFF', fontFamily: 'Microsoft YaHei' }}>
+    {/* A · 标题块 */}
+    <Box style={{ height: 108, flexDirection: 'column', justifyContent: 'center' }}>
+        <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#2F5597', letterSpacing: 2 }}>成本 · COST</Text>
+        <Text style={{ fontSize: 34, fontWeight: 'bold', color: '#1F2937', marginTop: 10 }}>运行成本按月两位数量级，不构成决策约束</Text>
+    </Box>
+
+    {/* B · 内容区 */}
+    <Box style={{ height: 524, flexDirection: 'column' }}>
+        <Box style={{ height: 390, flexDirection: 'row', gap: 40 }}>
+            {/* 左：巨型数字 */}
+            <Box style={{ flex: 56, flexDirection: 'column' }}>
+                <Text style={{ fontSize: 15, fontWeight: 'bold', color: 'rgba(31,41,55,0.48)', letterSpacing: 2 }}>运行成本 · 按月 20 次踏勘估算</Text>
+                <Box style={{ flexDirection: 'row', alignItems: 'flex-end', marginTop: 26 }}>
+                    <Text style={{ fontSize: 104, fontWeight: 'bold', color: '#E2703A', lineHeight: 1 }}>¥12–32</Text>
+                    <Text style={{ fontSize: 36, fontWeight: 'bold', color: '#E2703A', lineHeight: 1, marginLeft: 14, marginBottom: 10 }}>/ 月</Text>
+                </Box>
+                <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#1F2937', marginTop: 22 }}>全平台月度运行成本（不含人力）</Text>
+                <Text style={{ fontSize: 17, color: 'rgba(31,41,55,0.68)', lineHeight: 1.6, marginTop: 10 }}>按每月 20 次踏勘、每次 2 小时录音估算。费用不是本方案的取舍点，取舍点在人力与口径。</Text>
+            </Box>
+
+            {/* 右：三项分项 */}
+            <Box style={{ flex: 44, flexDirection: 'column', justifyContent: 'space-between' }}>
+                <Box style={{ background: '#E8EEF7', borderRadius: 8, padding: 16, flexDirection: 'column' }}>
+                    <Box style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
+                        <Text style={{ fontSize: 28, fontWeight: 'bold', color: '#2F5597', lineHeight: 1 }}>¥0.6–1.6</Text>
+                    </Box>
+                    <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1F2937', marginTop: 10 }}>录音转写 · 单次 2 小时</Text>
+                    <Text style={{ fontSize: 14, color: 'rgba(31,41,55,0.64)', lineHeight: 1.4, marginTop: 4 }}>按量计费，厂商另有免费额度可覆盖首年</Text>
+                </Box>
+
+                <Box style={{ background: '#E8EEF7', borderRadius: 8, padding: 16, flexDirection: 'column' }}>
+                    <Box style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
+                        <Text style={{ fontSize: 28, fontWeight: 'bold', color: '#2F5597', lineHeight: 1 }}>1 台</Text>
+                    </Box>
+                    <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1F2937', marginTop: 10 }}>服务器 · 按年租用</Text>
+                    <Text style={{ fontSize: 14, color: 'rgba(31,41,55,0.64)', lineHeight: 1.4, marginTop: 4 }}>最低规格轻量应用服务器即可承载</Text>
+                </Box>
+
+                <Box style={{ background: '#E8EEF7', borderRadius: 8, padding: 16, flexDirection: 'column' }}>
+                    <Box style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
+                        <Text style={{ fontSize: 28, fontWeight: 'bold', color: '#2F5597', lineHeight: 1 }}>可忽略</Text>
+                    </Box>
+                    <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1F2937', marginTop: 10 }}>大模型字段提取</Text>
+                    <Text style={{ fontSize: 14, color: 'rgba(31,41,55,0.64)', lineHeight: 1.4, marginTop: 4 }}>按量计费，单次方案提取成本远低于转写</Text>
+                </Box>
+            </Box>
+        </Box>
+
+        {/* 洞察条 */}
+        <Box style={{ flexDirection: 'row', gap: 24, background: '#E8EEF7', borderRadius: 8, padding: 20, marginTop: 20 }}>
+            <Box style={{ width: 3, background: '#E2703A' }} />
+            <Box style={{ flexDirection: 'column' }}>
+                <Text style={{ fontSize: 17, fontWeight: 'bold', color: '#1F2937' }}>判断：真正要投的不是钱，是人力与口径</Text>
+                <Text style={{ fontSize: 16, color: 'rgba(31,41,55,0.72)', lineHeight: 1.55, marginTop: 6 }}>转写与存储的量级可以忽略；决定成败的是字段口径确认与一线试点投入。所有单价口径以厂商最新计费文档为准，本页仅作量级参考。</Text>
+            </Box>
+        </Box>
+    </Box>
+
+    {/* C · 页脚条 */}
+    <Box style={{ height: 48, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Text style={{ fontSize: 14, color: 'rgba(31,41,55,0.45)' }}>灵石解决方案工作台 · 进展汇报</Text>
+        <Text style={{ fontSize: 14, color: 'rgba(31,41,55,0.45)' }}>10 / 12</Text>
+    </Box>
+</Slide>

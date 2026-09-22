@@ -33,6 +33,10 @@ record-test/
 # Local assistant/workspace memory
 .workbuddy/
 
+# Generated presentation caches and local authoring history
+**/.cache/
+**/.slidep/
+
 # Editor and operating-system files
 .vscode/
 .idea/

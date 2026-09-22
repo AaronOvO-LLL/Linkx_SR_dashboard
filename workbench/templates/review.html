@@ -1,13 +1,15 @@
 {% extends 'base.html' %}
-{% block title %}信息核对 · {{ project.name }}{% endblock %}
+{% block title %}手动填写 / 信息核对 · {{ project.name }}{% endblock %}
 {% block content %}
 {% set step = step_of(5) %}
 
-<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+<div class="page-head">
   <a class="btn gray sm" href="{{ url_for('survey', pp_id=pp.id) }}">← 返回调研输入</a>
-  <h2 style="margin:0;font-size:17px">{{ project.name }} · {{ product.name }} · 信息核对</h2>
-  <span class="tag blue">模板 v{{ pp.template_version }}</span>
+  <h2 style="margin:0;font-size:17px">{{ project.name }} · {{ product.name }} · 手动填写 / 信息核对</h2>
+  <span class="tag blue">字段模板 v{{ field_template_version }}</span>
 </div>
+
+{% include '_input_modes.html' %}
 
 <div class="stat-bar">
   <div class="stat green"><b id="sDone">{{ stats.required_done }}/{{ stats.required_total }}</b><span>必填已完成</span></div>
@@ -44,7 +46,7 @@
 <div id="fieldArea">
 {% for g in groups %}
 <div class="grp">
-  <div class="grp-head" onclick="toggleGroup(this)">
+  <div class="grp-head">
     <span class="nm">{{ g.def.name }}</span>
     <span class="tag">{{ g['items']|length }} 项</span>
     <span class="cnt">
@@ -57,7 +59,7 @@
     {% for it in g['items'] %}
     {% set f = it.def %}
     {% set row = it.row %}
-    {% set st = row.status if row else 'optional_missing' %}
+    {% set st = row.status if row else ('required_missing' if f.required else 'optional_missing') %}
     {% set val = row.value_json if row else '""' %}
     <div class="fld-row {{ 'miss' if st=='required_missing' else ('confirm' if st=='pending_confirm' else '') }}"
          data-status="{{ st }}" data-filled="{{ '1' if row and row.value_json not in ('""','[]','{}','null') else '0' }}">
@@ -86,22 +88,10 @@
       {% elif f.type == 'textarea' %}
         <textarea class="fi" data-key="{{ f.key }}" data-type="text" rows="3"
                   placeholder="{{ f.get('placeholder','') }}">{{ row.value_json|jval if row else '' }}</textarea>
-      {% elif f.type == 'select' %}
-        <select class="fi" data-key="{{ f.key }}" data-type="text">
-          <option value="">— 请选择 —</option>
-          {% for o in f.options %}
-          <option value="{{ o.value }}" {% if row and row.value_json|jval == o.value %}selected{% endif %}>{{ o.value }}</option>
-          {% endfor %}
-        </select>
-      {% elif f.type == 'multiselect' %}
-        <div class="chk-group" data-key="{{ f.key }}" data-type="list">
-          {% for o in f.options %}
-          <label class="chk {% if row and o.value in (row.value_json|fromjson or []) %}on{% endif %}">
-            <input type="checkbox" value="{{ o.value }}" {% if row and o.value in (row.value_json|fromjson or []) %}checked{% endif %}>{{ o.value }}
-          </label>
-          {% endfor %}
-        </div>
+      {% elif f.type in ('select', 'multiselect') %}
+        {% include '_choice_field.html' %}
       {% elif f.type == 'table' %}
+        <div class="table-scroll" role="region" aria-label="{{ f.label }}，可横向滚动" tabindex="0">
         <table class="tbl" data-key="{{ f.key }}" data-type="table">
           <thead><tr>{% for c in f.columns %}<th>{{ c.label }}</th>{% endfor %}<th style="width:60px">操作</th></tr></thead>
           <tbody>
@@ -111,6 +101,7 @@
           {% endfor %}
           </tbody>
         </table>
+        </div>
         <button class="btn gray sm" type="button" style="margin-top:6px"
                 onclick="addRow(this,'{{ f.columns|map(attribute='key')|join(',') }}')">+ 添加一行</button>
       {% endif %}
@@ -118,7 +109,7 @@
       {% if row and row.source_quote %}
       <div class="quote"><b>原文依据：</b>{{ row.source_quote }}</div>
       {% elif st in ('required_missing','optional_missing') %}
-      <div class="quote">未在文字稿中找到该信息的依据，请人工补充。</div>
+      <div class="quote">请填写该信息，也可以稍后导入文字稿辅助补充。</div>
       {% endif %}
 
       {% for i in it.issues %}

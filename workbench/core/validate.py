@@ -10,6 +10,7 @@ from datetime import datetime
 
 from .config import field_map
 from .repo import field_values
+from .choices import other_detail_error
 
 
 def parse_value(value_json):
@@ -58,6 +59,11 @@ def validate_fields(pp_id, product_type):
         if empty:
             continue
 
+        error = other_detail_error(f, v)
+        if error:
+            issues.append({'level': 'error', 'field': key,
+                           'message': '【%s】%s' % (label, error)})
+
         # 类型与格式
         if f['type'] == 'number':
             n = as_number(v)
@@ -86,14 +92,22 @@ def validate_fields(pp_id, product_type):
 
         if f['type'] == 'select' and f.get('options'):
             allowed = [o['value'] for o in f['options']]
-            if v not in allowed:
+            if not isinstance(v, str):
+                issues.append({'level': 'error', 'field': key, 'message': '【%s】需要单选文字值。' % label})
+            elif v not in allowed and not f.get('allow_custom'):
                 issues.append({'level': 'warn', 'field': key,
                                'message': '【%s】取值不在候选范围内：%s。' % (label, '、'.join(allowed))})
 
         if f['type'] == 'multiselect' and f.get('options'):
+            # Previously these fields held free text. Read without rewriting old projects.
+            if isinstance(v, str) and f.get('allow_custom'):
+                continue
+            if not isinstance(v, list) or any(not isinstance(x, str) for x in v):
+                issues.append({'level': 'error', 'field': key, 'message': '【%s】需要多选文字列表。' % label})
+                continue
             allowed = set(o['value'] for o in f['options'])
             bad = [x for x in (v or []) if x not in allowed]
-            if bad:
+            if bad and not f.get('allow_custom'):
                 issues.append({'level': 'warn', 'field': key,
                                'message': '【%s】包含无效取值：%s。' % (label, '、'.join(bad))})
 

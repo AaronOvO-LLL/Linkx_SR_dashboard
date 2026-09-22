@@ -1,4 +1,9 @@
-"""录音上传、异步转写、结果预览与确认。"""
+"""项目级录音上传、异步转写、结果预览与确认。
+
+转写任务归属项目而不是产品：一次踏勘通常只录一份音，却可能同时评估安全管家、
+消防管家等多个产品。放在项目级可以避免同一段录音被重复上传和重复计费，确认后的
+转写稿由项目下各产品自行导入使用。
+"""
 
 import json
 import os
@@ -8,8 +13,7 @@ import uuid
 from pathlib import Path
 
 from core import paths, repo
-from core.capabilities import require_capability
-from core.config import asr_config, load_json
+from core.config import asr_config, asr_terms_config
 from providers.tencent_pipeline import TencentAsrCosPipeline, is_configured
 
 
@@ -29,9 +33,11 @@ def configuration_status():
     }
 
 
-def create_job(pp, project, uploaded):
-    require_capability(pp['product_type'], 'audio_asr')
+def create_job(project, uploaded):
+    """接收录音文件并登记项目级转写任务。"""
     cfg = asr_config()
+    if not cfg.get('enabled'):
+        raise AudioServiceError('录音转写功能未启用，请联系管理员检查 config/asr.json。')
     original_name = os.path.basename((uploaded.filename or '').strip())
     suffix = Path(original_name).suffix.lower().lstrip('.')
     if not original_name or suffix not in set(cfg.get('allowed_extensions') or []):
@@ -39,7 +45,7 @@ def create_job(pp, project, uploaded):
                                 ' / '.join(cfg.get('allowed_extensions') or []))
 
     token = uuid.uuid4().hex
-    folder = os.path.join(paths.UPLOAD_DIR, pp['id'], token)
+    folder = os.path.join(paths.UPLOAD_DIR, project['id'], token)
     os.makedirs(folder, exist_ok=True)
     local_path = os.path.join(folder, 'original.' + suffix)
     uploaded.save(local_path)
@@ -52,15 +58,10 @@ def create_job(pp, project, uploaded):
             pass
         raise AudioServiceError('录音文件为空或超过 %dMB 上限。' % cfg.get('max_file_mb', 500))
 
-    job = repo.create_audio_job(pp['id'], original_name, local_path, size)
+    job = repo.create_audio_job(project['id'], original_name, local_path, size)
     repo.touch_project(project['id'])
     start_job(job['id'])
     return job
-
-
-def _terms_config(product_type):
-    path = os.path.join(paths.product_dir(product_type), 'asr_terms.json')
-    return load_json(path) if os.path.isfile(path) else {}
 
 
 def _correct_text(text, rules):
@@ -113,7 +114,6 @@ def _worker(job_id):
     job = repo.get_audio_job(job_id)
     if not job:
         return
-    pp = repo.get_pp(job['project_product_id'])
     cfg = asr_config()
     pipeline = None
     object_key = job.get('object_key') or ''
@@ -125,8 +125,7 @@ def _worker(job_id):
             object_key, url = pipeline.upload(job['local_path'], object_key)
             repo.update_audio_job(job_id, status='submitted', status_message='录音已上传，正在创建转写任务',
                                   object_key=object_key)
-            terms = _terms_config(pp['product_type'])
-            hotword_id = (terms.get('provider') or {}).get('vocab_id')
+            hotword_id = (asr_terms_config().get('provider') or {}).get('vocab_id')
             provider_job_id = pipeline.submit(
                 url, cfg.get('engine_model_type', '16k_zh_en_2.0'), hotword_id,
                 bool(cfg.get('speaker_diarization', True)))
@@ -137,9 +136,8 @@ def _worker(job_id):
         while time.monotonic() < deadline:
             status, payload = pipeline.poll(provider_job_id)
             if status == 'success':
-                terms = _terms_config(pp['product_type'])
                 raw, corrected, segments, hits, duration = _normalize_result(
-                    payload, terms.get('corrections') or [])
+                    payload, asr_terms_config().get('corrections') or [])
                 if not corrected.strip():
                     raise AudioServiceError('腾讯云返回了空转写结果，请检查录音内容后重试。')
                 repo.update_audio_job(
@@ -173,8 +171,13 @@ def _worker(job_id):
 
 
 def start_job(job_id):
+    """幂等地拉起后台转写线程。
+
+    页面刷新和状态轮询都会调用本函数；_running 集合保证同一个任务不会被重复
+    提交到腾讯云，避免刷新页面造成重复计费。
+    """
     job = repo.get_audio_job(job_id)
-    if not job or job['status'] not in ('pending', 'uploading', 'submitted', 'transcribing'):
+    if not job or job['status'] not in repo.AUDIO_JOB_ACTIVE_STATUSES:
         return False
     with _running_lock:
         if job_id in _running:
@@ -194,10 +197,16 @@ def retry_job(job):
 
 
 def approve_transcript(job, transcript):
+    """确认转写稿，并提升为项目级共享稿。
+
+    这里只产出共享转写稿，不直接触发大模型梳理：确认时用户可能还没决定这段
+    录音要用于哪几个产品，梳理动作由各产品在导入后自行发起。
+    """
     text = (transcript or '').strip()
     if not text:
         raise AudioServiceError('转写结果不能为空。')
     repo.update_audio_job(job['id'], corrected_transcript=text,
-                          status='approved', status_message='已确认并进入结构化梳理',
+                          status='approved', status_message='已确认为项目共享转写稿',
                           approved_at=repo.now_iso())
+    repo.save_project_transcript(job['project_id'], job['id'], text)
     return text

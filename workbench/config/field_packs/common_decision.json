@@ -91,18 +91,60 @@
       "key": "has_budget",
       "label": "是否有预算",
       "group": "decision",
-      "type": "text",
+      "type": "select",
       "required": true,
-      "ai_hint": "提取客户是否有预算及其大致情况",
+      "ai_hint": "选择预算状态；金额、审批安排等具体情况可选择“其他 / 详细说明”填写。 优先使用候选项；选项无法表达的具体事实可保留原文，不得推测。",
       "extract": {
-        "mode": "sentence",
+        "mode": "enum",
         "keywords": [
           "预算",
           "有没有钱",
           "经费",
           "投入"
-        ]
-      }
+        ],
+        "context_keywords": [
+          "预算",
+          "有没有钱",
+          "经费",
+          "投入"
+        ],
+        "fallback_text": true,
+        "negation_guard": false,
+        "prefer_longest_match": true
+      },
+      "options": [
+        {
+          "value": "已明确预算",
+          "synonyms": [
+            "已有预算",
+            "预算已批",
+            "有预算"
+          ]
+        },
+        {
+          "value": "尚无预算",
+          "synonyms": [
+            "没有预算",
+            "无预算",
+            "暂无预算"
+          ]
+        },
+        {
+          "value": "预算审批中",
+          "synonyms": [
+            "预算待批"
+          ]
+        },
+        {
+          "value": "待确认",
+          "synonyms": [
+            "预算待确认",
+            "预算不清楚"
+          ]
+        }
+      ],
+      "allow_custom": true,
+      "help": "选择预算状态；金额、审批安排等具体情况可选择“其他 / 详细说明”填写。"
     }
   ]
 }

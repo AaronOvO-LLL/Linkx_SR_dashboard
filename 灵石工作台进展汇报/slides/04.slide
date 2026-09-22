@@ -1,0 +1,63 @@
+<Slide style={{ width: 1280, height: 720, padding: '20px 64px', flexDirection: 'column', background: '#FFFFFF', fontFamily: 'Microsoft YaHei' }}>
+    {/* A · 标题块 */}
+    <Box style={{ height: 108, flexDirection: 'column', justifyContent: 'center' }}>
+        <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#2F5597', letterSpacing: 2 }}>证据 · EVIDENCE</Text>
+        <Text style={{ fontSize: 34, fontWeight: 'bold', color: '#1F2937', marginTop: 10 }}>不是演示脚本，是真实录音跑通的结果</Text>
+    </Box>
+
+    {/* B · 内容区 */}
+    <Box style={{ height: 524, flexDirection: 'row', gap: 44 }}>
+        {/* 左：巨型数字 */}
+        <Box style={{ flex: 56, flexDirection: 'column' }}>
+            <Text style={{ fontSize: 15, fontWeight: 'bold', color: 'rgba(31,41,55,0.48)', letterSpacing: 2 }}>真实录音实测 · 2026-09-19</Text>
+
+            <Box style={{ flexDirection: 'row', alignItems: 'flex-end', marginTop: 22 }}>
+                <Text style={{ fontSize: 104, fontWeight: 'bold', color: '#E2703A', lineHeight: 1 }}>2</Text>
+                <Text style={{ fontSize: 44, fontWeight: 'bold', color: '#E2703A', lineHeight: 1, marginLeft: 12, marginBottom: 12 }}>分钟</Text>
+            </Box>
+
+            <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#1F2937', marginTop: 18 }}>从上传到转写完成</Text>
+            <Text style={{ fontSize: 17, color: 'rgba(31,41,55,0.68)', lineHeight: 1.6, marginTop: 10 }}>66 分钟的真实手机录音，一次跑通。带说话人分离；转写结果立即落库，厂商侧清理不影响结果。</Text>
+
+            <Box style={{ marginTop: 'auto', borderLeft: '3px solid #E2703A', paddingLeft: 16, paddingTop: 2, paddingBottom: 2 }}>
+                <Text style={{ fontSize: 18, color: '#1F2937', lineHeight: 1.65 }}>判断：值不值得继续投人推进，看的是这一页 —— 真实数据能跑通，才谈得上试点。</Text>
+            </Box>
+        </Box>
+
+        {/* 右：三组对照 */}
+        <Box style={{ flex: 44, flexDirection: 'column', justifyContent: 'space-between' }}>
+            <Box style={{ background: '#E8EEF7', borderRadius: 8, padding: 22, flexDirection: 'column' }}>
+                <Box style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
+                    <Text style={{ fontSize: 34, fontWeight: 'bold', color: '#2F5597', lineHeight: 1 }}>66</Text>
+                    <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#2F5597', lineHeight: 1, marginLeft: 6, marginBottom: 3 }}>分钟</Text>
+                </Box>
+                <Text style={{ fontSize: 17, fontWeight: 'bold', color: '#1F2937', marginTop: 12 }}>录音时长</Text>
+                <Text style={{ fontSize: 15, color: 'rgba(31,41,55,0.64)', lineHeight: 1.5, marginTop: 5 }}>一次完整踏勘的原始录音，不是剪辑样本</Text>
+            </Box>
+
+            <Box style={{ background: '#E8EEF7', borderRadius: 8, padding: 22, flexDirection: 'column' }}>
+                <Box style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
+                    <Text style={{ fontSize: 34, fontWeight: 'bold', color: '#2F5597', lineHeight: 1 }}>33.9</Text>
+                    <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#2F5597', lineHeight: 1, marginLeft: 6, marginBottom: 3 }}>MB</Text>
+                </Box>
+                <Text style={{ fontSize: 17, fontWeight: 'bold', color: '#1F2937', marginTop: 12 }}>文件体积</Text>
+                <Text style={{ fontSize: 15, color: 'rgba(31,41,55,0.64)', lineHeight: 1.5, marginTop: 5 }}>手机直接录制，无需额外转码</Text>
+            </Box>
+
+            <Box style={{ background: '#E8EEF7', borderRadius: 8, padding: 22, flexDirection: 'column' }}>
+                <Box style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
+                    <Text style={{ fontSize: 34, fontWeight: 'bold', color: '#E2703A', lineHeight: 1 }}>3</Text>
+                    <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#E2703A', lineHeight: 1, marginLeft: 6, marginBottom: 3 }}>条门禁全绿</Text>
+                </Box>
+                <Text style={{ fontSize: 17, fontWeight: 'bold', color: '#1F2937', marginTop: 12 }}>质量门禁（2026-09-20 实测）</Text>
+                <Text style={{ fontSize: 15, color: 'rgba(31,41,55,0.64)', lineHeight: 1.5, marginTop: 5 }}>配置校验 0 错 0 警 · 单元测试 16/16 · 主流程自测 73/73</Text>
+            </Box>
+        </Box>
+    </Box>
+
+    {/* C · 页脚条 */}
+    <Box style={{ height: 48, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Text style={{ fontSize: 14, color: 'rgba(31,41,55,0.45)' }}>灵石解决方案工作台 · 进展汇报</Text>
+        <Text style={{ fontSize: 14, color: 'rgba(31,41,55,0.45)' }}>04 / 12</Text>
+    </Box>
+</Slide>

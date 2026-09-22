@@ -1,0 +1,66 @@
+<Slide style={{ width: 1280, height: 720, padding: '20px 64px', flexDirection: 'column', background: '#FFFFFF', fontFamily: 'Microsoft YaHei' }}>
+    {/* A · 标题块 */}
+    <Box style={{ height: 108, flexDirection: 'column', justifyContent: 'center' }}>
+        <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#2F5597', letterSpacing: 2 }}>架构 · ARCHITECTURE</Text>
+        <Text style={{ fontSize: 34, fontWeight: 'bold', color: '#1F2937', marginTop: 10 }}>四层单向依赖，厂商全部关在接口后面</Text>
+    </Box>
+
+    {/* B · 内容区 */}
+    <Box style={{ height: 524, flexDirection: 'column' }}>
+        {/* 上：架构图 308px */}
+        <Box style={{ height: 308, flexDirection: 'column' }}>
+            <Box style={{ height: 64, background: '#E8EEF7', borderLeft: '4px solid #2F5597', borderRadius: 6, padding: '9px 22px', flexDirection: 'column', justifyContent: 'center' }}>
+                <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#1F2937', lineHeight: 1.25 }}>页面与路由　templates / routes</Text>
+                <Text style={{ fontSize: 14, color: 'rgba(31,41,55,0.62)', lineHeight: 1.3, marginTop: 4 }}>只处理 HTTP、会话与页面跳转，不写业务规则</Text>
+            </Box>
+
+            <Box style={{ height: 16, justifyContent: 'center', alignItems: 'center' }}>
+                <FAIcon name='chevron-down' style={{ fill: '#2F5597', width: 16, height: 16 }} />
+            </Box>
+
+            <Box style={{ height: 64, background: '#2F5597', borderRadius: 6, padding: '9px 22px', flexDirection: 'column', justifyContent: 'center' }}>
+                <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#FFFFFF', lineHeight: 1.25 }}>services　业务动作层</Text>
+                <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.80)', lineHeight: 1.3, marginTop: 4 }}>录音转写与确认 · 踏勘提取与字段确认 · 生成与打包</Text>
+            </Box>
+
+            <Box style={{ height: 16, justifyContent: 'center', alignItems: 'center' }}>
+                <FAIcon name='chevron-down' style={{ fill: '#2F5597', width: 16, height: 16 }} />
+            </Box>
+
+            <Box style={{ height: 64, background: '#E8EEF7', borderLeft: '4px solid #2F5597', borderRadius: 6, padding: '9px 22px', flexDirection: 'column', justifyContent: 'center' }}>
+                <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#1F2937', lineHeight: 1.25 }}>core　领域能力层</Text>
+                <Text style={{ fontSize: 14, color: 'rgba(31,41,55,0.62)', lineHeight: 1.3, marginTop: 4 }}>字段模型 · 校验 · 模板渲染 · 数据访问 · 迁移</Text>
+            </Box>
+
+            <Box style={{ height: 16, justifyContent: 'center', alignItems: 'center' }}>
+                <FAIcon name='chevron-down' style={{ fill: '#2F5597', width: 16, height: 16 }} />
+            </Box>
+
+            <Box style={{ height: 64, background: '#E8EEF7', borderLeft: '4px solid #E2703A', borderRadius: 6, padding: '9px 22px', flexDirection: 'column', justifyContent: 'center' }}>
+                <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#1F2937', lineHeight: 1.25 }}>数据库与外部厂商　provider 接口</Text>
+                <Text style={{ fontSize: 14, color: 'rgba(31,41,55,0.62)', lineHeight: 1.3, marginTop: 4 }}>SQLite（WAL）｜腾讯云 ASR · 腾讯云 COS · DeepSeek 大模型</Text>
+            </Box>
+        </Box>
+
+        {/* 下：两张卡片 196px */}
+        <Box style={{ height: 196, flexDirection: 'row', gap: 28, marginTop: 20 }}>
+            <Box style={{ flex: 60, background: '#E8EEF7', borderRadius: 8, padding: 22, flexDirection: 'column' }}>
+                <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#2F5597', letterSpacing: 2 }}>依赖方向</Text>
+                <Text style={{ fontSize: 19, fontWeight: 'bold', color: '#1F2937', marginTop: 8 }}>只能自上而下调用</Text>
+                <Text style={{ fontSize: 16, color: 'rgba(31,41,55,0.70)', lineHeight: 1.6, marginTop: 10 }}>下层不得反向导入上层。因此改页面不会碰业务规则，改数据访问不会碰页面 —— 演示到试点的改动范围是可控的。</Text>
+            </Box>
+
+            <Box style={{ flex: 40, background: '#E8EEF7', borderRadius: 8, padding: 22, flexDirection: 'column' }}>
+                <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#2F5597', letterSpacing: 2 }}>厂商可替换</Text>
+                <Text style={{ fontSize: 19, fontWeight: 'bold', color: '#1F2937', marginTop: 8 }}>换厂商 = 换一个实现</Text>
+                <Text style={{ fontSize: 16, color: 'rgba(31,41,55,0.70)', lineHeight: 1.6, marginTop: 10 }}>语音识别、对象存储与大模型都被接口隔离，业务代码不依赖任何厂商 SDK。</Text>
+            </Box>
+        </Box>
+    </Box>
+
+    {/* C · 页脚条 */}
+    <Box style={{ height: 48, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Text style={{ fontSize: 14, color: 'rgba(31,41,55,0.45)' }}>灵石解决方案工作台 · 进展汇报</Text>
+        <Text style={{ fontSize: 14, color: 'rgba(31,41,55,0.45)' }}>06 / 12</Text>
+    </Box>
+</Slide>

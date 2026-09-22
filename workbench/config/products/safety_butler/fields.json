@@ -1,7 +1,7 @@
 {
-  "template_version": "0.4.0",
+  "template_version": "0.6.0",
   "product_type": "safety_butler",
-  "note": "安全管家字段模型 = 引用字段包（config/field_packs/）+ 本产品组装。字段本体在字段包里，本文件只负责「引用哪些包、按什么顺序、改哪几个例外」。口径唯一权威来源：『踏勘要求的项目具体内容.xlsx』；MVP 阶段不做增删。",
+  "note": "安全管家字段模型 = 引用字段包（config/field_packs/）+ 本产品组装。字段本体在字段包里，本文件只负责「引用哪些包、按什么顺序、改哪几个例外」。口径唯一权威来源：『踏勘要求的项目具体内容.xlsx』；MVP 阶段不做增删。 2026-09-21：按用户授权将适合的文本字段改为选择题，字段 key 与必填范围保留，历史文字兼容显示。 2026-09-22：按用户授权调整项目来源、删除服务类型、缩减必填范围，品牌改为多选且其他须填写具体品牌，协议改为是否支持GB28181；仅覆盖安全管家。",
   "packs": [
     "common_project",
     "common_docs",
@@ -25,7 +25,180 @@
     "keypoints",
     "special"
   ],
-  "overrides": {},
+  "overrides": {
+    "project_source": {
+      "help": "内部项目、外部项目或渠道项目",
+      "options": [
+        {
+          "value": "内部项目",
+          "synonyms": [
+            "内部",
+            "自有项目"
+          ]
+        },
+        {
+          "value": "外部项目",
+          "synonyms": [
+            "外部",
+            "对外项目"
+          ]
+        },
+        {
+          "value": "渠道项目",
+          "synonyms": [
+            "渠道",
+            "渠道介绍"
+          ]
+        }
+      ],
+      "ai_hint": "判断项目是内部、外部还是渠道项目；旧的重点项目不可推断为渠道项目。"
+    },
+    "contract_years": {
+      "required": false
+    },
+    "property_company": {
+      "required": true
+    },
+    "project_owner": {
+      "required": true
+    },
+    "business_desc": {
+      "required": false
+    },
+    "fee_mode": {
+      "required": false
+    },
+    "mgmt_scope": {
+      "required": false
+    },
+    "has_internet": {
+      "required": true
+    },
+    "switch_brand": {
+      "required": false,
+      "type": "multiselect",
+      "allow_custom": true,
+      "require_other_detail": true,
+      "help": "选填，可多选；选择“其他”时必须填写具体品牌名称。",
+      "ai_hint": "提取该设备的全部品牌，返回数组。未提供则留空；非候选品牌返回“其他”和原文中的具体品牌名称，不得仅返回“其他”。",
+      "extract": {
+        "mode": "list",
+        "context_keywords": [
+          "交换机"
+        ]
+      }
+    },
+    "switch_port_type": {
+      "required": false
+    },
+    "switch_ports_free": {
+      "required": false
+    },
+    "network_topo": {
+      "required": false
+    },
+    "network_admin": {
+      "required": false
+    },
+    "has_cabinet": {
+      "required": false
+    },
+    "cabinet_condition": {
+      "required": false
+    },
+    "server_noise_ok": {
+      "required": false
+    },
+    "camera_brand": {
+      "type": "multiselect",
+      "required": false,
+      "allow_custom": true,
+      "require_other_detail": true,
+      "help": "选填，可多选；选择“其他”时必须填写具体品牌名称。",
+      "ai_hint": "提取该设备的全部品牌，返回数组。未提供则留空；非候选品牌返回“其他”和原文中的具体品牌名称，不得仅返回“其他”。",
+      "extract": {
+        "mode": "list",
+        "context_keywords": [
+          "摄像头",
+          "摄像机",
+          "探头"
+        ]
+      }
+    },
+    "storage_brand": {
+      "type": "multiselect",
+      "required": false,
+      "allow_custom": true,
+      "require_other_detail": true,
+      "help": "选填，可多选；选择“其他”时必须填写具体品牌名称。",
+      "ai_hint": "提取该设备的全部品牌，返回数组。未提供则留空；非候选品牌返回“其他”和原文中的具体品牌名称，不得仅返回“其他”。",
+      "extract": {
+        "mode": "list",
+        "context_keywords": [
+          "存储",
+          "录像机",
+          "NVR",
+          "CVR",
+          "DVR"
+        ]
+      }
+    },
+    "storage_model": {
+      "required": false
+    },
+    "storage_protocol": {
+      "label": "是否支持GB28181",
+      "help": "确认存储设备是否支持GB28181，选择是、否或其他。",
+      "options": [
+        {
+          "value": "是",
+          "synonyms": [
+            "支持GB28181",
+            "支持 GB28181",
+            "支持GB/T28181",
+            "支持 GB/T28181",
+            "GB28181-2016",
+            "GB/T28181-2022",
+            "支持国标"
+          ]
+        },
+        {
+          "value": "否",
+          "synonyms": [
+            "不支持GB28181",
+            "不支持 GB28181",
+            "不支持GB/T28181",
+            "不支持 GB/T28181",
+            "不支持国标",
+            "非国标"
+          ]
+        },
+        {
+          "value": "其他",
+          "synonyms": [
+            "其他协议",
+            "私有协议",
+            "ONVIF",
+            "onvif"
+          ]
+        }
+      ],
+      "ai_hint": "判断存储设备是否支持GB28181。明确支持含2016或2022版本为是，明确不支持为否，其他协议或其他情况为其他；未说明留空，不得把不支持识别为是。",
+      "extract": {
+        "mode": "enum",
+        "context_keywords": [
+          "28181",
+          "国标",
+          "协议",
+          "ONVIF",
+          "onvif"
+        ],
+        "prefer_longest_match": true
+      }
+    }
+  },
   "extra_fields": [],
-  "remove_fields": []
+  "remove_fields": [
+    "service_type"
+  ]
 }

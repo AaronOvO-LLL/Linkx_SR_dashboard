@@ -1,0 +1,9 @@
+<div class="card">
+  <h2>调研方式，随时切换</h2>
+  <p class="sub">可以直接手动填表，也可以导入文字稿辅助填写。人工确认的内容优先，后续导入和重新梳理不会覆盖。</p>
+  <div class="btn-row">
+    <a class="btn {{ 'ghost' if request.endpoint != 'survey' else '' }}" href="{{ url_for('survey', pp_id=pp.id) }}" {% if request.endpoint == 'survey' %}aria-current="page"{% endif %}>导入 / 编辑文字稿</a>
+    <a class="btn {{ 'ghost' if request.endpoint != 'review' else '' }}" href="{{ url_for('review', pp_id=pp.id) }}" {% if request.endpoint == 'review' %}aria-current="page"{% endif %}>{{ '手动填写 / 信息核对' if request.endpoint == 'review' else '直接手动填写 →' }}</a>
+    {% if has_capability(pp.product_type, 'audio_asr') %}<a class="btn gray" href="{{ url_for('project_detail', pid=project.id) }}#audio">录音转写</a>{% endif %}
+  </div>
+</div>

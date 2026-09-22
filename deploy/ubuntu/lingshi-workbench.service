@@ -1,0 +1,20 @@
+[Unit]
+Description=灵石解决方案工作台 (Waitress WSGI)
+After=network.target
+
+[Service]
+Type=simple
+# 以非 root 运行；该用户需对 workbench/data 有读写权限（见部署文档）
+User=www-data
+Group=www-data
+# 项目部署路径，按实际修改
+WorkingDirectory=/opt/lingshi-workbench/workbench
+# 环境变量文件（含密钥），权限须为 600
+EnvironmentFile=/etc/lingshi/lingshi.env
+# 单进程多线程：ASR 走进程内线程、SQLite 单机单写，切勿改成多 worker
+ExecStart=/opt/lingshi-workbench/venv/bin/waitress-serve --host=127.0.0.1 --port=8000 --threads=8 wsgi:app
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,89 @@
+<Slide style={{ width: 1280, height: 720, padding: '20px 64px', flexDirection: 'column', background: '#FFFFFF', fontFamily: 'Microsoft YaHei' }}>
+    {/* A · 标题块 */}
+    <Box style={{ height: 108, flexDirection: 'column', justifyContent: 'center' }}>
+        <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#2F5597', letterSpacing: 2 }}>上线 · GO LIVE</Text>
+        <Text style={{ fontSize: 34, fontWeight: 'bold', color: '#1F2937', marginTop: 10 }}>备案不是上线的前置条件，现在就能上内网</Text>
+    </Box>
+
+    {/* B · 内容区 */}
+    <Box style={{ height: 524, flexDirection: 'row', gap: 30 }}>
+        {/* 左：部署拓扑 62% */}
+        <Box style={{ flex: 62, flexDirection: 'column' }}>
+            <Box style={{ height: 68, background: '#E8EEF7', borderRadius: 6, padding: '8px 20px', flexDirection: 'column', justifyContent: 'center' }}>
+                <Text style={{ fontSize: 19, fontWeight: 'bold', color: '#1F2937', lineHeight: 1.25 }}>浏览器　用户端</Text>
+                <Text style={{ fontSize: 13, color: 'rgba(31,41,55,0.62)', lineHeight: 1.3, marginTop: 4 }}>内网或公网访问，不安装任何客户端</Text>
+            </Box>
+
+            <Box style={{ height: 14, justifyContent: 'center', alignItems: 'center' }}>
+                <FAIcon name='chevron-down' style={{ fill: '#2F5597', width: 14, height: 14 }} />
+            </Box>
+
+            <Box style={{ height: 68, background: '#2F5597', borderRadius: 6, padding: '8px 20px', flexDirection: 'column', justifyContent: 'center' }}>
+                <Text style={{ fontSize: 19, fontWeight: 'bold', color: '#FFFFFF', lineHeight: 1.25 }}>反向代理　Nginx</Text>
+                <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.82)', lineHeight: 1.3, marginTop: 4 }}>对外唯一入口：终止 HTTPS、把 HTTP 强制跳转</Text>
+            </Box>
+
+            <Box style={{ height: 14, justifyContent: 'center', alignItems: 'center' }}>
+                <FAIcon name='chevron-down' style={{ fill: '#2F5597', width: 14, height: 14 }} />
+            </Box>
+
+            <Box style={{ height: 68, background: '#E8EEF7', borderLeft: '4px solid #2F5597', borderRadius: 6, padding: '8px 20px', flexDirection: 'column', justifyContent: 'center' }}>
+                <Text style={{ fontSize: 19, fontWeight: 'bold', color: '#1F2937', lineHeight: 1.25 }}>生产 WSGI 服务器　Waitress</Text>
+                <Text style={{ fontSize: 13, color: 'rgba(31,41,55,0.62)', lineHeight: 1.3, marginTop: 4 }}>单进程多线程，只监听内网 127.0.0.1:8000，不直接对外</Text>
+            </Box>
+
+            <Box style={{ height: 14, justifyContent: 'center', alignItems: 'center' }}>
+                <FAIcon name='chevron-down' style={{ fill: '#2F5597', width: 14, height: 14 }} />
+            </Box>
+
+            <Box style={{ height: 68, background: '#E8EEF7', borderLeft: '4px solid #2F5597', borderRadius: 6, padding: '8px 20px', flexDirection: 'column', justifyContent: 'center' }}>
+                <Text style={{ fontSize: 19, fontWeight: 'bold', color: '#1F2937', lineHeight: 1.25 }}>Flask 应用　workbench</Text>
+                <Text style={{ fontSize: 13, color: 'rgba(31,41,55,0.62)', lineHeight: 1.3, marginTop: 4 }}>页面与路由 · 业务动作 · 领域能力 · 字段配置</Text>
+            </Box>
+
+            <Box style={{ height: 14, justifyContent: 'center', alignItems: 'center' }}>
+                <FAIcon name='chevron-down' style={{ fill: '#2F5597', width: 14, height: 14 }} />
+            </Box>
+
+            <Box style={{ height: 68, background: '#E8EEF7', borderLeft: '4px solid #E2703A', borderRadius: 6, padding: '8px 20px', flexDirection: 'column', justifyContent: 'center' }}>
+                <Text style={{ fontSize: 19, fontWeight: 'bold', color: '#1F2937', lineHeight: 1.25 }}>数据与外部服务</Text>
+                <Text style={{ fontSize: 13, color: 'rgba(31,41,55,0.62)', lineHeight: 1.3, marginTop: 4 }}>本机数据库与文件目录｜腾讯云 ASR · COS · DeepSeek</Text>
+            </Box>
+
+            <Box style={{ background: '#FFFFFF', border: '1px solid rgba(47,85,151,0.28)', borderRadius: 6, padding: '12px 20px', marginTop: 20 }}>
+                <Text style={{ fontSize: 15, color: 'rgba(31,41,55,0.72)', lineHeight: 1.55 }}>进程由 systemd 守护，崩溃自动拉起｜全部密钥放在独立环境文件，权限 600</Text>
+            </Box>
+        </Box>
+
+        {/* 右：两阶段 + 硬约束 38% */}
+        <Box style={{ flex: 38, flexDirection: 'column' }}>
+            <Box style={{ background: '#E8EEF7', borderRadius: 8, padding: 20, flexDirection: 'column' }}>
+                <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#2F5597', letterSpacing: 1 }}>上线的两个阶段</Text>
+
+                <Text style={{ fontSize: 17, fontWeight: 'bold', color: '#1F2937', marginTop: 12 }}>阶段一 · 公网 IP + HTTP</Text>
+                <Text style={{ fontSize: 14, color: 'rgba(31,41,55,0.70)', lineHeight: 1.5, marginTop: 5 }}>不需备案，放行 8770 端口即可访问</Text>
+
+                <Box style={{ height: 1, background: 'rgba(47,85,151,0.20)', marginTop: 14 }} />
+
+                <Text style={{ fontSize: 17, fontWeight: 'bold', color: '#1F2937', marginTop: 14 }}>阶段二 · 域名 + HTTPS</Text>
+                <Text style={{ fontSize: 14, color: 'rgba(31,41,55,0.70)', lineHeight: 1.5, marginTop: 5 }}>申请证书并强制跳转，Cookie 加 Secure</Text>
+            </Box>
+
+            <Box style={{ background: '#FFFFFF', borderLeft: '3px solid #E2703A', borderRadius: 8, padding: 20, flexDirection: 'column', marginTop: 14 }}>
+                <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#E2703A', letterSpacing: 1 }}>硬约束</Text>
+                <Text style={{ fontSize: 19, fontWeight: 'bold', color: '#1F2937', marginTop: 6 }}>必须单进程多线程</Text>
+                <Text style={{ fontSize: 15, color: 'rgba(31,41,55,0.72)', lineHeight: 1.5, marginTop: 6 }}>转写在进程内线程执行、数据库单机单写。禁止多 worker。</Text>
+            </Box>
+
+            <Box style={{ background: '#2F5597', borderRadius: 8, padding: 20, flexDirection: 'column', marginTop: 14 }}>
+                <Text style={{ fontSize: 15, color: 'rgba(255,255,255,0.90)', lineHeight: 1.55 }}>两阶段应用代码完全一致，只改反向代理配置。</Text>
+            </Box>
+        </Box>
+    </Box>
+
+    {/* C · 页脚条 */}
+    <Box style={{ height: 48, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Text style={{ fontSize: 14, color: 'rgba(31,41,55,0.45)' }}>灵石解决方案工作台 · 进展汇报</Text>
+        <Text style={{ fontSize: 14, color: 'rgba(31,41,55,0.45)' }}>09 / 12</Text>
+    </Box>
+</Slide>

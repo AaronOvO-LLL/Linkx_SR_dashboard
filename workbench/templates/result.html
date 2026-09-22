@@ -3,7 +3,7 @@
 {% block content %}
 {% set step = step_of(7) %}
 
-<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+<div class="page-head">
   <a class="btn gray sm" href="{{ url_for('preview', pp_id=pp.id) }}">← 返回预览与生成</a>
   <h2 style="margin:0;font-size:17px">{{ project.name }} · {{ product.name }} · 结果中心</h2>
 </div>
@@ -54,7 +54,7 @@
   {% if ok_runs %}
   <form method="post" action="{{ url_for('package', pp_id=pp.id) }}">
     {% for r in ok_runs %}<input type="hidden" name="artifacts" value="{{ r.artifact_key }}">{% endfor %}
-    <div class="btn-row">
+    <div class="btn-row download-actions">
       <button class="btn" type="submit">生成并下载 ZIP（{{ ok_runs|length }} 项）</button>
       {% if export %}
       <a class="btn ghost" href="{{ url_for('package_download', pp_id=pp.id) }}">
@@ -67,6 +67,7 @@
   {% if export %}
   <h3>打包内容</h3>
   {% set mf = export.manifest_json|fromjson %}
+  <div class="table-scroll" role="region" aria-label="打包内容，可横向滚动" tabindex="0">
   <table class="tbl">
     <thead><tr><th>目录</th><th>生成物</th><th>文件</th><th>模板版本</th></tr></thead>
     <tbody>
@@ -75,6 +76,7 @@
     {% endfor %}
     </tbody>
   </table>
+  </div>
   {% endif %}
   {% else %}
   <div class="empty"><b>暂无可打包的成功产物</b>请先生成至少一项内容。</div>

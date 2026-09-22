@@ -1,0 +1,105 @@
+<Slide style={{ width: 1280, height: 720, padding: '20px 64px', flexDirection: 'column', background: '#FFFFFF', fontFamily: 'Microsoft YaHei' }}>
+    {/* A · 标题块 */}
+    <Box style={{ height: 108, flexDirection: 'column', justifyContent: 'center' }}>
+        <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#2F5597', letterSpacing: 2 }}>流程 · WORKFLOW</Text>
+        <Text style={{ fontSize: 34, fontWeight: 'bold', color: '#1F2937', marginTop: 10 }}>十个节点，只有两处必须人工</Text>
+    </Box>
+
+    {/* B · 内容区 */}
+    <Box style={{ height: 524, flexDirection: 'column' }}>
+        <Text style={{ fontSize: 17, color: 'rgba(31,41,55,0.66)', height: 30 }}>其余环节全自动，方案人员只在「校对」与「补齐」两处介入。</Text>
+
+        {/* 流程带 216px */}
+        <Box style={{ height: 216, flexDirection: 'column' }}>
+            <Box style={{ height: 96, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Box style={{ width: 214, height: 96, background: '#E8EEF7', borderRadius: 6, padding: 14, flexDirection: 'column', justifyContent: 'center' }}>
+                    <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#2F5597' }}>01</Text>
+                    <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1F2937', marginTop: 6 }}>录音</Text>
+                    <Text style={{ fontSize: 13, color: 'rgba(31,41,55,0.60)', marginTop: 4 }}>手机直接录制</Text>
+                </Box>
+                <FAIcon name='chevron-right' style={{ fill: '#2F5597', width: 16, height: 16 }} />
+                <Box style={{ width: 214, height: 96, background: '#E8EEF7', borderRadius: 6, padding: 14, flexDirection: 'column', justifyContent: 'center' }}>
+                    <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#2F5597' }}>02</Text>
+                    <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1F2937', marginTop: 6 }}>上传</Text>
+                    <Text style={{ fontSize: 13, color: 'rgba(31,41,55,0.60)', marginTop: 4 }}>私有存储桶中转</Text>
+                </Box>
+                <FAIcon name='chevron-right' style={{ fill: '#2F5597', width: 16, height: 16 }} />
+                <Box style={{ width: 214, height: 96, background: '#E8EEF7', borderRadius: 6, padding: 14, flexDirection: 'column', justifyContent: 'center' }}>
+                    <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#2F5597' }}>03</Text>
+                    <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1F2937', marginTop: 6 }}>云端转写</Text>
+                    <Text style={{ fontSize: 13, color: 'rgba(31,41,55,0.60)', marginTop: 4 }}>后台执行，可离开</Text>
+                </Box>
+                <FAIcon name='chevron-right' style={{ fill: '#2F5597', width: 16, height: 16 }} />
+                <Box style={{ width: 214, height: 96, background: '#FFFFFF', border: '2px solid #E2703A', borderRadius: 6, padding: 14, flexDirection: 'column', justifyContent: 'center' }}>
+                    <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#E2703A' }}>04</Text>
+                    <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1F2937', marginTop: 6 }}>校对转写</Text>
+                    <Text style={{ fontSize: 13, color: 'rgba(31,41,55,0.60)', marginTop: 4 }}>人工节点</Text>
+                </Box>
+                <FAIcon name='chevron-right' style={{ fill: '#2F5597', width: 16, height: 16 }} />
+                <Box style={{ width: 214, height: 96, background: '#E8EEF7', borderRadius: 6, padding: 14, flexDirection: 'column', justifyContent: 'center' }}>
+                    <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#2F5597' }}>05</Text>
+                    <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1F2937', marginTop: 6 }}>确认共享稿</Text>
+                    <Text style={{ fontSize: 13, color: 'rgba(31,41,55,0.60)', marginTop: 4 }}>项目级资产</Text>
+                </Box>
+            </Box>
+
+            <Box style={{ height: 24, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 8 }}>
+                <Text style={{ fontSize: 13, color: 'rgba(31,41,55,0.45)' }}>接下行</Text>
+                <FAIcon name='arrow-down' style={{ fill: '#2F5597', width: 16, height: 16 }} />
+            </Box>
+
+            <Box style={{ height: 96, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Box style={{ width: 214, height: 96, background: '#E8EEF7', borderRadius: 6, padding: 14, flexDirection: 'column', justifyContent: 'center' }}>
+                    <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#2F5597' }}>06</Text>
+                    <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1F2937', marginTop: 6 }}>导入产品</Text>
+                    <Text style={{ fontSize: 13, color: 'rgba(31,41,55,0.60)', marginTop: 4 }}>多产品共用</Text>
+                </Box>
+                <FAIcon name='chevron-right' style={{ fill: '#2F5597', width: 16, height: 16 }} />
+                <Box style={{ width: 214, height: 96, background: '#E8EEF7', borderRadius: 6, padding: 14, flexDirection: 'column', justifyContent: 'center' }}>
+                    <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#2F5597' }}>07</Text>
+                    <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1F2937', marginTop: 6 }}>AI 提取字段</Text>
+                    <Text style={{ fontSize: 13, color: 'rgba(31,41,55,0.60)', marginTop: 4 }}>自动填写</Text>
+                </Box>
+                <FAIcon name='chevron-right' style={{ fill: '#2F5597', width: 16, height: 16 }} />
+                <Box style={{ width: 214, height: 96, background: '#FFFFFF', border: '2px solid #E2703A', borderRadius: 6, padding: 14, flexDirection: 'column', justifyContent: 'center' }}>
+                    <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#E2703A' }}>08</Text>
+                    <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1F2937', marginTop: 6 }}>补齐确认</Text>
+                    <Text style={{ fontSize: 13, color: 'rgba(31,41,55,0.60)', marginTop: 4 }}>人工节点</Text>
+                </Box>
+                <FAIcon name='chevron-right' style={{ fill: '#2F5597', width: 16, height: 16 }} />
+                <Box style={{ width: 214, height: 96, background: '#E8EEF7', borderRadius: 6, padding: 14, flexDirection: 'column', justifyContent: 'center' }}>
+                    <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#2F5597' }}>09</Text>
+                    <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1F2937', marginTop: 6 }}>生成材料</Text>
+                    <Text style={{ fontSize: 13, color: 'rgba(31,41,55,0.60)', marginTop: 4 }}>一次勾选</Text>
+                </Box>
+                <FAIcon name='chevron-right' style={{ fill: '#2F5597', width: 16, height: 16 }} />
+                <Box style={{ width: 214, height: 96, background: '#2F5597', borderRadius: 6, padding: 14, flexDirection: 'column', justifyContent: 'center' }}>
+                    <Text style={{ fontSize: 13, fontWeight: 'bold', color: 'rgba(255,255,255,0.75)' }}>10</Text>
+                    <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#FFFFFF', marginTop: 6 }}>打包 ZIP</Text>
+                    <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.72)', marginTop: 4 }}>可直接发送</Text>
+                </Box>
+            </Box>
+        </Box>
+
+        {/* 底部两张卡 256px */}
+        <Box style={{ height: 256, flexDirection: 'row', gap: 28, marginTop: 22 }}>
+            <Box style={{ flex: 60, background: '#E8EEF7', borderRadius: 8, padding: 22, flexDirection: 'column' }}>
+                <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#2F5597', letterSpacing: 2 }}>设计红线</Text>
+                <Text style={{ fontSize: 19, fontWeight: 'bold', color: '#1F2937', marginTop: 8 }}>两个「只做一次」</Text>
+                <Text style={{ fontSize: 16, color: 'rgba(31,41,55,0.72)', lineHeight: 1.62, marginTop: 10 }}>一份录音只转写一次：转写稿是项目级资产，同一项目的多个产品共用，不重复上传、不重复计费。<br />同一任务不重复提交：页面刷新不会重复提交云端任务，避免重复计费与结果被覆盖。</Text>
+            </Box>
+
+            <Box style={{ flex: 40, background: '#E8EEF7', borderRadius: 8, padding: 22, flexDirection: 'column' }}>
+                <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#2F5597', letterSpacing: 2 }}>人工介入</Text>
+                <Text style={{ fontSize: 19, fontWeight: 'bold', color: '#1F2937', marginTop: 8 }}>只确认，不重录</Text>
+                <Text style={{ fontSize: 16, color: 'rgba(31,41,55,0.72)', lineHeight: 1.62, marginTop: 10 }}>校对转写：只需确认专业术语与低置信片段，不要求逐字校对。<br />补齐字段：系统把未识别、低置信、必填未填的字段集中呈现，逐项确认。</Text>
+            </Box>
+        </Box>
+    </Box>
+
+    {/* C · 页脚条 */}
+    <Box style={{ height: 48, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Text style={{ fontSize: 14, color: 'rgba(31,41,55,0.45)' }}>灵石解决方案工作台 · 进展汇报</Text>
+        <Text style={{ fontSize: 14, color: 'rgba(31,41,55,0.45)' }}>07 / 12</Text>
+    </Box>
+</Slide>

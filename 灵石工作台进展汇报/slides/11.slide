@@ -1,0 +1,63 @@
+<Slide style={{ width: 1280, height: 720, padding: '20px 64px', flexDirection: 'column', background: '#FFFFFF', fontFamily: 'Microsoft YaHei' }}>
+    {/* A · 标题块 */}
+    <Box style={{ height: 108, flexDirection: 'column', justifyContent: 'center' }}>
+        <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#2F5597', letterSpacing: 2 }}>决策 · DECISIONS</Text>
+        <Text style={{ fontSize: 34, fontWeight: 'bold', color: '#1F2937', marginTop: 10 }}>三件事定了，就能进一线试点</Text>
+    </Box>
+
+    {/* B · 内容区 */}
+    <Box style={{ height: 524, flexDirection: 'row', gap: 28 }}>
+        {/* 左标题栏 30% */}
+        <Box style={{ flex: 30, background: '#2F5597', borderRadius: 8, padding: 28, flexDirection: 'column' }}>
+            <Text style={{ fontSize: 13, fontWeight: 'bold', color: 'rgba(255,255,255,0.62)', letterSpacing: 3 }}>需要拍板</Text>
+            <Text style={{ fontSize: 26, fontWeight: 'bold', color: '#FFFFFF', lineHeight: 1.4, marginTop: 16 }}>三条口径，<br />只能由业务定</Text>
+            <Text style={{ fontSize: 15, color: 'rgba(255,255,255,0.84)', lineHeight: 1.65, marginTop: 20 }}>这三条不是技术问题，而是合规与商务口径问题，技术侧无权假设。</Text>
+
+            <Box style={{ marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.22)', paddingTop: 16 }}>
+                <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.86)', lineHeight: 1.6 }}>另有一条上线硬性动作：五个分部的初始口令必须在试点前全部更换。</Text>
+            </Box>
+        </Box>
+
+        {/* 右内容区 70% */}
+        <Box style={{ flex: 70, flexDirection: 'column', justifyContent: 'space-between' }}>
+            <Box style={{ background: '#E8EEF7', borderRadius: 8, padding: 18, flexDirection: 'row', gap: 18 }}>
+                <Box style={{ width: 30, height: 30, borderRadius: 15, background: '#E2703A', justifyContent: 'center', alignItems: 'center' }}>
+                    <Text style={{ fontSize: 15, fontWeight: 'bold', color: '#FFFFFF' }}>1</Text>
+                </Box>
+                <Box style={{ flexDirection: 'column', gap: 6 }}>
+                    <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#1F2937' }}>真实录音能不能上公有云？</Text>
+                    <Text style={{ fontSize: 15, color: 'rgba(31,41,55,0.72)', lineHeight: 1.5 }}>录音中含客户监控账号密码等敏感信息。上云转写最快；若不能出内网，需改用本地方案，依赖与运维成本都会上升。</Text>
+                    <Text style={{ fontSize: 14, color: '#E2703A', lineHeight: 1.5, borderLeft: '3px solid #E2703A', paddingLeft: 12 }}>不定 → 现有做法是否合规无法确认，存在数据外流风险。</Text>
+                </Box>
+            </Box>
+
+            <Box style={{ background: '#E8EEF7', borderRadius: 8, padding: 18, flexDirection: 'row', gap: 18 }}>
+                <Box style={{ width: 30, height: 30, borderRadius: 15, background: '#E2703A', justifyContent: 'center', alignItems: 'center' }}>
+                    <Text style={{ fontSize: 15, fontWeight: 'bold', color: '#FFFFFF' }}>2</Text>
+                </Box>
+                <Box style={{ flexDirection: 'column', gap: 6 }}>
+                    <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#1F2937' }}>域名备案什么时候能下来？</Text>
+                    <Text style={{ fontSize: 15, color: 'rgba(31,41,55,0.72)', lineHeight: 1.5 }}>备案通过前只能用公网 IP 加 HTTP 访问，拿不到正式域名与 HTTPS，无法开启会话安全加固。</Text>
+                    <Text style={{ fontSize: 14, color: '#E2703A', lineHeight: 1.5, borderLeft: '3px solid #E2703A', paddingLeft: 12 }}>不定 → 内网试点不受影响，但对外推广会被卡住。</Text>
+                </Box>
+            </Box>
+
+            <Box style={{ background: '#E8EEF7', borderRadius: 8, padding: 18, flexDirection: 'row', gap: 18 }}>
+                <Box style={{ width: 30, height: 30, borderRadius: 15, background: '#E2703A', justifyContent: 'center', alignItems: 'center' }}>
+                    <Text style={{ fontSize: 15, fontWeight: 'bold', color: '#FFFFFF' }}>3</Text>
+                </Box>
+                <Box style={{ flexDirection: 'column', gap: 6 }}>
+                    <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#1F2937' }}>有没有可用于报价的真实价格表？</Text>
+                    <Text style={{ fontSize: 15, color: 'rgba(31,41,55,0.72)', lineHeight: 1.5 }}>当前费用估算中的单价是演示假设值，报价能力已从活动工作流中停用；系统目前只产出结构性材料。</Text>
+                    <Text style={{ fontSize: 14, color: '#E2703A', lineHeight: 1.5, borderLeft: '3px solid #E2703A', paddingLeft: 12 }}>不定 → 材料不能作为对外报价依据，只能内部沟通使用。</Text>
+                </Box>
+            </Box>
+        </Box>
+    </Box>
+
+    {/* C · 页脚条 */}
+    <Box style={{ height: 48, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Text style={{ fontSize: 14, color: 'rgba(31,41,55,0.45)' }}>灵石解决方案工作台 · 进展汇报</Text>
+        <Text style={{ fontSize: 14, color: 'rgba(31,41,55,0.45)' }}>11 / 12</Text>
+    </Box>
+</Slide>

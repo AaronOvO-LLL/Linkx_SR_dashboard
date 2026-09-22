@@ -19,7 +19,7 @@
         <label class="dept-opt" data-dept="{{ d.key }}">
           <input type="radio" name="dept_key" value="{{ d.key }}" {% if loop.first %}checked{% endif %}>
           <span class="nm">{{ d.name }}</span>
-          <span class="hint">{% if d.changed %}密码已修改{% else %}初始密码 {{ cfg.default_password }}{% endif %}</span>
+          {% if d.changed %}<span class="hint">密码已修改</span>{% endif %}
         </label>
         {% endfor %}
       </div>
@@ -31,8 +31,6 @@
 
       <button class="btn" type="submit" style="width:100%;justify-content:center">进入分部项目库</button>
     </form>
-
-    <div class="login-tip">{{ cfg.must_change_hint }}</div>
   </div>
 </div>
 {% endblock %}

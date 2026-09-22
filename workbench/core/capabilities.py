@@ -11,9 +11,13 @@ KNOWN_CAPABILITIES = {
     'text_input': '粘贴或编辑调研文字稿',
     'field_extraction': '从文字稿提取结构化字段',
     'artifact_generation': '预览、生成和打包材料',
-    'audio_asr': '上传录音并异步转写',
+    'audio_asr': '导入项目级录音转写稿',
     'image_evidence': '上传并查看现场图片',
 }
+
+# audio_asr 的语义是"该产品可以使用项目共享转写稿"，不是"该产品自己上传录音"。
+# 上传与转写发生在项目级、选择产品之前，由 config/asr.json 的 enabled 开关控制，
+# 不受产品 capability 约束；capability 只决定产品调研页是否显示导入入口。
 
 
 class CapabilityError(ValueError):

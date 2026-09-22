@@ -255,9 +255,14 @@ def validate_field_model(product_type):
                     issues.append(_issue('error', w, 'columns 每项必须含 key 与 label'))
         if t == 'number' and not f.get('unit'):
             issues.append(_issue('info', w, 'number 类型建议提供 unit（如 m² / 路 / 台）'))
-        for b in ('required',):
+        for b in ('required', 'allow_custom', 'require_other_detail'):
             if f.get(b) is not None and not isinstance(f[b], bool):
                 issues.append(_issue('error', w, '%s 必须是布尔值' % b))
+        if f.get('allow_custom') and t not in ('select', 'multiselect'):
+            issues.append(_issue('error', w, 'allow_custom 仅用于选择题'))
+        if f.get('require_other_detail') and (t != 'multiselect' or not f.get('allow_custom')
+                or '其他' not in [o['value'] for o in f.get('options', [])]):
+            issues.append(_issue('error', w, 'require_other_detail 需要允许补充文字且含其他选项的多选题'))
 
         spec = f.get('extract') or {}
         if spec:

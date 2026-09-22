@@ -3,6 +3,8 @@ setlocal
 chcp 65001 >nul
 set "PYTHONUTF8=1"
 set "PYTHONIOENCODING=utf-8"
+rem 本地开发模式：监听 127.0.0.1、允许配置内演示密钥、Cookie 不加 Secure，双击即可用。
+set "LS_ENV=development"
 title LinkX Workbench Demo
 
 cd /d "%~dp0workbench"

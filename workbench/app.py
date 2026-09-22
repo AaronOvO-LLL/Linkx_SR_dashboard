@@ -14,13 +14,13 @@ from werkzeug.utils import safe_join
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from core import db, extract, generate, repo  # noqa: E402
-from core.config import (app_config, artifact_map, departments_config,  # noqa: E402
-                         fields_by_group, list_products,
-                         product_config, save_departments_config)
+from core import db, departments, extract, generate, repo, runtime  # noqa: E402
+from core.config import (app_config, artifact_map, fields_by_group, field_config,  # noqa: E402
+                         list_products, product_config)
 from core.capabilities import has_capability  # noqa: E402
 from core.paths import ROOT, STATIC_DIR  # noqa: E402
 from core.validate import validate  # noqa: E402
+from core.choices import choice_state  # noqa: E402
 from services import artifacts as artifact_service  # noqa: E402
 from services import survey as survey_service  # noqa: E402
 from services import audio as audio_service  # noqa: E402
@@ -28,8 +28,20 @@ from services import audio as audio_service  # noqa: E402
 CFG = app_config()
 
 app = Flask(__name__, template_folder='templates', static_folder='static')
-app.secret_key = CFG['session']['secret_key']
+app.jinja_env.globals['choice_state'] = choice_state
+app.secret_key = runtime.resolve_secret_key(CFG)
 app.config['JSON_AS_ASCII'] = False
+# 会话 Cookie 加固：HttpOnly 防脚本窃取，SameSite 防 CSRF。
+# Secure 由 LS_COOKIE_SECURE 开关控制（默认关）——只有 HTTPS 真正上线后才开，
+# 否则在明文 HTTP（本地或备案前的 IP 访问）下会导致登录后立即掉线。
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_SECURE'] = runtime.cookie_secure()
+
+# 放在密钥校验之后：生产环境缺密钥时应直接拒绝启动，不留任何落盘副作用。
+departments.ensure_initialized()
+# 在导入期而非 main() 里告警：生产走 wsgi.py + waitress，main() 不会被执行。
+runtime.warn_insecure_departments(departments.unchanged_names())
 
 
 # ---------------------------------------------------------------- 基础工具
@@ -38,7 +50,7 @@ def current_dept():
     key = session.get('dept_key')
     if not key:
         return None
-    return next((d for d in departments_config()['departments'] if d['key'] == key), None)
+    return departments.find(key)
 
 
 def require_dept():
@@ -80,17 +92,23 @@ def load_project(pid):
     return project
 
 
-def load_audio_job(pp_id, job_id):
-    """任务访问同时受产品实例和分部边界约束。"""
-    pp, project = load_pp(pp_id)
+def load_audio_job(pid, job_id):
+    """转写任务访问受项目与分部边界约束。
+
+    任务归属项目而不是产品，因此这里不再经过 load_pp；分部检查由 load_project
+    完成，足以阻止跨分部读取他人项目的录音与转写结果。
+    """
+    project = load_project(pid)
     job = repo.get_audio_job(job_id)
-    if not job or job['project_product_id'] != pp_id:
+    if not job or job['project_id'] != pid:
         abort(404)
-    return pp, project, job
+    return project, job
 
 
 app.jinja_env.globals['product_name'] = lambda t: product_config(t)['name']
 app.jinja_env.globals['has_capability'] = has_capability
+app.jinja_env.globals['audio_status_label'] = lambda s: repo.AUDIO_JOB_STATUS_LABELS.get(s, s)
+app.jinja_env.globals['audio_status_tag'] = repo.audio_status_tag
 
 
 @app.template_filter('hit_count')
@@ -148,7 +166,7 @@ def inject_globals():
     }
 
 
-STEP_NAMES = ['分部入口', '项目中心', '项目概览', '调研输入', '信息核对', '预览与生成', '结果中心']
+STEP_NAMES = ['分部入口', '项目中心', '项目与转写', '调研输入', '信息核对', '预览与生成', '结果中心']
 
 
 def step_of(n):
@@ -159,21 +177,19 @@ def step_of(n):
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    cfg = departments_config()
+    depts = departments.config()['departments']
     if request.method == 'POST':
-        key = request.form.get('dept_key', '')
-        pwd = request.form.get('password', '')
-        dept = next((d for d in cfg['departments'] if d['key'] == key), None)
-        if dept and pwd == dept['password']:
+        dept = departments.find(request.form.get('dept_key', ''))
+        if dept and departments.verify(dept, request.form.get('password', '')):
             session['dept_key'] = dept['key']
-            if dept['password'] == cfg['default_password']:
-                flash_msg('当前使用初始默认密码，建议尽快在「修改密码」中更换。', 'warn')
+            if not dept.get('changed'):
+                flash_msg('当前仍在使用初始口令，建议尽快在「修改密码」中更换。', 'warn')
             return redirect(url_for('projects'))
-        return render_template('login.html', depts=cfg['departments'], cfg=cfg,
+        return render_template('login.html', depts=depts,
                                error='分部密码不正确，请重试。')
     if current_dept():
         return redirect(url_for('projects'))
-    return render_template('login.html', depts=cfg['departments'], cfg=cfg, error=None)
+    return render_template('login.html', depts=depts, error=None)
 
 
 @app.route('/logout')
@@ -187,26 +203,21 @@ def change_password():
     r = require_dept()
     if r:
         return r
-    cfg = departments_config()
     dept = current_dept()
     if request.method == 'POST':
         old = request.form.get('old_password', '')
         new = request.form.get('new_password', '')
         confirm = request.form.get('confirm_password', '')
-        if old != dept['password']:
-            return render_template('password.html', cfg=cfg, error='原密码不正确。')
+        if not departments.verify(dept, old):
+            return render_template('password.html', error='原密码不正确。')
         if len(new) < 6:
-            return render_template('password.html', cfg=cfg, error='新密码至少 6 位。')
+            return render_template('password.html', error='新密码至少 6 位。')
         if new != confirm:
-            return render_template('password.html', cfg=cfg, error='两次输入的新密码不一致。')
-        for d in cfg['departments']:
-            if d['key'] == dept['key']:
-                d['password'] = new
-                d['changed'] = True
-        save_departments_config(cfg)
+            return render_template('password.html', error='两次输入的新密码不一致。')
+        departments.set_password(dept['key'], new)
         flash_msg('分部密码已更新，下次进入需使用新密码。')
         return redirect(url_for('projects'))
-    return render_template('password.html', cfg=cfg, error=None)
+    return render_template('password.html', error=None)
 
 
 # ---------------------------------------------------------------- 2. 项目中心
@@ -257,10 +268,11 @@ def project_create():
     ptype = request.form.get('product_type', '').strip()
     if ptype:
         try:
-            pp = repo.ensure_product(p['id'], ptype)
-            return redirect(url_for('survey', pp_id=pp['id']))
+            repo.ensure_product(p['id'], ptype)
         except Exception:
             flash_msg('项目已创建，但产品选择无效，请在项目概览中重新添加。', 'warn')
+    # 一律回到项目概览：录音转写已是项目级动作，直接跳进产品调研页会让用户
+    # 错过转写入口。
     return redirect(url_for('project_detail', pid=p['id']))
 
 
@@ -331,7 +343,7 @@ def project_copy(pid):
     return redirect(url_for('project_detail', pid=new['id']) if new else url_for('projects'))
 
 
-# ---------------------------------------------------------------- 3. 项目概览
+# ---------------------------------------------------------------- 3. 项目概览与录音转写
 
 @app.route('/projects/<pid>')
 def project_detail(pid):
@@ -347,7 +359,15 @@ def project_detail(pid):
         item['progress'] = pct
         item['status_label'] = repo.PROJECT_STATUS_LABELS[st]
         item['stats'] = repo.field_stats(pp['id'], pp['product_type'])
+        src = repo.latest_source(pp['id'])
+        item['source_kind'] = src['kind'] if src else ''
         pps.append(item)
+    # 进入项目概览即恢复未完成的转写任务：长任务可能跨越页面刷新和应用重启，
+    # 只靠转写预览页恢复会让停在中间状态的任务无人认领。
+    audio_jobs = repo.list_audio_jobs(pid)
+    for job in audio_jobs:
+        if job['status'] in repo.AUDIO_JOB_ACTIVE_STATUSES:
+            audio_service.start_job(job['id'])
     selected = {p['product_type'] for p in pps}
     catalog = list_products()
     planned = []
@@ -358,7 +378,10 @@ def project_detail(pid):
             planned.append(c)
     return render_template('project.html', project=repo.decorate_project(project),
                            pps=pps, planned=planned,
-                           categories=repo.PROJECT_CATEGORIES)
+                           categories=repo.PROJECT_CATEGORIES,
+                           audio_jobs=audio_jobs,
+                           transcript=repo.latest_project_transcript(pid),
+                           asr_status=audio_service.configuration_status())
 
 
 @app.route('/projects/<pid>/products/add', methods=['POST'])
@@ -375,6 +398,100 @@ def product_add(pid):
         return redirect(url_for('project_detail', pid=pid))
     repo.ensure_product(pid, ptype)
     flash_msg('已添加产品。')
+    return redirect(url_for('project_detail', pid=pid))
+
+
+@app.route('/projects/<pid>/audio', methods=['POST'])
+def audio_upload(pid):
+    r = require_dept()
+    if r:
+        return r
+    project = load_project(pid)
+    uploaded = request.files.get('audio')
+    if not uploaded:
+        flash_msg('请选择录音文件。', 'warn')
+        return redirect(url_for('project_detail', pid=pid))
+    try:
+        job = audio_service.create_job(project, uploaded)
+    except Exception as exc:
+        flash_msg(str(exc), 'warn')
+        return redirect(url_for('project_detail', pid=pid))
+    flash_msg('录音已接收，正在后台上传并转写。')
+    return redirect(url_for('transcription_preview', pid=pid, job_id=job['id']))
+
+
+@app.route('/projects/<pid>/audio/<job_id>/status')
+def audio_job_status(pid, job_id):
+    r = require_dept()
+    if r:
+        return jsonify({'ok': False, 'error': '未登录'}), 401
+    _, job = load_audio_job(pid, job_id)
+    audio_service.start_job(job_id)
+    job = repo.get_audio_job(job_id)
+    return jsonify({
+        'ok': True, 'status': job['status'], 'message': job['status_message'],
+        'error': job['error'],
+        'preview_url': (url_for('transcription_preview', pid=pid, job_id=job_id)
+                        if job['status'] in ('awaiting_preview', 'approved') else ''),
+    })
+
+
+@app.route('/projects/<pid>/audio/<job_id>')
+def transcription_preview(pid, job_id):
+    r = require_dept()
+    if r:
+        return r
+    project, job = load_audio_job(pid, job_id)
+    audio_service.start_job(job_id)
+    job = repo.get_audio_job(job_id)
+    try:
+        segments = repo.json.loads(job['segments_json'] or '[]')
+        corrections = repo.json.loads(job['corrections_json'] or '[]')
+    except Exception:
+        segments, corrections = [], []
+    return render_template('transcription.html', project=project, job=job,
+                           segments=segments, corrections=corrections,
+                           pps=repo.list_products(pid))
+
+
+@app.route('/projects/<pid>/audio/<job_id>/file')
+def audio_file(pid, job_id):
+    r = require_dept()
+    if r:
+        return r
+    _, job = load_audio_job(pid, job_id)
+    if not os.path.isfile(job['local_path']):
+        abort(404)
+    return send_file(job['local_path'], as_attachment=False,
+                     download_name=job['original_name'], conditional=True)
+
+
+@app.route('/projects/<pid>/audio/<job_id>/retry', methods=['POST'])
+def audio_retry(pid, job_id):
+    r = require_dept()
+    if r:
+        return r
+    _, job = load_audio_job(pid, job_id)
+    audio_service.retry_job(job)
+    flash_msg('已重新提交转写任务。')
+    return redirect(url_for('transcription_preview', pid=pid, job_id=job_id))
+
+
+@app.route('/projects/<pid>/audio/<job_id>/approve', methods=['POST'])
+def audio_approve(pid, job_id):
+    r = require_dept()
+    if r:
+        return r
+    _, job = load_audio_job(pid, job_id)
+    if job['status'] not in ('awaiting_preview', 'approved'):
+        flash_msg('请等待转写完成后再确认。', 'warn')
+        return redirect(url_for('transcription_preview', pid=pid, job_id=job_id))
+    try:
+        text = audio_service.approve_transcript(job, request.form.get('transcript', ''))
+    except audio_service.AudioServiceError as exc:
+        flash_msg(str(exc), 'warn')
+        return redirect(url_for('transcription_preview', pid=pid, job_id=job_id))
+    flash_msg('转写稿已确认（%d 字），可在各产品调研页导入使用。' % len(text))
     return redirect(url_for('project_detail', pid=pid))
 
 
@@ -395,129 +512,48 @@ def survey(pp_id):
             return redirect(url_for('survey', pp_id=pp_id))
         flash_msg('文字稿已保存，共 %d 字。' % len(text))
         return redirect(url_for('survey', pp_id=pp_id))
-    src = repo.latest_source(pp_id)
-    jobs = repo.list_audio_jobs(pp_id)
-    for job in jobs:
-        if job['status'] in ('pending', 'uploading', 'submitted', 'transcribing'):
-            audio_service.start_job(job['id'])
     runs = db.query('SELECT * FROM extraction_runs WHERE project_product_id=? '
                       'ORDER BY started_at DESC LIMIT 5', (pp_id,))
-    samples = _samples()
-    return render_template('survey.html', pp=pp, project=project, source=src,
-                           runs=runs, samples=samples,
+    return render_template('survey.html', pp=pp, project=project,
+                           source=repo.latest_source(pp_id),
+                           runs=runs, samples=_samples(pp['product_type']),
                            limits=CFG['extraction'],
-                           audio_jobs=jobs,
-                           asr_status=audio_service.configuration_status(),
+                           transcript=repo.latest_project_transcript(project['id']),
                            llm_status=extract.llm_status(),
                            product=product_config(pp['product_type']))
 
 
-@app.route('/p/<pp_id>/audio', methods=['POST'])
-def audio_upload(pp_id):
+@app.route('/p/<pp_id>/import-transcript', methods=['POST'])
+def import_transcript(pp_id):
+    """把项目级共享转写稿导入当前产品。
+
+    导入与提取刻意分成两步：导入后用户仍有机会先修正明显的错字，再决定是否
+    消耗大模型额度。
+    """
     r = require_dept()
     if r:
         return r
     pp, project = load_pp(pp_id)
-    uploaded = request.files.get('audio')
-    if not uploaded:
-        flash_msg('请选择录音文件。', 'warn')
-        return redirect(url_for('survey', pp_id=pp_id))
     try:
-        job = audio_service.create_job(pp, project, uploaded)
-    except Exception as exc:
+        _, row = survey_service.import_project_transcript(pp, project)
+    except survey_service.SurveyServiceError as exc:
         flash_msg(str(exc), 'warn')
         return redirect(url_for('survey', pp_id=pp_id))
-    flash_msg('录音已接收，正在后台上传并转写。')
-    return redirect(url_for('transcription_preview', pp_id=pp_id, job_id=job['id']))
+    flash_msg('已导入项目转写稿（%d 字），确认无误后即可开始结构化梳理。' % row['char_count'])
+    return redirect(url_for('survey', pp_id=pp_id))
 
 
-@app.route('/p/<pp_id>/audio/<job_id>/status')
-def audio_job_status(pp_id, job_id):
-    r = require_dept()
-    if r:
-        return jsonify({'ok': False, 'error': '未登录'}), 401
-    _, _, job = load_audio_job(pp_id, job_id)
-    audio_service.start_job(job_id)
-    job = repo.get_audio_job(job_id)
-    return jsonify({
-        'ok': True, 'status': job['status'], 'message': job['status_message'],
-        'error': job['error'],
-        'preview_url': (url_for('transcription_preview', pp_id=pp_id, job_id=job_id)
-                        if job['status'] in ('awaiting_preview', 'approved') else ''),
-    })
-
-
-@app.route('/p/<pp_id>/audio/<job_id>')
-def transcription_preview(pp_id, job_id):
-    r = require_dept()
-    if r:
-        return r
-    pp, project, job = load_audio_job(pp_id, job_id)
-    audio_service.start_job(job_id)
-    job = repo.get_audio_job(job_id)
-    try:
-        segments = repo.json.loads(job['segments_json'] or '[]')
-        corrections = repo.json.loads(job['corrections_json'] or '[]')
-    except Exception:
-        segments, corrections = [], []
-    return render_template(
-        'transcription.html', pp=pp, project=project, job=job,
-        segments=segments, corrections=corrections,
-        product=product_config(pp['product_type']), llm_status=extract.llm_status())
-
-
-@app.route('/p/<pp_id>/audio/<job_id>/file')
-def audio_file(pp_id, job_id):
-    r = require_dept()
-    if r:
-        return r
-    _, _, job = load_audio_job(pp_id, job_id)
-    if not os.path.isfile(job['local_path']):
-        abort(404)
-    return send_file(job['local_path'], as_attachment=False,
-                     download_name=job['original_name'], conditional=True)
-
-
-@app.route('/p/<pp_id>/audio/<job_id>/retry', methods=['POST'])
-def audio_retry(pp_id, job_id):
-    r = require_dept()
-    if r:
-        return r
-    _, _, job = load_audio_job(pp_id, job_id)
-    audio_service.retry_job(job)
-    flash_msg('已重新提交转写任务。')
-    return redirect(url_for('transcription_preview', pp_id=pp_id, job_id=job_id))
-
-
-@app.route('/p/<pp_id>/audio/<job_id>/approve', methods=['POST'])
-def audio_approve(pp_id, job_id):
-    r = require_dept()
-    if r:
-        return r
-    pp, project, job = load_audio_job(pp_id, job_id)
-    if job['status'] not in ('awaiting_preview', 'approved'):
-        flash_msg('请等待转写完成后再确认。', 'warn')
-        return redirect(url_for('transcription_preview', pp_id=pp_id, job_id=job_id))
-    try:
-        text = audio_service.approve_transcript(job, request.form.get('transcript', ''))
-        survey_service.save_audio_transcript(pp, project, text)
-        stats, protected_count = survey_service.extract_latest_source(pp, project, provider='llm')
-    except (audio_service.AudioServiceError, survey_service.SurveyServiceError) as exc:
-        flash_msg(str(exc), 'warn')
-        return redirect(url_for('transcription_preview', pp_id=pp_id, job_id=job_id))
-    msg = '大模型梳理完成：识别 %d/%d 个结构化字段' % (stats['hit_fields'], stats['total_fields'])
-    if protected_count:
-        msg += '，保护 %d 个人工确认字段' % protected_count
-    flash_msg(msg + '。')
-    return redirect(url_for('review', pp_id=pp_id))
-
-
-def _samples():
+def _samples(product_type='safety_butler'):
     out = []
     from core.paths import SAMPLES_DIR
-    for fn in sorted(os.listdir(SAMPLES_DIR)):
+    sample_dir = os.path.join(SAMPLES_DIR, product_type)
+    if not os.path.isdir(sample_dir):
+        if product_type != 'safety_butler':
+            return out
+        sample_dir = SAMPLES_DIR
+    for fn in sorted(os.listdir(sample_dir)):
         if fn.endswith('.md'):
-            with open(os.path.join(SAMPLES_DIR, fn), encoding='utf-8') as f:
+            with open(os.path.join(sample_dir, fn), encoding='utf-8') as f:
                 out.append({'name': fn, 'content': f.read(),
                             'label': '完整样例（信息充分）' if 'full' in fn else '残缺样例（缺必填项）'})
     return out
@@ -562,11 +598,15 @@ def review(pp_id):
         items = []
         for f in fs:
             row = values.get(f['key'])
+            if row:
+                row = dict(row, status=repo.field_status(row, f))
             items.append({'def': f, 'row': row, 'issues': issue_map.get(f['key'], [])})
         groups.append({
             'def': g,
             'items': items,
-            'miss': sum(1 for i in items if i['row'] and i['row']['status'] == 'required_missing'),
+            'miss': sum(1 for i in items if
+                        (i['row'] and i['row']['status'] == 'required_missing') or
+                        (not i['row'] and i['def'].get('required'))),
             'conf': sum(1 for i in items if i['row'] and i['row']['status'] == 'pending_confirm'),
         })
 
@@ -574,7 +614,8 @@ def review(pp_id):
                            stats=stats, ok=ok, issues=issues,
                            status_labels=repo.FIELD_STATUS_LABELS,
                            product=product_config(ptype),
-                           run=repo.latest_extraction_run(pp_id))
+                           run=repo.latest_extraction_run(pp_id),
+                           field_template_version=field_config(ptype)['template_version'])
 
 
 @app.route('/p/<pp_id>/field', methods=['POST'])
@@ -735,16 +776,19 @@ def forbidden(e):
 
 def main():
     db.init_db()
-    host = CFG['server']['host']
-    port = CFG['server']['port']
+    host = runtime.resolve_host(CFG)
+    port = runtime.resolve_port(CFG)
     url = 'http://%s:%d' % (host, port)
     print('=' * 52)
     print('  灵石解决方案工作台 Demo')
+    print('  运行模式：%s' % runtime.mode())
     print('  访问地址：%s' % url)
     print('  数据目录：%s' % os.path.join(ROOT, 'data'))
     print('  停止服务：Ctrl + C')
     print('=' * 52)
-    if CFG['server'].get('open_browser'):
+    if runtime.is_production():
+        print('  注意：当前为 Flask 开发服务器，生产环境请改用 waitress 承载（见 wsgi.py / deploy）。')
+    if runtime.should_open_browser(CFG):
         import threading
         import webbrowser
         threading.Timer(1.2, lambda: webbrowser.open(url)).start()

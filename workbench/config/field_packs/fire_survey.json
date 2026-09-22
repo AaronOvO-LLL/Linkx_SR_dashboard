@@ -1,0 +1,324 @@
+{
+  "pack": "fire_survey",
+  "name": "消防现状踏勘",
+  "scope": "product",
+  "groups": [
+    {
+      "key": "fire_control",
+      "name": "消控室情况",
+      "order": 4
+    },
+    {
+      "key": "fire_maintenance",
+      "name": "项目维保单位信息",
+      "order": 5
+    },
+    {
+      "key": "fire_cost",
+      "name": "一次性改造费用",
+      "order": 6
+    }
+  ],
+  "fields": [
+    {
+      "key": "fire_control_count",
+      "label": "消控中心数量",
+      "group": "fire_control",
+      "type": "number",
+      "required": true,
+      "source": "踏勘要求的项目具体内容.xlsx / Sheet1 / 行63",
+      "extract": {
+        "mode": "number",
+        "keywords": [
+          "消控中心数量",
+          "消控中心",
+          "消控室"
+        ],
+        "negation_guard": false,
+        "unit_hint": "个"
+      },
+      "unit": "个",
+      "validate": {
+        "min": 0,
+        "message": "消控中心数量不能为负数"
+      }
+    },
+    {
+      "key": "fire_signal_transmission",
+      "label": "消控室是否可分控或信号传输",
+      "group": "fire_control",
+      "type": "select",
+      "required": true,
+      "source": "踏勘要求的项目具体内容.xlsx / Sheet1 / 行64",
+      "extract": {
+        "mode": "enum",
+        "keywords": [
+          "分控",
+          "信号传输",
+          "主消控室"
+        ],
+        "context_keywords": [
+          "分控",
+          "信号传输",
+          "主消控室"
+        ],
+        "fallback_text": true,
+        "negation_guard": false,
+        "prefer_longest_match": true
+      },
+      "options": [
+        {
+          "value": "可分控且可传输信号",
+          "synonyms": [
+            "可以分控并传输信号"
+          ]
+        },
+        {
+          "value": "仅可分控",
+          "synonyms": [
+            "只能分控"
+          ]
+        },
+        {
+          "value": "仅可传输信号",
+          "synonyms": [
+            "只能传输信号"
+          ]
+        },
+        {
+          "value": "均不支持",
+          "synonyms": [
+            "不能分控也不能传输信号",
+            "不支持分控和信号传输"
+          ]
+        },
+        {
+          "value": "待确认",
+          "synonyms": [
+            "分控情况待确认",
+            "信号传输待确认"
+          ]
+        }
+      ],
+      "allow_custom": true,
+      "help": "按现场核查选择；多个消控室情况不同或需描述主从关系时，请选择“其他 / 详细说明”逐项填写。",
+      "ai_hint": "按现场核查选择；多个消控室情况不同或需描述主从关系时，请选择“其他 / 详细说明”逐项填写。 优先使用候选项；选项无法表达的具体事实可保留原文，不得推测。"
+    },
+    {
+      "key": "fire_host_relationships",
+      "label": "消防主机数量及主从关系",
+      "group": "fire_control",
+      "type": "textarea",
+      "required": true,
+      "source": "踏勘要求的项目具体内容.xlsx / Sheet1 / 行65-66",
+      "extract": {
+        "mode": "sentence",
+        "keywords": [
+          "消防主机数量",
+          "主从",
+          "主机",
+          "主消控室"
+        ],
+        "negation_guard": false,
+        "max_sentences": 1000
+      },
+      "help": "有几个消控室就填写几行，每行注明消控室编号及对应主机信息。",
+      "ai_hint": "逐个消控室保留编号、主机信息及主从关系，每个消控室一行，不得合并遗漏。"
+    },
+    {
+      "key": "fire_host_brands",
+      "label": "消防主机品牌及主从关系",
+      "group": "fire_control",
+      "type": "textarea",
+      "required": true,
+      "source": "踏勘要求的项目具体内容.xlsx / Sheet1 / 行67-68",
+      "extract": {
+        "mode": "sentence",
+        "keywords": [
+          "消防主机品牌",
+          "主机品牌",
+          "品牌",
+          "赋安"
+        ],
+        "negation_guard": false,
+        "max_sentences": 1000
+      },
+      "help": "有几个消控室就填写几行，每行注明消控室编号及对应主机信息。",
+      "ai_hint": "逐个消控室保留编号、主机信息及主从关系，每个消控室一行，不得合并遗漏。"
+    },
+    {
+      "key": "fire_host_age",
+      "label": "消防主机出厂年限或投入使用年限",
+      "group": "fire_control",
+      "type": "textarea",
+      "required": true,
+      "source": "踏勘要求的项目具体内容.xlsx / Sheet1 / 行69",
+      "extract": {
+        "mode": "sentence",
+        "keywords": [
+          "出厂年限",
+          "使用年限",
+          "已使用",
+          "投入使用"
+        ],
+        "negation_guard": false
+      }
+    },
+    {
+      "key": "fire_host_buttons",
+      "label": "消防主机按键",
+      "group": "fire_control",
+      "type": "select",
+      "required": true,
+      "source": "踏勘要求的项目具体内容.xlsx / Sheet1 / 行70",
+      "extract": {
+        "mode": "enum",
+        "keywords": [
+          "消防主机按键",
+          "主机按键",
+          "按键"
+        ],
+        "negation_guard": false,
+        "context_keywords": [
+          "按键"
+        ]
+      },
+      "options": [
+        {
+          "value": "按键无损坏",
+          "synonyms": [
+            "按键完好"
+          ]
+        },
+        {
+          "value": "按键有损坏",
+          "synonyms": [
+            "按键损坏"
+          ]
+        }
+      ],
+      "help": "检查消防主机按键是否损坏。"
+    },
+    {
+      "key": "fire_point_code_table",
+      "label": "消防主机点位编码表",
+      "group": "fire_control",
+      "type": "select",
+      "required": true,
+      "source": "踏勘要求的项目具体内容.xlsx / Sheet1 / 行71",
+      "extract": {
+        "mode": "enum",
+        "keywords": [
+          "点位编码表"
+        ],
+        "negation_guard": false,
+        "context_keywords": [
+          "点位编码表"
+        ]
+      },
+      "options": [
+        {
+          "value": "有",
+          "synonyms": []
+        },
+        {
+          "value": "无",
+          "synonyms": [
+            "没有"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "fire_contract_expiry",
+      "label": "消防维保合同到期时间",
+      "group": "fire_maintenance",
+      "type": "textarea",
+      "required": true,
+      "source": "踏勘要求的项目具体内容.xlsx / Sheet1 / 行72",
+      "extract": {
+        "mode": "sentence",
+        "keywords": [
+          "维保合同到期",
+          "消防维保合同",
+          "合同到期时间"
+        ],
+        "negation_guard": false
+      }
+    },
+    {
+      "key": "fire_contract_party",
+      "label": "合同签约方（甲方）",
+      "group": "fire_maintenance",
+      "type": "textarea",
+      "required": true,
+      "source": "踏勘要求的项目具体内容.xlsx / Sheet1 / 行73",
+      "extract": {
+        "mode": "sentence",
+        "keywords": [
+          "合同签约方",
+          "签约方",
+          "甲方"
+        ],
+        "negation_guard": false
+      }
+    },
+    {
+      "key": "fire_maintenance_company",
+      "label": "维保单位名称",
+      "group": "fire_maintenance",
+      "type": "textarea",
+      "required": true,
+      "source": "踏勘要求的项目具体内容.xlsx / Sheet1 / 行74",
+      "extract": {
+        "mode": "sentence",
+        "keywords": [
+          "维保单位",
+          "维保公司"
+        ],
+        "negation_guard": false
+      }
+    },
+    {
+      "key": "fire_maintenance_contact",
+      "label": "维保联系人",
+      "group": "fire_maintenance",
+      "type": "textarea",
+      "required": true,
+      "source": "踏勘要求的项目具体内容.xlsx / Sheet1 / 行75",
+      "extract": {
+        "mode": "sentence",
+        "keywords": [
+          "维保联系人"
+        ],
+        "negation_guard": false
+      },
+      "help": "填写联系人姓名及电话。"
+    },
+    {
+      "key": "fire_renovation_cost",
+      "label": "恒益报价一次性改造费用",
+      "group": "fire_cost",
+      "type": "number",
+      "required": true,
+      "source": "踏勘要求的项目具体内容.xlsx / Sheet1 / 行76",
+      "extract": {
+        "mode": "money",
+        "keywords": [
+          "恒益报价",
+          "一次性改造费用",
+          "改造费用"
+        ],
+        "negation_guard": false,
+        "numeric_value": true
+      },
+      "unit": "元",
+      "remark": "必填！会出现在消防管家报价中",
+      "validate": {
+        "min": 0,
+        "message": "一次性改造费用不能为负数"
+      },
+      "ai_hint": "提取恒益报价一次性改造费用，金额统一换算为元；未提供不能推测。"
+    }
+  ]
+}

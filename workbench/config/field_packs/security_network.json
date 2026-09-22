@@ -191,20 +191,54 @@
       "key": "has_cabinet",
       "label": "现场是否有机柜",
       "group": "cabinet",
-      "type": "text",
+      "type": "select",
       "required": true,
-      "help": "机柜深度、剩余 U 数、供电插口等",
-      "ai_hint": "提取现场机柜有无及深度/剩余U/供电情况",
+      "help": "选择现场状态；如需记录深度、剩余 U 数或供电插口，请选择“其他 / 详细说明”填写完整情况。",
+      "ai_hint": "选择现场状态；如需记录深度、剩余 U 数或供电插口，请选择“其他 / 详细说明”填写完整情况。 优先使用候选项；选项无法表达的具体事实可保留原文，不得推测。",
       "extract": {
-        "mode": "sentence",
+        "mode": "enum",
         "keywords": [
           "机柜",
           "机房",
           "弱电间",
           "U",
           "供电"
-        ]
-      }
+        ],
+        "context_keywords": [
+          "机柜",
+          "机房",
+          "弱电间",
+          "U",
+          "供电"
+        ],
+        "fallback_text": true,
+        "negation_guard": false,
+        "prefer_longest_match": true
+      },
+      "options": [
+        {
+          "value": "有机柜",
+          "synonyms": [
+            "现有机柜",
+            "机柜有"
+          ]
+        },
+        {
+          "value": "无机柜",
+          "synonyms": [
+            "没有机柜",
+            "机柜没有"
+          ]
+        },
+        {
+          "value": "待确认",
+          "synonyms": [
+            "机柜待确认",
+            "机柜情况不清楚"
+          ]
+        }
+      ],
+      "allow_custom": true
     },
     {
       "key": "cabinet_condition",

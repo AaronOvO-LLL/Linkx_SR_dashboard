@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime
 
 from . import db, paths
-from .config import app_config, artifact_map, field_map, product_config
+from .config import app_config, artifact_map, field_map, product_config, field_config
 
 FIELD_STATUS_LABELS = {
     'extracted': '已提取',
@@ -24,6 +24,27 @@ PROJECT_STATUS_LABELS = {
 }
 
 PROJECT_CATEGORIES = ['内部项目', '外部项目', '重点项目']
+
+AUDIO_JOB_STATUS_LABELS = {
+    'pending': '等待中',
+    'uploading': '上传中',
+    'submitted': '已提交',
+    'transcribing': '转写中',
+    'awaiting_preview': '待预览',
+    'approved': '已确认',
+    'failed': '失败',
+}
+
+# 未终结的转写任务状态。页面加载时据此尝试恢复后台线程，避免长任务因用户
+# 离开页面或应用重启而永久停在中间状态。
+AUDIO_JOB_ACTIVE_STATUSES = ('pending', 'uploading', 'submitted', 'transcribing')
+
+
+def audio_status_tag(status):
+    """转写任务状态对应的标签配色。"""
+    if status in ('awaiting_preview', 'approved'):
+        return 'green'
+    return 'red' if status == 'failed' else 'blue'
 
 
 def new_id(prefix):
@@ -114,15 +135,15 @@ def list_deleted(dept_key):
 
 def purge_project(pid):
     """彻底删除项目及其全部关联数据与产出文件。"""
-    pps = list_products(pid)
-    for pp in pps:
+    for pp in list_products(pid):
         pp_dir = os.path.join(paths.OUTPUT_DIR, pp['id'])
         if os.path.isdir(pp_dir):
             shutil.rmtree(pp_dir, ignore_errors=True)
-        upload_dir = os.path.join(paths.UPLOAD_DIR, pp['id'])
-        if os.path.isdir(upload_dir):
-            shutil.rmtree(upload_dir, ignore_errors=True)
-        db.execute('DELETE FROM audio_transcription_jobs WHERE project_product_id=?', (pp['id'],))
+        # 项目级转写上线前，录音按产品目录存放。两条路径都要清理，否则用户
+        # 执行"彻底删除"后客户原始录音仍留在磁盘上。
+        legacy_upload_dir = os.path.join(paths.UPLOAD_DIR, pp['id'])
+        if os.path.isdir(legacy_upload_dir):
+            shutil.rmtree(legacy_upload_dir, ignore_errors=True)
         db.execute('DELETE FROM survey_field_values WHERE project_product_id=?', (pp['id'],))
         db.execute('DELETE FROM survey_sources WHERE project_product_id=?', (pp['id'],))
         db.execute('DELETE FROM extraction_runs WHERE project_product_id=?', (pp['id'],))
@@ -130,6 +151,11 @@ def purge_project(pid):
         db.execute('DELETE FROM artifact_runs WHERE project_product_id=?', (pp['id'],))
         db.execute('DELETE FROM export_packages WHERE project_product_id=?', (pp['id'],))
         db.execute('DELETE FROM project_products WHERE id=?', (pp['id'],))
+    upload_dir = os.path.join(paths.UPLOAD_DIR, pid)
+    if os.path.isdir(upload_dir):
+        shutil.rmtree(upload_dir, ignore_errors=True)
+    db.execute('DELETE FROM audio_transcription_jobs WHERE project_id=?', (pid,))
+    db.execute('DELETE FROM project_transcripts WHERE project_id=?', (pid,))
     db.execute('DELETE FROM projects WHERE id=?', (pid,))
 
 
@@ -168,7 +194,8 @@ def add_product(project_id, product_type):
     db.execute(
         """INSERT INTO project_products (id, project_id, product_type, product_version,
            template_version, status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)""",
-        (pid, project_id, product_type, cfg['version'], cfg['version'], 'draft', ts, ts))
+        (pid, project_id, product_type, cfg['version'],
+         field_config(product_type)['template_version'], 'draft', ts, ts))
     touch_project(project_id)
     return db.query_one('SELECT * FROM project_products WHERE id=?', (pid,))
 
@@ -219,7 +246,7 @@ def save_source(pp_id, content, kind='transcript'):
 
 def latest_source(pp_id):
     return db.query_one(
-        'SELECT * FROM survey_sources WHERE project_product_id=? ORDER BY created_at DESC LIMIT 1',
+        'SELECT * FROM survey_sources WHERE project_product_id=? ORDER BY created_at DESC, rowid DESC LIMIT 1',
         (pp_id,))
 
 
@@ -230,15 +257,21 @@ def all_sources(pp_id):
 
 # ---------------------------------------------------------------- 录音转写任务
 
-def create_audio_job(pp_id, original_name, local_path, file_size, provider='tencent'):
+def create_audio_job(project_id, original_name, local_path, file_size, provider='tencent'):
+    """登记一个项目级转写任务。
+
+    任务归属项目而非产品：同一段踏勘录音常被多个产品共用，按产品建任务会导致
+    重复上传和重复计费。project_product_id 仍写入空串而不是省略，因为历史库中
+    该列为 NOT NULL 且无默认值。
+    """
     jid = new_id('asr')
     ts = now_iso()
     db.execute(
         """INSERT INTO audio_transcription_jobs
-           (id, project_product_id, original_name, local_path, file_size, provider,
+           (id, project_id, project_product_id, original_name, local_path, file_size, provider,
             status, status_message, created_at, updated_at)
-           VALUES (?,?,?,?,?,?,?,?,?,?)""",
-        (jid, pp_id, original_name, local_path, file_size, provider,
+           VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
+        (jid, project_id, '', original_name, local_path, file_size, provider,
          'pending', '等待开始转写', ts, ts))
     return get_audio_job(jid)
 
@@ -247,10 +280,10 @@ def get_audio_job(job_id):
     return db.query_one('SELECT * FROM audio_transcription_jobs WHERE id=?', (job_id,))
 
 
-def list_audio_jobs(pp_id):
+def list_audio_jobs(project_id):
     return db.query(
-        'SELECT * FROM audio_transcription_jobs WHERE project_product_id=? '
-        'ORDER BY created_at DESC', (pp_id,))
+        'SELECT * FROM audio_transcription_jobs WHERE project_id=? '
+        'ORDER BY created_at DESC', (project_id,))
 
 
 def update_audio_job(job_id, **values):
@@ -269,6 +302,34 @@ def update_audio_job(job_id, **values):
     db.execute('UPDATE audio_transcription_jobs SET %s WHERE id=?' % cols,
                tuple(clean.values()) + (job_id,))
     return get_audio_job(job_id)
+
+
+# ---------------------------------------------------------------- 项目级共享转写稿
+
+def save_project_transcript(project_id, audio_job_id, content):
+    """保存一份确认后的项目级转写稿。
+
+    与 survey_sources 分开存放：这里是项目下所有产品的共同输入源，产品导入时
+    才复制进各自的 survey_sources，之后产品内的修改不影响本项目稿。
+    """
+    tid = new_id('pt')
+    db.execute(
+        """INSERT INTO project_transcripts (id, project_id, audio_job_id, content,
+           char_count, created_at) VALUES (?,?,?,?,?,?)""",
+        (tid, project_id, audio_job_id or '', content, len(content or ''), now_iso()))
+    touch_project(project_id)
+    return tid
+
+
+def latest_project_transcript(project_id):
+    return db.query_one(
+        'SELECT * FROM project_transcripts WHERE project_id=? '
+        'ORDER BY created_at DESC, rowid DESC LIMIT 1', (project_id,))
+
+
+def all_project_transcripts(project_id):
+    return db.query('SELECT * FROM project_transcripts WHERE project_id=? ORDER BY created_at',
+                    (project_id,))
 
 
 # ---------------------------------------------------------------- 字段值
@@ -417,6 +478,13 @@ def latest_export(pp_id):
 
 # ---------------------------------------------------------------- 派生状态
 
+def field_status(row, field):
+    """Use current requiredness for empty historical answers without rewriting them."""
+    if not row or _value_is_empty(row['value_json']):
+        return 'required_missing' if field.get('required') else 'optional_missing'
+    return row['status']
+
+
 def field_stats(pp_id, product_type):
     """统计字段状态，用于进度与提示。"""
     fmap = field_map(product_type)
@@ -432,7 +500,7 @@ def field_stats(pp_id, product_type):
             stats['required_total'] += 1
             if filled:
                 stats['required_done'] += 1
-        st = row['status'] if row else 'optional_missing'
+        st = field_status(row, f)
         if st == 'pending_confirm':
             stats['pending_confirm'] += 1
         elif st == 'required_missing':
@@ -470,8 +538,8 @@ def progress_of(pp_id, product_type):
         return 100, 'completed'
     if val and val['ok']:
         return 80, 'pending_generate'
-    if run and run['status'] == 'success':
-        st = field_stats(pp_id, product_type)
+    st = field_stats(pp_id, product_type)
+    if (run and run['status'] == 'success') or st['filled']:
         if st['required_done'] >= st['required_total']:
             return 65, 'pending_generate'
         return 50, 'pending_fill'

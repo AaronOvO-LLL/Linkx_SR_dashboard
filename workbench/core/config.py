@@ -29,15 +29,15 @@ def asr_config():
     return load_json(os.path.join(paths.CONFIG_DIR, 'asr.json'))
 
 
-def departments_config():
-    return load_json(os.path.join(paths.CONFIG_DIR, 'departments.json'))
+def asr_terms_config():
+    """项目级 ASR 热词与术语纠错词表。
 
-
-def save_departments_config(cfg):
-    path = os.path.join(paths.CONFIG_DIR, 'departments.json')
-    with open(path, 'w', encoding='utf-8') as f:
-        json.dump(cfg, f, ensure_ascii=False, indent=2)
-    _CACHE.pop(path, None)
+    转写发生在选择产品之前，此时无法确定产品类型，所以词表必须是项目级的
+    一份合并结果，而不是各产品目录下的 asr_terms.json。文件缺失时返回空配置，
+    让转写退化为"不带热词、不做纠错"，而不是直接失败。
+    """
+    path = os.path.join(paths.CONFIG_DIR, 'asr_terms.json')
+    return load_json(path) if os.path.isfile(path) else {}
 
 
 def list_products():

@@ -14,7 +14,7 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape, StrictUndef
 
 from . import paths, repo
 from .config import (artifact_map, artifacts_config, app_config, field_map,
-                     fields_by_group, product_config)
+                     fields_by_group, product_config, field_config)
 from .repo import (FIELD_STATUS_LABELS, field_values, get_pp, latest_extraction_run,
                    latest_source)
 from .validate import parse_value
@@ -79,8 +79,8 @@ def build_context(pp_id, product_type):
             'label': f['label'],
             'value': v,
             'text': _value_to_text(v),
-            'status': row['status'] if row else 'optional_missing',
-            'status_label': FIELD_STATUS_LABELS.get(row['status'], '') if row else '可选缺失',
+            'status': repo.field_status(row, f),
+            'status_label': FIELD_STATUS_LABELS.get(repo.field_status(row, f), ''),
             'confidence': row['confidence'] if row else None,
             'quote': row['source_quote'] if row else '',
             'updated_by': row['updated_by'] if row else '',
@@ -108,6 +108,7 @@ def build_context(pp_id, product_type):
             'generated_at': datetime.now().strftime('%Y-%m-%d %H:%M'),
             'product_version': cfg_ver,
             'template_version': artifacts_config(product_type)['template_version'],
+            'field_template_version': field_config(product_type)['template_version'],
             'extraction_provider': (run['provider'] if run else '-'),
             'source_chars': (src['char_count'] if src else 0),
         },

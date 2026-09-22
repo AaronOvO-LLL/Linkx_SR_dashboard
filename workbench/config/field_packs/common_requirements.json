@@ -16,12 +16,12 @@
       "key": "compliance",
       "label": "特殊合规/安全/保密要求",
       "group": "special",
-      "type": "textarea",
+      "type": "multiselect",
       "required": false,
-      "help": "例如：视频不得出园区，需要使用企业内网",
-      "ai_hint": "提取保密、合规、数据存储等特殊要求",
+      "help": "只选择客户明确提出的要求；具体标准、期限和其他合规要求请补充说明。",
+      "ai_hint": "只选择客户明确提出的要求；具体标准、期限和其他合规要求请补充说明。 优先使用候选项；选项无法表达的具体事实可保留原文，不得推测。",
       "extract": {
-        "mode": "sentence",
+        "mode": "list",
         "keywords": [
           "保密",
           "合规",
@@ -35,37 +35,131 @@
           "存在本地",
           "不能出厂区",
           "不外传"
-        ]
-      }
+        ],
+        "context_keywords": [
+          "保密",
+          "合规",
+          "等保",
+          "存储",
+          "出境",
+          "隐私",
+          "不许",
+          "不能外传",
+          "本地化",
+          "存在本地",
+          "不能出厂区",
+          "不外传"
+        ],
+        "fallback_text": true,
+        "preserve_details": true
+      },
+      "options": [
+        {
+          "value": "视频不出园区",
+          "synonyms": [
+            "视频不得出园区",
+            "不能出厂区",
+            "视频不外传"
+          ]
+        },
+        {
+          "value": "本地存储",
+          "synonyms": [
+            "存在本地",
+            "本地化存储"
+          ]
+        },
+        {
+          "value": "使用企业内网",
+          "synonyms": [
+            "企业内网",
+            "使用内网"
+          ]
+        },
+        {
+          "value": "访问权限管控",
+          "synonyms": [
+            "权限管控",
+            "访问权限"
+          ]
+        },
+        {
+          "value": "操作日志留存",
+          "synonyms": [
+            "操作日志",
+            "日志留存"
+          ]
+        }
+      ],
+      "allow_custom": true
     },
     {
       "key": "highlights",
       "label": "亮点或标杆打造要求",
       "group": "special",
-      "type": "textarea",
+      "type": "multiselect",
       "required": false,
-      "help": "例如：是试点标杆",
-      "ai_hint": "提取客户对亮点或标杆打造的要求",
+      "help": "可多选；具体展示目标和验收要求可补充说明。",
+      "ai_hint": "可多选；具体展示目标和验收要求可补充说明。 优先使用候选项；选项无法表达的具体事实可保留原文，不得推测。",
       "extract": {
-        "mode": "sentence",
+        "mode": "list",
         "keywords": [
           "亮点",
           "标杆",
           "试点",
           "示范",
           "展示"
-        ]
-      }
+        ],
+        "context_keywords": [
+          "亮点",
+          "标杆",
+          "试点",
+          "示范",
+          "展示"
+        ],
+        "fallback_text": true,
+        "preserve_details": true
+      },
+      "options": [
+        {
+          "value": "试点验证",
+          "synonyms": [
+            "试点",
+            "先试用"
+          ]
+        },
+        {
+          "value": "标杆项目",
+          "synonyms": [
+            "标杆"
+          ]
+        },
+        {
+          "value": "示范展示",
+          "synonyms": [
+            "示范",
+            "展示"
+          ]
+        },
+        {
+          "value": "后续推广复制",
+          "synonyms": [
+            "推广",
+            "复制"
+          ]
+        }
+      ],
+      "allow_custom": true
     },
     {
       "key": "procurement",
       "label": "采购与审批要求",
       "group": "special",
-      "type": "textarea",
+      "type": "multiselect",
       "required": false,
-      "ai_hint": "提取招投标、比价、资质等采购要求",
+      "ai_hint": "可多选；采购时限、审批环节和其他限制可补充说明。 优先使用候选项；选项无法表达的具体事实可保留原文，不得推测。",
       "extract": {
-        "mode": "sentence",
+        "mode": "list",
         "keywords": [
           "招标",
           "比价",
@@ -75,8 +169,63 @@
           "入围",
           "合同",
           "框架"
-        ]
-      }
+        ],
+        "context_keywords": [
+          "招标",
+          "比价",
+          "审批",
+          "采购",
+          "资质",
+          "入围",
+          "合同",
+          "框架"
+        ],
+        "fallback_text": true,
+        "preserve_details": true
+      },
+      "options": [
+        {
+          "value": "招投标",
+          "synonyms": [
+            "招标",
+            "投标"
+          ]
+        },
+        {
+          "value": "多家比价",
+          "synonyms": [
+            "比价",
+            "货比三家"
+          ]
+        },
+        {
+          "value": "供应商入围",
+          "synonyms": [
+            "入围",
+            "供应商准入"
+          ]
+        },
+        {
+          "value": "资质审核",
+          "synonyms": [
+            "资质"
+          ]
+        },
+        {
+          "value": "内部审批",
+          "synonyms": [
+            "审批"
+          ]
+        },
+        {
+          "value": "框架采购",
+          "synonyms": [
+            "框架协议"
+          ]
+        }
+      ],
+      "allow_custom": true,
+      "help": "可多选；采购时限、审批环节和其他限制可补充说明。"
     }
   ]
 }

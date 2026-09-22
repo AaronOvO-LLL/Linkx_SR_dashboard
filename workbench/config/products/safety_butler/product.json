@@ -12,8 +12,17 @@
     "artifact_generation"
   ],
   "planned_products": [
-    {"product_type": "fire_butler", "name": "消防管家", "status": "planned", "desc": "消防设施监测、疏散通道管理与消防合规托管"},
-    {"product_type": "energy_butler", "name": "能源管家", "status": "planned", "desc": "能耗采集、异常用能与节能优化建议"},
-    {"product_type": "device_butler", "name": "设备管家", "status": "planned", "desc": "设备台账、状态监测与预测性维护"}
+    {
+      "product_type": "energy_butler",
+      "name": "能源管家",
+      "status": "planned",
+      "desc": "能耗采集、异常用能与节能优化建议"
+    },
+    {
+      "product_type": "device_butler",
+      "name": "设备管家",
+      "status": "planned",
+      "desc": "设备台账、状态监测与预测性维护"
+    }
   ]
 }

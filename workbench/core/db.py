@@ -51,9 +51,13 @@ CREATE TABLE IF NOT EXISTS survey_sources (
 );
 CREATE INDEX IF NOT EXISTS idx_src_pp ON survey_sources(project_product_id);
 
+-- project_product_id 是 v3 之前的归属列，现仅用于历史审计。保留而不删除，
+-- 是因为老任务需要能回答"当时是在哪个产品下转写的"，且 SQLite 删列会连带
+-- 丢失该审计信息。新任务一律写空串，归属只看 project_id。
 CREATE TABLE IF NOT EXISTS audio_transcription_jobs (
     id                  TEXT PRIMARY KEY,
-    project_product_id  TEXT NOT NULL,
+    project_id          TEXT NOT NULL DEFAULT '',
+    project_product_id  TEXT NOT NULL DEFAULT '',
     original_name       TEXT NOT NULL,
     local_path          TEXT NOT NULL,
     file_size           INTEGER NOT NULL DEFAULT 0,
@@ -73,8 +77,23 @@ CREATE TABLE IF NOT EXISTS audio_transcription_jobs (
     completed_at        TEXT,
     approved_at         TEXT
 );
+-- idx_audio_jobs_project 刻意不在这里声明：init_db 先跑 SCHEMA 再跑迁移，历史库
+-- 中 audio_transcription_jobs 还没有 project_id 列，在此建索引会让升级直接失败。
+-- 该索引由迁移 v3 在补列之后创建，新库走 init_db 同样能拿到。
 CREATE INDEX IF NOT EXISTS idx_audio_jobs_pp
     ON audio_transcription_jobs(project_product_id, created_at);
+
+-- 项目级共享转写稿：录音确认后的正式文本，供项目下所有产品导入使用。
+CREATE TABLE IF NOT EXISTS project_transcripts (
+    id                  TEXT PRIMARY KEY,
+    project_id          TEXT NOT NULL,
+    audio_job_id        TEXT NOT NULL DEFAULT '',
+    content             TEXT NOT NULL DEFAULT '',
+    char_count          INTEGER NOT NULL DEFAULT 0,
+    created_at          TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_project_transcripts
+    ON project_transcripts(project_id, created_at);
 
 CREATE TABLE IF NOT EXISTS survey_field_values (
     id                  TEXT PRIMARY KEY,
