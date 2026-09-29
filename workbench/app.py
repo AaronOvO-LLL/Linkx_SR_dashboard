@@ -220,6 +220,21 @@ def change_password():
     return render_template('password.html', error=None)
 
 
+@app.route('/docs')
+def docs():
+    r = require_dept()
+    if r:
+        return r
+    # 版本更新说明以项目根目录的 版本更新说明.md 为单一事实来源，
+    # 改该 md 文件即可同步页面，无需改模板。
+    changelog_html = ''
+    md_path = os.path.normpath(os.path.join(ROOT, os.pardir, '版本更新说明.md'))
+    if os.path.isfile(md_path):
+        with open(md_path, encoding='utf-8') as f:
+            changelog_html = generate.md_to_html_fragment(f.read())
+    return render_template('docs.html', changelog_html=changelog_html)
+
+
 # ---------------------------------------------------------------- 2. 项目中心
 
 @app.route('/')

@@ -18,6 +18,7 @@
     <button class="nav-toggle" type="button" aria-controls="mainNav" aria-expanded="false" hidden>菜单</button>
     <nav class="topnav" id="mainNav" aria-label="主导航">
       <a href="{{ url_for('projects') }}">项目中心</a>
+      <a href="{{ url_for('docs') }}">使用说明</a>
       <a href="{{ url_for('change_password') }}">修改密码</a>
       <span class="dept-chip">{{ dept.name }}</span>
       <a class="logout" href="{{ url_for('logout') }}">退出分部</a>

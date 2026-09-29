@@ -12,7 +12,7 @@ class HotwordValidationTests(unittest.TestCase):
         config = hotwords.load_config(hotwords.DEFAULT_CONFIG)
         rendered = hotwords.render_hotwords(config)
         hotwords.validate_generated_file(hotwords.DEFAULT_CONFIG, config, rendered)
-        self.assertEqual(len(config["hotwords"]), 46)
+        self.assertEqual(len(config["hotwords"]), 56)
         self.assertNotIn("|100", rendered)
 
     def test_duplicate_is_rejected(self):

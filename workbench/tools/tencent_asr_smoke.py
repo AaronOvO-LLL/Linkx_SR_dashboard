@@ -97,7 +97,7 @@ def import_sdks() -> dict[str, Any]:
     except ImportError as exc:
         raise SmokeTestError(
             "腾讯云 SDK 尚未安装。请先执行：\n"
-            "python -m pip install -r requirements-asr.txt"
+            "python -m pip install -r requirements.txt"
         ) from exc
     return {
         "CosConfig": CosConfig,

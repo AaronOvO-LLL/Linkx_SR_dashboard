@@ -239,3 +239,41 @@ textarea{min-height:92px;resize:vertical;line-height:1.7}
 .preview-box th{background:#f7f9fc;color:var(--brand)}
 .preview-box blockquote{margin:10px 0;padding:8px 12px;background:#f7f9fc;border-left:3px solid var(--brand);color:var(--muted)}
 .preview-box ul{padding-left:20px}
+
+/* ---------- 使用说明页 ---------- */
+.page-sub{color:var(--muted);font-size:12.5px;margin-bottom:18px}
+.seg button{padding:6px 14px;font-size:13px;color:var(--muted);background:#fff}
+.seg button.on{background:var(--brand);color:#fff}
+.pane{display:none}
+.pane.on{display:block;animation:fade .18s ease}
+@keyframes fade{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+.doc h3{font-size:14.5px;margin:20px 0 8px;color:var(--brand);padding-left:9px;border-left:4px solid var(--brand)}
+.doc .card > .flow-strip + h3{margin-top:20px}
+.doc p{font-size:13.5px;line-height:1.8;margin:6px 0}
+.doc ul{padding-left:20px;margin:6px 0;font-size:13.5px;line-height:1.9}
+.doc table{border-collapse:collapse;width:100%;margin:10px 0;font-size:13px}
+.doc th,.doc td{border:1px solid var(--line);padding:6px 9px;text-align:left}
+.doc th{background:#f7f9fc;color:var(--brand);font-weight:500}
+.doc blockquote{margin:10px 0;padding:8px 12px;background:#f7f9fc;border-left:3px solid var(--brand);
+  color:var(--muted);font-size:12.5px;border-radius:0 6px 6px 0}
+.changelog h1{display:none}
+.changelog p{margin:14px 0 2px}
+.changelog p strong{color:var(--brand);font-size:14px}
+.changelog blockquote + p{margin-top:14px}
+.changelog ul{margin:4px 0 10px}
+.ver{border-left:2px solid var(--line);padding:0 0 8px 18px;position:relative;margin-left:6px}
+.ver:last-child{padding-bottom:0}
+.ver::before{content:"";position:absolute;left:-6px;top:5px;width:10px;height:10px;border-radius:50%;
+  background:#fff;border:2px solid var(--brand)}
+.ver-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px}
+.ver-head b{font-size:14.5px}
+.ver-head time{font-size:12px;color:var(--muted)}
+.ver ul{padding-left:18px;margin:6px 0 10px;font-size:13px;line-height:2}
+.ver .tag{margin-right:6px}
+.fb-hero{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.fb-hero .sub{margin:4px 0 0}
+.fb-tips{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.fb-tip{flex:1;min-width:180px;background:#f7f9fc;border:1px solid var(--line);border-radius:10px;
+  padding:11px 14px;font-size:12.5px;color:var(--muted);line-height:1.6}
+.fb-tip b{display:block;color:var(--ink);font-size:13px;margin-bottom:2px}
+@media(max-width:680px){.seg.doc-tabs{width:100%}.seg.doc-tabs button{flex:1;padding:7px 0}}

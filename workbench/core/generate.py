@@ -121,7 +121,7 @@ def build_context(pp_id, product_type):
 
 # ------------------------------------------------------------------ 极简 Markdown → HTML
 
-def md_to_html(md, title=''):
+def md_to_html_fragment(md):
     lines = md.splitlines()
     out = []
     in_list = False
@@ -202,6 +202,11 @@ def md_to_html(md, title=''):
     close_table()
 
     body = '\n'.join(out)
+    return body
+
+
+def md_to_html(md, title=''):
+    body = md_to_html_fragment(md)
     esc_title = (title or '生成物').replace('<', '&lt;')
     return HTML_WRAPPER.replace('{{title}}', esc_title).replace('{{body}}', body)
 

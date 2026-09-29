@@ -9,7 +9,7 @@
 在 `workbench` 目录执行：
 
 ```powershell
-python -m pip install -r requirements-asr.txt
+python -m pip install -r requirements.txt
 ```
 
 ## 2. 配置环境变量
@@ -81,7 +81,7 @@ python tools/tencent_asr_smoke.py resume "data\asr_smoke\20260919_120000_ab12cd3
 首版安全管家热词表位于：
 
 - `config/products/safety_butler/asr_terms.json`：热词、权重、纠错和待确认项
-- `config/products/safety_butler/tencent_hotwords_v1.txt`：腾讯云 `词|权重` 导入格式
+- `config/tencent_hotwords_v1.txt`：腾讯云 `词|权重` 导入格式
 
 校验或同步热词表：
 

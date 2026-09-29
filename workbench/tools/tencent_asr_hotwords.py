@@ -30,8 +30,6 @@ except ImportError:  # 直接执行本文件时，tools 目录位于 sys.path。
 DEFAULT_CONFIG = (
     Path(__file__).resolve().parents[1]
     / "config"
-    / "products"
-    / "safety_butler"
     / "asr_terms.json"
 )
 
