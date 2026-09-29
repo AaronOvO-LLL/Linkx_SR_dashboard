@@ -83,6 +83,11 @@
 
     document.querySelectorAll('.tbl[data-type=table]').forEach(function (tbl) {
       tbl.addEventListener('input', function () { scheduleSave(tbl, 700); });
+      tbl.addEventListener('change', function (event) {
+        if (event.target.matches('[data-rules-role=category]')) updateRuleDeviceOptions(tbl, event.target.closest('tr'));
+        scheduleSave(tbl, 0);
+      });
+      initRuleTable(tbl);
     });
 
     // 切换方式前立即保存，包括尚未到达自动保存延时的最后一次输入。
@@ -108,6 +113,45 @@
     });
   }
 
+  function initRuleTable(tbl) {
+    var raw = tbl.getAttribute('data-rules');
+    if (!raw) return;
+    var rules;
+    try { rules = JSON.parse(raw); } catch (e) { return; }
+    tbl.querySelectorAll('tbody tr').forEach(function (tr) { updateRuleDeviceOptions(tbl, tr, true); });
+  }
+
+  function updateRuleDeviceOptions(tbl, tr, preserveCurrent) {
+    var raw = tbl.getAttribute('data-rules');
+    if (!raw || !tr) return;
+    var rules;
+    try { rules = JSON.parse(raw); } catch (e) { return; }
+    var categorySelect = tr.querySelector('[data-rules-role=category]');
+    var itemSelect = tr.querySelector('[data-rules-role=item]');
+    if (!categorySelect || !itemSelect) return;
+    var category = rules.categories.find(function (c) { return c.name === categorySelect.value; });
+    var previous = preserveCurrent ? itemSelect.value : '';
+    itemSelect.replaceChildren();
+    var placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = category ? '请选择物业设备' : '请先选择空间类型';
+    itemSelect.appendChild(placeholder);
+    if (category) {
+      category.items.forEach(function (item) {
+        var option = document.createElement('option');
+        option.value = item.name;
+        option.textContent = item.name + (item.kind === 'fixed' ? '（固定项）' : '');
+        itemSelect.appendChild(option);
+      });
+    }
+    if (previous && Array.from(itemSelect.options).some(function (o) { return o.value === previous; })) itemSelect.value = previous;
+    else if (preserveCurrent && previous) {
+      var legacy = document.createElement('option'); legacy.value = previous; legacy.textContent = previous + '（历史值）';
+      itemSelect.appendChild(legacy); itemSelect.value = previous;
+    }
+    itemSelect.disabled = !category;
+  }
+
   function readValue(el) {
     var type = el.getAttribute('data-type');
     if (type === 'choice-single') {
@@ -129,7 +173,7 @@
     if (type === 'table') {
       return Array.prototype.slice.call(el.querySelectorAll('tbody tr')).map(function (tr) {
         var obj = {};
-        tr.querySelectorAll('input[data-col]').forEach(function (inp) {
+        tr.querySelectorAll('[data-col]').forEach(function (inp) {
           obj[inp.getAttribute('data-col')] = (inp.value || '').trim();
         });
         return obj;
@@ -214,28 +258,20 @@
     set('sMissing', res.required_missing);
     set('warnMissing', res.required_missing);
 
+    var errors = (res.issues || []).filter(function (i) { return i.level === 'error'; });
+    var banner = document.getElementById('validationIssues');
+    if (banner) {
+      banner.replaceChildren();
+      errors.forEach(function (issue) {
+        var div = document.createElement('div'); div.textContent = issue.message; banner.appendChild(div);
+      });
+      banner.hidden = errors.length === 0;
+    }
+    // 预览始终可进入；生成资格由后端重新判定。
     var btn = document.getElementById('nextBtn');
-    var hint = document.getElementById('nextHint');
-    if (btn) {
-      if (!btn.getAttribute('data-href')) btn.setAttribute('data-href', btn.href);
-      var blocked = !res.validation_ok;
-      btn.classList.toggle('gray', blocked);
-      btn.setAttribute('aria-disabled', blocked ? 'true' : 'false');
-      if (blocked) {
-        btn.setAttribute('href', 'javascript:void(0)');
-        btn.onclick = function () {
-          alert('还有 ' + res.required_missing + ' 项必填内容未补齐，补齐后才能进入生成步骤。');
-        };
-      } else {
-        btn.setAttribute('href', btn.getAttribute('data-href') || btn.href);
-        btn.onclick = null;
-      }
-    }
-    if (hint) {
-      hint.textContent = res.validation_ok
-        ? '校验通过，可以进入下一步。'
-        : '还需补齐 ' + res.required_missing + ' 项必填内容。';
-    }
+    if (btn) btn.classList.toggle('gray', !res.validation_ok);
+    set('nextHint', res.validation_ok ? '校验通过，可以进入下一步。' : '请核对上方校验提示，暂不能生成。');
+    document.querySelectorAll('.fld-row .issue').forEach(function (el) { el.remove(); });
 
     var missRow = document.querySelector('.fld-row.miss');
     if (missRow) missRow.id = 'firstMissing';
@@ -306,12 +342,34 @@
     while (tbl && tbl.tagName !== 'TABLE') tbl = tbl.previousElementSibling;
     if (!tbl) return;
     var tr = document.createElement('tr');
-    cols.split(',').forEach(function (c) {
+    var number = document.createElement('td');
+    number.setAttribute('data-row-number', ''); number.textContent = tbl.tBodies[0].rows.length + 1; tr.appendChild(number);
+    var tableRules = tbl.getAttribute('data-rules') ? JSON.parse(tbl.getAttribute('data-rules')) : null;
+    var rowValues = {};
+    if (tableRules) {
+      rowValues[tableRules.category_column] = '';
+      rowValues[tableRules.item_column] = '';
+    }
+    JSON.parse(tbl.getAttribute('data-columns')).forEach(function (c) {
       var td = document.createElement('td');
-      var inp = document.createElement('input');
-      inp.setAttribute('data-col', c);
-      td.appendChild(inp);
-      tr.appendChild(td);
+      var inp;
+      if (tableRules && c.key === tableRules.category_column) {
+        inp = document.createElement('select');
+        inp.setAttribute('data-rules-role', 'category');
+        var choose = document.createElement('option'); choose.value = ''; choose.textContent = '请选择空间类型'; inp.appendChild(choose);
+        tableRules.categories.forEach(function (cat) { var op = document.createElement('option'); op.value = cat.name; op.textContent = cat.name; inp.appendChild(op); });
+      } else if (tableRules && c.key === tableRules.item_column) {
+        inp = document.createElement('select'); inp.setAttribute('data-rules-role', 'item'); inp.disabled = true;
+        var chooseItem = document.createElement('option'); chooseItem.value = ''; chooseItem.textContent = '请先选择空间类型'; inp.appendChild(chooseItem);
+      } else {
+        inp = document.createElement(c.type === 'select' ? 'select' : 'input');
+        if (c.type === 'select') {
+          c.options.forEach(function (o) { var op = document.createElement('option'); op.value = o.value; op.textContent = o.value; inp.appendChild(op); });
+        } else { inp.type = c.type === 'number' ? 'number' : 'text'; inp.step = 'any'; }
+        inp.value = c.default || '';
+      }
+      inp.setAttribute('data-col', c.key); inp.setAttribute('aria-label', c.label);
+      td.appendChild(inp); tr.appendChild(td);
     });
     var td = document.createElement('td');
     var b = document.createElement('button');
@@ -322,7 +380,9 @@
     td.appendChild(b);
     tr.appendChild(td);
     tbl.querySelector('tbody').appendChild(tr);
+    if (tableRules) updateRuleDeviceOptions(tbl, tr);
     tr.querySelector('input').focus();
+    scheduleSave(tbl, 0);
   };
 
   window.delRow = function (btn) {
@@ -330,6 +390,7 @@
     if (tr) {
       var tbl = tr.closest('table');
       tr.remove();
+      tbl.querySelectorAll('[data-row-number]').forEach(function (cell, i) { cell.textContent = i + 1; });
       scheduleSave(tbl, 0);
     }
   };

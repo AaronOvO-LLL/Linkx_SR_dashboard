@@ -47,6 +47,7 @@ def regenerate_artifact(pp, key):
     require_capability(pp['product_type'], 'artifact_generation')
     if key not in artifact_map(pp['product_type']):
         raise ArtifactServiceError('未知生成物。')
+    require_valid_artifacts(pp)
     repo.reset_artifact_run(pp['id'], key)
     return generate.generate_selected(pp['id'], pp['product_type'], [key])[0]
 
@@ -54,6 +55,7 @@ def regenerate_artifact(pp, key):
 def package_artifacts(pp, keys=None):
     """打包当前产品仍声明的生成物。"""
     require_capability(pp['product_type'], 'artifact_generation')
+    require_valid_artifacts(pp)
     return packaging.package_zip(pp['id'], pp['product_type'], keys)
 
 
@@ -73,3 +75,10 @@ def latest_current_export(pp):
         return None
     current_keys = set(artifact_map(pp['product_type']))
     return export if exported_keys <= current_keys else None
+
+
+def require_valid_artifacts(pp):
+    """重新检查当前数据，历史文件不能绕过修改后的准入结论。"""
+    ok, issues = validate(pp['id'], pp['product_type'])
+    if not ok:
+        raise ArtifactServiceError('；'.join(i['message'] for i in issues if i['level'] == 'error'))

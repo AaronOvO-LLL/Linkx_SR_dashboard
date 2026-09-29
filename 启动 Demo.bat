@@ -18,6 +18,8 @@ if defined LINGSHI_PYTHON if exist "%LINGSHI_PYTHON%" (
     set "PYTHON_EXE=%LINGSHI_PYTHON%"
 )
 
+if not defined PYTHON_EXE if exist ".venv\Scripts\python.exe" set "PYTHON_EXE=%CD%\.venv\Scripts\python.exe"
+
 if not defined PYTHON_EXE (
     for /f "delims=" %%I in ('where python 2^>nul') do if not defined PYTHON_EXE set "PYTHON_EXE=%%I"
 )
@@ -38,14 +40,14 @@ if not defined PYTHON_EXE (
     exit /b 1
 )
 
-"%PYTHON_EXE%" %PYTHON_ARGS% -c "import flask, jinja2, qcloud_cos, tencentcloud" >nul 2>&1
+"%PYTHON_EXE%" %PYTHON_ARGS% -c "import flask, jinja2, qcloud_cos, tencentcloud, openpyxl" >nul 2>&1
 if errorlevel 1 (
     echo [SETUP] Installing dependencies from requirements.txt ...
-    "%PYTHON_EXE%" %PYTHON_ARGS% -m pip install --user -r requirements.txt
+    "%PYTHON_EXE%" %PYTHON_ARGS% -m pip install -r requirements.txt
     if errorlevel 1 (
         echo.
         echo [ERROR] Dependency installation failed. Run this command in workbench:
-        echo "%PYTHON_EXE%" %PYTHON_ARGS% -m pip install --user -r requirements.txt
+        echo "%PYTHON_EXE%" %PYTHON_ARGS% -m pip install -r requirements.txt
         pause
         exit /b 1
     )

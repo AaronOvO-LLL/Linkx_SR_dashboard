@@ -1,0 +1,66 @@
+{
+  "version": "0.1.0",
+  "hotwords": [
+    {
+      "term": "能源管家",
+      "weight": 10,
+      "category": "energy",
+      "source": "energy_butler"
+    },
+    {
+      "term": "冷水主机",
+      "weight": 10,
+      "category": "energy",
+      "source": "energy_butler"
+    },
+    {
+      "term": "冷却塔",
+      "weight": 10,
+      "category": "energy",
+      "source": "energy_butler"
+    },
+    {
+      "term": "板换",
+      "weight": 10,
+      "category": "energy",
+      "source": "energy_butler"
+    },
+    {
+      "term": "VRV",
+      "weight": 10,
+      "category": "energy",
+      "source": "energy_butler"
+    },
+    {
+      "term": "BA",
+      "weight": 10,
+      "category": "energy",
+      "source": "energy_butler"
+    },
+    {
+      "term": "冷冻水泵",
+      "weight": 10,
+      "category": "energy",
+      "source": "energy_butler"
+    },
+    {
+      "term": "冷却塔循环泵",
+      "weight": 10,
+      "category": "energy",
+      "source": "energy_butler"
+    },
+    {
+      "term": "制冷季",
+      "weight": 10,
+      "category": "energy",
+      "source": "energy_butler"
+    },
+    {
+      "term": "非制冷季",
+      "weight": 10,
+      "category": "energy",
+      "source": "energy_butler"
+    }
+  ],
+  "corrections": []
+}

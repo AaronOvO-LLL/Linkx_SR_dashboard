@@ -99,6 +99,17 @@ def save_field_value(pp, project, data):
             value = normalize_manual_choice(field, value)
         except ValueError as exc:
             raise SurveyServiceError(str(exc)) from exc
+    if field['type'] == 'table':
+        if not isinstance(value, list) or any(not isinstance(r, dict) for r in value):
+            raise SurveyServiceError('表格值必须为对象数组')
+        value = [{c['key']: r.get(c['key']) if r.get(c['key']) not in (None, '') else c.get('default', '') for c in field['columns']} for r in value]
+        output_def = extract.rules_output_for(pp['product_type'], field)
+        if output_def:
+            # 手动新增一间设备房后，固定项要按空间类型自动补出来，否则用户得自己
+            # 记住每类房间该配几台温湿度/水浸/网关/摄像头。同时把口语写法归一到
+            # 规则库标准名，避免「生活水箱」这类同义词换算不出传感器。
+            from core import rules
+            value = rules.materialize(output_def, value)
     is_empty = value in (None, '', [], {})
     if is_empty:
         status = 'required_missing' if field.get('required') else 'optional_missing'

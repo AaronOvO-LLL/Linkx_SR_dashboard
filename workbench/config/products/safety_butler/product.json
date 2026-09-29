@@ -13,12 +13,6 @@
   ],
   "planned_products": [
     {
-      "product_type": "energy_butler",
-      "name": "能源管家",
-      "status": "planned",
-      "desc": "能耗采集、异常用能与节能优化建议"
-    },
-    {
       "product_type": "device_butler",
       "name": "设备管家",
       "status": "planned",

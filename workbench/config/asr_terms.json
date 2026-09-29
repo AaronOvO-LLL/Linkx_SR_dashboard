@@ -1,10 +1,11 @@
 {
   "schema_version": "1.0",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "status": "draft",
   "scope": "project_global",
   "sources": [
-    "safety_butler"
+    "safety_butler",
+    "energy_butler"
   ],
   "_note": "项目级 ASR 词表：录音转写发生在选择产品之前，运行时只读本文件。当前内容来自 safety_butler 词表；fire_butler 尚无词表。各产品目录下的 asr_terms.json 仅作词表素材，需要新增词条时先改产品素材再合并到这里。",
   "provider": {
@@ -298,6 +299,66 @@
       "weight": 11,
       "category": "business_name",
       "source": "需求文档"
+    },
+    {
+      "term": "能源管家",
+      "weight": 10,
+      "category": "energy",
+      "source": "energy_butler"
+    },
+    {
+      "term": "冷水主机",
+      "weight": 10,
+      "category": "energy",
+      "source": "energy_butler"
+    },
+    {
+      "term": "冷却塔",
+      "weight": 10,
+      "category": "energy",
+      "source": "energy_butler"
+    },
+    {
+      "term": "板换",
+      "weight": 10,
+      "category": "energy",
+      "source": "energy_butler"
+    },
+    {
+      "term": "VRV",
+      "weight": 10,
+      "category": "energy",
+      "source": "energy_butler"
+    },
+    {
+      "term": "BA",
+      "weight": 10,
+      "category": "energy",
+      "source": "energy_butler"
+    },
+    {
+      "term": "冷冻水泵",
+      "weight": 10,
+      "category": "energy",
+      "source": "energy_butler"
+    },
+    {
+      "term": "冷却塔循环泵",
+      "weight": 10,
+      "category": "energy",
+      "source": "energy_butler"
+    },
+    {
+      "term": "制冷季",
+      "weight": 10,
+      "category": "energy",
+      "source": "energy_butler"
+    },
+    {
+      "term": "非制冷季",
+      "weight": 10,
+      "category": "energy",
+      "source": "energy_butler"
     }
   ],
   "corrections": [

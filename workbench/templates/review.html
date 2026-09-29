@@ -27,12 +27,9 @@
 </div>
 {% endif %}
 
-{% if not ok %}
-<div class="flash warn">
-  还有 <b id="warnMissing">{{ stats.required_missing }}</b> 项必填内容未补齐，补齐后才能进入生成步骤。
-  <a href="#firstMissing" style="margin-left:8px">定位到第一项 →</a>
+<div id="validationIssues" class="flash warn" {% if ok %}hidden{% endif %}>
+{% for issue in issues if issue.level == 'error' %}<div>{{ issue.message }}</div>{% endfor %}
 </div>
-{% endif %}
 
 <div class="filter-row">
   <span class="hint">筛选：</span>
@@ -92,11 +89,30 @@
         {% include '_choice_field.html' %}
       {% elif f.type == 'table' %}
         <div class="table-scroll" role="region" aria-label="{{ f.label }}，可横向滚动" tabindex="0">
-        <table class="tbl" data-key="{{ f.key }}" data-type="table">
-          <thead><tr>{% for c in f.columns %}<th>{{ c.label }}</th>{% endfor %}<th style="width:60px">操作</th></tr></thead>
+        <table class="tbl" data-key="{{ f.key }}" data-type="table" data-columns='{{ f.columns|tojson }}'
+               {% if f.rules_ui %}data-rules='{{ f.rules_ui|tojson }}'{% endif %}>
+          <thead><tr><th>序号</th>{% for c in f.columns %}<th>{{ c.label }}</th>{% endfor %}<th style="width:60px">操作</th></tr></thead>
           <tbody>
           {% for r in (row.value_json|fromjson or []) if row %}
-            <tr>{% for c in f.columns %}<td><input value="{{ r.get(c.key,'') }}" data-col="{{ c.key }}"></td>{% endfor %}
+            <tr><td data-row-number>{{ loop.index }}</td>{% for c in f.columns %}<td>
+              {% if f.rules_ui and c.key == f.rules_ui.category_column %}
+                <select data-col="{{ c.key }}" data-rules-role="category" aria-label="{{ c.label }}">
+                  <option value="">请选择空间类型</option>
+                  {% for cat in f.rules_ui.categories %}<option value="{{ cat.name }}" {% if r.get(c.key) == cat.name %}selected{% endif %}>{{ cat.name }}</option>{% endfor %}
+                  {% if r.get(c.key) and r.get(c.key) not in f.rules_ui.categories|map(attribute='name')|list %}<option value="{{ r.get(c.key) }}" selected>{{ r.get(c.key) }}（历史值）</option>{% endif %}
+                </select>
+              {% elif f.rules_ui and c.key == f.rules_ui.item_column %}
+                {% set selected_category = namespace(value=none) %}
+                {% for cat in f.rules_ui.categories if cat.name == r.get(f.rules_ui.category_column) %}{% set selected_category.value = cat %}{% endfor %}
+                <select data-col="{{ c.key }}" data-rules-role="item" aria-label="{{ c.label }}">
+                  <option value="">请先选择空间类型</option>
+                  {% if selected_category.value %}{% for item in selected_category.value.items %}<option value="{{ item.name }}" {% if r.get(c.key) == item.name %}selected{% endif %}>{{ item.name }}{% if item.kind == 'fixed' %}（固定项）{% endif %}</option>{% endfor %}{% endif %}
+                  {% if r.get(c.key) and (not selected_category.value or r.get(c.key) not in selected_category.value.items|map(attribute='name')|list) %}<option value="{{ r.get(c.key) }}" selected>{{ r.get(c.key) }}（历史值）</option>{% endif %}
+                </select>
+              {% elif c.get('type') == 'select' %}<select data-col="{{ c.key }}" aria-label="{{ c.label }}">
+              {% for o in c.options %}<option value="{{ o.value }}" {% if r.get(c.key,c.get('default','')) == o.value %}selected{% endif %}>{{ o.value }}</option>{% endfor %}</select>
+              {% else %}<input type="{{ 'number' if c.get('type') == 'number' else 'text' }}" step="any" value="{{ r.get(c.key,'') if r.get(c.key) is not none else '' }}" data-col="{{ c.key }}" aria-label="{{ c.label }}">{% endif %}
+              </td>{% endfor %}
               <td><button class="btn danger sm" type="button" onclick="delRow(this)">删除</button></td></tr>
           {% endfor %}
           </tbody>

@@ -181,6 +181,9 @@ def extract_entity(sentences, spec):
 
 def extract_sentence(sentences, spec):
     """摘取包含关键词的原句。按关键词命中数排序，取最相关的若干句。"""
+    if spec.get('preserve_lines'):
+        matches = [s for s in sentences if any(k in s for k in spec.get('keywords', []))]
+        return ('\n'.join(matches), clean_quote(matches[0]), 'medium') if matches else (None, '', 'low')
     kws = spec.get('keywords', [])
     guard = spec.get('negation_guard', True)
     limit = spec.get('max_sentences', 3)
@@ -365,6 +368,20 @@ def _score_options(sentences, field, guard=True):
 
 
 def extract_enum(sentences, spec, field, text):
+    if spec.get('patterns'):
+        matches = []
+        for option in field.get('options', []):
+            if len(option['value']) > 3 and option['value'] in text and not negated(text, option['value']):
+                matches.append(option['value'])
+        for rule in spec['patterns']:
+            for sentence in re.split(r'[。！？!\n]', text):
+                if re.search(rule['pattern'], sentence, re.I) and not any(re.search(p, sentence, re.I) for p in rule.get('exclude_patterns', [])):
+                    matches.append(rule['value'])
+        matches = list(dict.fromkeys(matches))
+        if not matches: return None, '', 'low'
+        if field['type'] != 'multiselect' and len(matches) > 1: return None, clean_quote(text), 'low'
+        value = matches if field['type'] == 'multiselect' else matches[0]
+        return value, clean_quote(text), 'medium'
     if spec.get('context_keywords'):
         sentences = [s for s in sentences if any(k in s for k in spec['context_keywords'])]
     if spec.get('prefer_longest_match'):
@@ -432,6 +449,18 @@ QTY_RE = re.compile(r'([0-9]+|[一二三四五六七八九十百千万两]{1,4})
 
 
 def extract_table(sentences, spec, text):
+    if spec.get('labeled_columns'):
+        rows = []
+        for line in text.splitlines():
+            row = {}
+            for col in spec['columns']:
+                match = re.search(re.escape(col['label']) + r'\s*[:：=]\s*([^，,；;|\n]+)', line)
+                value = match.group(1).strip() if match else col.get('default', '')
+                row[col['key']] = value
+            if row.get('equipment') and not any(x in row['equipment'] for x in spec.get('excluded_equipment', [])):
+                rows.append(row)
+        return (rows, clean_quote(text), 'medium') if rows else (None, '', 'low')
+
     rows, seen = [], set()
     for s in sentences:
         for w in DEVICE_WORDS:
@@ -459,6 +488,32 @@ def extract_table(sentences, spec, text):
     return rows[:20], clean_quote(rows[0]['type'] + ' 等设备描述'), 'medium'
 
 
+def rules_output_for(product_type, field):
+    """取出驱动该表格字段的规则库输出声明；没有则返回 None。"""
+    if (field.get('extract') or {}).get('mode') != 'rules_table':
+        return None
+    from . import rules          # 延迟导入：rules 在模块级依赖本文件的文本工具
+    return rules.field_output(product_type, field['key'])
+
+
+def extract_rules_table(product_type, field, text):
+    """规则库驱动的表格抽取。
+
+    词表、行语义与分组实体全部来自产品的 rules.json，本函数只做转接——这样新增
+    一个「按规则换算清单」的产品不需要再改这里。抽不到分组实体时返回空值，交由
+    字段状态机判为「必须补填」，不编造行。
+    """
+    output_def = rules_output_for(product_type, field)
+    if not output_def:
+        return None, '', 'low'
+    from . import rules
+    rows, quote, conf = rules.extract_rows(output_def, text)
+    if not rows:
+        return None, '', 'low'
+    rows, conf = rules.postprocess(product_type, field['key'], rows, conf)
+    return rows, quote, conf
+
+
 # ------------------------------------------------------------------ 规则引擎
 
 def _run_rule_engine(text, product_type, protected_keys):
@@ -468,7 +523,9 @@ def _run_rule_engine(text, product_type, protected_keys):
 
     for f in cfg['fields']:
         key = f['key']
-        spec = f.get('extract') or {}
+        spec = dict(f.get('extract') or {})
+        spec['columns'] = f.get('columns', [])
+        spec['excluded_equipment'] = f.get('validate', {}).get('excluded_equipment', [])
         mode = spec.get('mode', 'sentence')
 
         if mode == 'phone':
@@ -485,10 +542,12 @@ def _run_rule_engine(text, product_type, protected_keys):
             value, quote, conf = extract_list(sentences, spec, f, text)
         elif mode == 'table':
             value, quote, conf = extract_table(sentences, spec, text)
+        elif mode == 'rules_table':
+            value, quote, conf = extract_rules_table(product_type, f, text)
         elif mode == 'entity':
             value, quote, conf = extract_entity(sentences, spec)
         else:
-            value, quote, conf = extract_sentence(sentences, spec)
+            value, quote, conf = extract_sentence(text.splitlines() if spec.get("preserve_lines") else sentences, spec)
 
         if f.get('allow_custom') and spec.get('fallback_text'):
             relevant = [s for s in sentences if any(k in s for k in spec.get('context_keywords', []))]
@@ -538,6 +597,9 @@ def _normalize_llm_value(field, value):
     if value in (None, '', [], {}):
         return None
     ftype = field.get('type')
+    if ftype == 'table':
+        if not isinstance(value, list) or any(not isinstance(r, dict) for r in value): return None
+        return [{c['key']: r.get(c['key']) if r.get(c['key']) not in (None, '') else c.get('default', '') for c in field['columns']} for r in value]
     if ftype == 'number':
         if isinstance(value, bool):
             return None
@@ -575,6 +637,13 @@ def _run_llm_engine(text, product_type, protected_keys):
         if f.get('options'):
             item['options'] = [o['value'] for o in f['options']]
             item['allow_custom'] = bool(f.get('allow_custom'))
+        if f.get('columns'): item['columns'] = f['columns']
+        output_def = rules_output_for(product_type, f)
+        if output_def:
+            # 把规则库的候选项一并交给模型：否则它只能凭想象写设备名，落库后与
+            # 规则库对不上就换算不出传感器，而这种错误在页面上很难看出来。
+            from . import rules
+            item['rules'] = rules.table_ui(product_type, output_def)
         schema.append(item)
 
     prompt = (
@@ -583,7 +652,7 @@ def _run_llm_engine(text, product_type, protected_keys):
         '输出严格的 JSON 对象（不要 markdown 代码块），格式：\n'
         '{"fields": {"<key>": {"value": <值>, "quote": "<原文依据片段>", "confidence": "high|medium|low"}}}\n'
         '规则：\n'
-        '1. 值必须与字段 type 匹配（number 用数字，multiselect 用数组）。\n'
+        '1. 值必须与字段 type 匹配（number 用数字，multiselect 用数组，table 用对象数组且对象键必须为 columns.key）。\n'
         '2. 找不到就给空值，禁止臆测。\n'
         '3. 存在歧义或冲突时 confidence 给 low。\n'
         '4. quote 必须是原文中真实存在的片段。\n'
@@ -623,6 +692,10 @@ def _run_llm_engine(text, product_type, protected_keys):
     for f in fields:
         got = (data.get('fields') or {}).get(f['key']) or {}
         value = _normalize_llm_value(f, got.get('value'))
+        conf = got.get('confidence') if got.get('confidence') in ('high', 'medium', 'low') else 'medium'
+        if isinstance(value, list) and rules_output_for(product_type, f):
+            from . import rules
+            value, conf = rules.postprocess(product_type, f['key'], value, conf)
         if f.get('allow_custom') and f['type'] in ('select', 'multiselect'):
             allowed = {o['value'] for o in f.get('options', [])}
             if isinstance(value, list):
@@ -635,7 +708,6 @@ def _run_llm_engine(text, product_type, protected_keys):
             conf = None
         else:
             hit_fields += 1
-            conf = got.get('confidence') if got.get('confidence') in ('high', 'medium', 'low') else 'medium'
             status = 'pending_confirm' if conf == 'low' else 'extracted'
         quote = clean_quote(got.get('quote', ''))
         if quote and quote not in text:

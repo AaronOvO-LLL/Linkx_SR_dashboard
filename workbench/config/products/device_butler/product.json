@@ -1,0 +1,14 @@
+{
+  "product_type": "device_butler",
+  "name": "设备管家",
+  "version": "0.1.0",
+  "short_desc": "把设备房与需改造的物业设备按配置规则换算成应加装的传感器清单，输出可直接流转的 Excel。",
+  "coverage": "覆盖 7 类设备房：独立生活水泵房、独立消防水泵房、楼顶稳压消防泵房、混合消防水泵房、电梯机房、配电房（基础）、空调机房。首版不含三相电表、变压器漏电流监测与管道温度传感器。",
+  "status": "active",
+  "capabilities": [
+    "text_input",
+    "audio_asr",
+    "field_extraction",
+    "artifact_generation"
+  ]
+}

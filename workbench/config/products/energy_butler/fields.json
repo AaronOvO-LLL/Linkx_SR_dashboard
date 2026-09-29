@@ -1,0 +1,18 @@
+{
+  "template_version": "0.1.0",
+  "product_type": "energy_butler",
+  "packs": [
+    "common_project",
+    "common_docs",
+    "common_property",
+    "energy_survey"
+  ],
+  "group_order": [
+    "basic",
+    "docs",
+    "property",
+    "energy_eligibility",
+    "energy_equipment",
+    "energy_operation"
+  ]
+}

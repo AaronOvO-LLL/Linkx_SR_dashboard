@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>设备管家 · 核对页与预览页（静态视觉稿 v1）</title>
+<style>
+:root{
+  --brand:#2F5597; --brand-dark:#24447b; --brand-soft:#e8eefb; --support:#E8EEF7;
+  --accent:#E2703A; --accent-soft:#fdf0e8;
+  --ink:#1f2937; --muted:#6b7280; --line:#e3e7ee; --bg:#f2f4f7;
+  --ok:#0f8a5f; --ok-bg:#eaf7f1;
+  --warn:#b45309; --warn-bg:#fff7ed; --warn-line:#fed7aa;
+  --err:#c0392b; --err-bg:#fdeeee; --err-line:#f5c6c2;
+  --calc:#f4f6fa;
+  --radius:12px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+     background:var(--bg);color:var(--ink);font-size:14.5px;line-height:1.7}
+.draft{background:#fffbe6;border-bottom:1px solid #f5e0a3;color:#7a5c00;
+       font-size:12.5px;padding:8px 20px;text-align:center}
+.draft b{color:#5c4500}
+.topbar{background:var(--brand);color:#fff;position:sticky;top:0;z-index:50;
+        box-shadow:0 2px 10px rgba(31,41,55,.12)}
+.topbar-in{max-width:1320px;margin:0 auto;padding:0 22px;height:56px;
+           display:flex;align-items:center;justify-content:space-between;gap:16px}
+.brand{color:#fff;font-weight:600;font-size:15.5px;display:flex;align-items:center;gap:9px}
+.brand-mark{background:rgba(255,255,255,.18);padding:3px 9px;border-radius:7px;font-size:13.5px;letter-spacing:1px}
+.topmeta{display:flex;align-items:center;gap:9px;font-size:12px;color:#cdddf7}
+.chip{background:rgba(255,255,255,.16);padding:3px 10px;border-radius:20px;white-space:nowrap}
+.shell{max-width:1320px;margin:0 auto;padding:22px;display:flex;gap:22px;align-items:flex-start}
+.outline{width:206px;flex:0 0 206px;position:sticky;top:78px;background:#fff;border:1px solid var(--line);
+         border-radius:var(--radius);padding:12px 0;max-height:calc(100vh - 100px);overflow:auto}
+.outline h4{font-size:11.5px;color:#98a2b3;letter-spacing:1px;padding:0 14px 8px;font-weight:600}
+.outline a{display:flex;gap:8px;padding:5px 14px;font-size:12.5px;color:#4b5563;
+           border-left:2px solid transparent;line-height:1.45;text-decoration:none}
+.outline a:hover{background:#f7f9fc}
+.outline a.on{color:var(--brand);background:var(--brand-soft);border-left-color:var(--brand);font-weight:600}
+.outline a i{font-style:normal;color:#b6bfcc;font-size:11px;flex:0 0 24px}
+.outline a.on i{color:var(--brand)}
+.content{flex:1;min-width:0}
+section{background:#fff;border:1px solid var(--line);border-radius:var(--radius);
+        padding:22px 24px;margin-bottom:18px;scroll-margin-top:74px}
+.shead{display:flex;align-items:flex-start;gap:12px;margin-bottom:6px}
+.bno{flex:0 0 auto;background:var(--support);color:var(--brand);font-size:11px;font-weight:700;
+     letter-spacing:.5px;padding:3px 8px;border-radius:6px;margin-top:4px}
+.shead h2{font-size:18px;line-height:1.4}
+.kicker{display:block;font-size:11.5px;color:var(--accent);letter-spacing:1.5px;font-weight:700;margin-bottom:2px}
+.sub{color:var(--muted);font-size:13px;margin:2px 0 16px}
+h3{font-size:14.5px;color:var(--brand);margin:20px 0 9px}
+p{margin-bottom:9px}
+ul,ol{margin:0 0 10px 20px}
+li{margin-bottom:5px}
+.takeaway{background:var(--brand-soft);border-left:3px solid var(--brand);
+          padding:10px 14px;border-radius:0 8px 8px 0;font-size:13.5px;margin-top:14px}
+.note{background:#f7f9fc;border:1px dashed #cfd8e6;border-radius:8px;padding:9px 13px;
+      font-size:12.5px;color:var(--muted);margin-top:12px}
+.tbl{width:100%;border-collapse:collapse;font-size:13px;margin:6px 0 4px}
+.tbl th{background:var(--support);color:#33475f;text-align:left;font-weight:600;
+        padding:7px 9px;border:1px solid #d8e2f0;white-space:nowrap}
+.tbl td{padding:5px 7px;border:1px solid var(--line);vertical-align:middle}
+.tbl td.c,.tbl th.c{text-align:center}
+.scroll-x{overflow-x:auto;border:1px solid var(--line);border-radius:9px}
+.scroll-x .tbl{margin:0}
+.scroll-x .tbl th:first-child,.scroll-x .tbl td:first-child{border-left:none}
+.scroll-x .tbl th:last-child,.scroll-x .tbl td:last-child{border-right:none}
+.pill{display:inline-block;font-size:11.5px;padding:1px 8px;border-radius:20px;
+      border:1px solid transparent;white-space:nowrap;line-height:1.7}
+.pill.ok{background:var(--ok-bg);color:var(--ok);border-color:#bfe4d3}
+.pill.warn{background:var(--warn-bg);color:var(--warn);border-color:var(--warn-line)}
+.pill.err{background:var(--err-bg);color:var(--err);border-color:var(--err-line)}
+.pill.info{background:var(--brand-soft);color:var(--brand);border-color:#c9d6ee}
+.pill.mute{background:#f1f3f7;color:#6b7280;border-color:#e3e7ee}
+.pill.acc{background:var(--accent-soft);color:var(--accent);border-color:#f3d3bf}
+code{background:#f1f3f7;border:1px solid var(--line);border-radius:4px;padding:0 5px;
+     font-size:12.5px;font-family:Consolas,"Courier New",monospace;color:#334155}
+input,select{font-family:inherit;font-size:12.5px;color:var(--ink);border:1px solid #ccd4e0;
+             border-radius:6px;padding:4px 7px;background:#fff;width:100%}
+input:focus,select:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 2px var(--brand-soft)}
+input[readonly]{background:var(--calc);border-color:#e6eaf1;color:#475069}
+td.calc{background:var(--calc)}
+td.qty{white-space:nowrap}
+.qtywrap{display:flex;align-items:center;gap:5px}
+.qtywrap input{width:62px;text-align:right}
+.qtyunit{font-size:11.5px;color:var(--muted);white-space:nowrap}
+tr.roomstart td{border-top:2px solid #c3cee0}
+tr.off td{background:#fbfbfc;color:#9aa3b2}
+tr.off td.calc{background:#f6f7f9}
+tr.bad td{background:var(--err-bg)}
+tr.pending td{background:var(--warn-bg)}
+.roomtag{display:inline-block;background:#eef2fa;color:var(--brand-dark);border:1px solid #d5dfee;
+         border-radius:6px;padding:0 7px;font-size:12px;font-weight:600}
+.ck{width:16px;height:16px;accent-color:var(--brand);cursor:pointer}
+.btn{display:inline-block;border:1px solid #ccd4e0;background:#fff;color:#475069;border-radius:7px;
+     padding:4px 11px;font-size:12.5px;cursor:pointer;font-family:inherit}
+.btn:hover{border-color:var(--brand);color:var(--brand)}
+.btn.danger:hover{border-color:var(--err);color:var(--err)}
+.btn.pri{background:var(--brand);border-color:var(--brand);color:#fff}
+.btnrow{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-top:11px}
+.statbar{display:flex;gap:11px;flex-wrap:wrap;margin:4px 0 14px}
+.stat{flex:1;min-width:126px;background:#fafbfd;border:1px solid var(--line);border-radius:9px;padding:9px 12px}
+.stat b{display:block;font-size:21px;line-height:1.25;color:var(--brand-dark)}
+.stat span{font-size:11.5px;color:var(--muted)}
+.card2{border:1px solid var(--line);border-radius:10px;margin-bottom:12px;overflow:hidden}
+.card2>.hd{background:#f7f9fc;border-bottom:1px solid var(--line);padding:9px 13px;
+           display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.card2>.bd{padding:11px 13px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.qbox{border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:0 9px 9px 0;
+      padding:11px 14px;margin-bottom:10px;background:#fffdfa}
+.qbox b{display:block;font-size:13.5px;margin-bottom:3px}
+.qbox .opt{font-size:12.5px;color:#4b5563;margin:3px 0 0 0}
+.qbox .rec{color:var(--ok);font-weight:600}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin:8px 0 2px}
+.legend span{display:flex;align-items:center;gap:5px}
+.sw{width:13px;height:13px;border-radius:3px;border:1px solid #d6dce6;display:inline-block}
+@media (max-width:1080px){.outline{display:none}.grid2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="draft">
+  <b>静态视觉稿 v1 · 仅供评审，尚未写入应用。</b>
+  下面每个区块都有编号（B01–B07），请按编号反馈「保留 / 删除 / 合并 / 换位置 / 改成…」。
+  表格里的数据是真实的：取自 <code>rules.json</code>（规则库 v1.0.0）与
+  <code>samples/device_butler/full.md</code> 经离线规则通道提取的结果，数量可以直接改，计算列会跟着变。
+</div>
+
+<div class="topbar"><div class="topbar-in">
+  <span class="brand"><span class="brand-mark">灵石</span>设备管家 · 核对页与预览页视觉稿</span>
+  <span class="topmeta"><span class="chip">静态稿 v1</span><span class="chip">2026-09-29</span><span class="chip">后端已跑通</span></span>
+</div></div>
+
+<div class="shell">
+<nav class="outline" id="outline">
+  <h4>区块导航</h4>
+  <a href="#b01" class="on"><i>B01</i>这份稿子解决什么</a>
+  <a href="#b02"><i>B02</i>现状与差距</a>
+  <a href="#b03"><i>B03</i>方案 A 单表增强</a>
+  <a href="#b04"><i>B04</i>方案 B 分房卡片</a>
+  <a href="#b05"><i>B05</i>预览页清单</a>
+  <a href="#b06"><i>B06</i>状态与边界</a>
+  <a href="#b07"><i>B07</i>请你拍板</a>
+</nav>
+<div class="content">
+
+<section id="b01">
+  <div class="shead"><span class="bno">B01</span><h2><span class="kicker">SCOPE</span>这份稿子解决什么</h2></div>
+  <p class="sub">设备管家的后端已经端到端跑通并验收（提取 → 规则换算 → Excel → ZIP）。剩下的三件事都在界面上，需求文档 6.5 / 6.6 要求，但按既定做法要先出静态稿评审再动 <code>templates/</code> 与 <code>static/</code>。</p>
+  <div class="statbar">
+    <div class="stat"><b id="stRows">41</b><span>踏勘清单行数</span></div>
+    <div class="stat"><b id="stRooms">6</b><span>设备房间数</span></div>
+    <div class="stat"><b id="stBad">0</b><span>待确认行</span></div>
+    <div class="stat"><b id="stOff">0</b><span>已取消勾选行</span></div>
+  </div>
+  <h3>要落地的三件事</h3>
+  <ol>
+    <li><b>勾选 / 取消物业设备行</b>（需求 6.5、2.2 第 6 步）。现在只能删行，而删掉的固定项会在下次保存时被规则引擎重新补出来。</li>
+    <li><b>计量标签与联动候选项</b>（需求 6.2）。「设备数量」到底数的是什么随设备而变——区数 / 控制柜数 / 独立水箱数 / 喷淋主管网数；物业设备的合法取值也随空间类型而变。现在两列都是自由文本框。</li>
+    <li><b>计算列</b>（需求 6.5、6.6）。传感器类型与传感器数量目前只在预览页的原始表格和 Excel 里能看到，核对时看不到自己改的数量算出了什么。</li>
+  </ol>
+  <div class="note">下面 B03 / B04 是同一件事的两种布局，请二选一（或指定混合）。B05 的预览页两种布局都要做，只是数据来源相同。</div>
+</section>
+
+<section id="b02">
+  <div class="shead"><span class="bno">B02</span><h2><span class="kicker">GAP</span>现状与差距</h2></div>
+  <p class="sub">左：现在核对页真实渲染出来的样子（平台通用表格控件）。右：本稿要达到的样子。</p>
+  <div class="grid2">
+    <div>
+      <h3>现状（已在浏览器验证）</h3>
+      <div class="scroll-x"><table class="tbl">
+        <thead><tr><th class="c">序号</th><th>设备房名称</th><th>空间类型</th><th>物业设备</th><th>设备数量</th><th class="c">操作</th></tr></thead>
+        <tbody>
+          <tr><td class="c">1</td><td><input value="1#独立生活水泵房"></td><td><input value="独立生活水泵房"></td><td><input value="给水生活管网始端（高/中/低区）"></td><td><input value="3"></td><td class="c"><button class="btn danger">删除</button></td></tr>
+          <tr><td class="c">3</td><td><input value="1#独立生活水泵房"></td><td><input value="独立生活水泵房"></td><td><input value="给水生活水池/水箱"></td><td><input value="" placeholder="（空）"></td><td class="c"><button class="btn danger">删除</button></td></tr>
+          <tr><td class="c">8</td><td><input value="1#独立生活水泵房"></td><td><input value="独立生活水泵房"></td><td><input value="数据采集"></td><td><input value="1"></td><td class="c"><button class="btn danger">删除</button></td></tr>
+        </tbody></table></div>
+      <ul style="margin-top:10px;font-size:13px">
+        <li>四个输入列全是自由文本，写错一个词就换算不出传感器。</li>
+        <li>空着的数量看不出是「还没核实」还是「这间没有」。</li>
+        <li>看不到 3 区 → 3 台压力变送器、1 套网关的换算结果。</li>
+        <li>41 行平铺，设备房之间没有视觉边界。</li>
+      </ul>
+    </div>
+    <div>
+      <h3>目标</h3>
+      <ul style="font-size:13px">
+        <li>空间类型改下拉（7 类固定取值）；物业设备随空间类型联动，只列该类房间的合法设备。</li>
+        <li>设备数量右侧显示计量口径（区数 / 控制柜数 / 独立水箱数…），并把规则库的 <code>remark</code> 作为悬浮或行尾说明。</li>
+        <li>固定项行打「固定」标签，与来自文字稿的变动项区分开。</li>
+        <li>两列只读计算列，改数量后 0.7 秒自动保存并由服务端重算回填。</li>
+        <li>待确认行整行标红并给出行内原因；已算出的行显示「可计算」。</li>
+        <li>设备房换行处加分隔线，房名只在每组首行显示。</li>
+      </ul>
+      <div class="takeaway"><b>一个已经定下来的取舍：</b>「不要某个固定项」用<b>把数量改成 0</b> 表达，而不是删行——删掉的行下次保存会被重新补出，因为「主动删除」和「尚未补全」在数据上分不出来。若采纳勾选列，取消勾选就等价于数量 0，两者可以并存。</div>
+    </div>
+  </div>
+</section>
+
+<section id="b03">
+  <div class="shead"><span class="bno">B03</span><h2><span class="kicker">PLAN A</span>方案 A · 单表增强</h2></div>
+  <p class="sub">在现有通用表格上加「勾选」与两列只读计算列，设备房之间用分隔线分组。改动集中在 <code>review.html</code> 的 table 分支与 <code>app.js</code> 的 readValue，规则数据由服务端下发一份 UI 描述（<code>core/rules.py::table_ui</code> 已实现）。</p>
+  <div class="legend">
+    <span><i class="sw" style="background:#fff"></i>可编辑输入</span>
+    <span><i class="sw" style="background:var(--calc)"></i>计算列（只读，服务端算）</span>
+    <span><i class="sw" style="background:var(--warn-bg);border-color:var(--warn-line)"></i>待确认行</span>
+    <span><i class="sw" style="background:var(--err-bg);border-color:var(--err-line)"></i>算不出 / 取值非法</span>
+    <span><i class="sw" style="background:#fbfbfc"></i>已取消勾选</span>
+  </div>
+  <div class="scroll-x" style="max-height:520px;overflow-y:auto">
+    <table class="tbl">
+      <thead><tr>
+        <th class="c" style="width:34px">配</th><th class="c" style="width:40px">序号</th>
+        <th style="width:150px">设备房名称</th><th style="width:136px">空间类型</th>
+        <th style="width:210px">物业设备</th><th style="width:132px">设备数量</th>
+        <th style="width:206px">传感器类型（计算）</th><th class="c" style="width:82px">传感器数量</th>
+        <th style="width:150px">状态</th><th class="c" style="width:60px">操作</th>
+      </tr></thead>
+      <tbody id="planA"></tbody>
+    </table>
+  </div>
+  <div class="btnrow">
+    <button class="btn" type="button">+ 添加一行</button>
+    <button class="btn" type="button">+ 添加一间设备房（自动补固定项）</button>
+    <span style="font-size:12.5px;color:#6b7280">改动任意单元格 → 0.7 秒后自动保存 → 服务端重算 → 计算列与状态回填</span>
+  </div>
+  <div class="note"><b>宽表代价：</b>10 列在 1440px 宽度下刚好放下，笔记本（1280px）需要横向滚动。可以把「状态」并入传感器类型列（出错时该列直接显示红字原因）省一列，或把「序号」去掉。</div>
+</section>
+
+<section id="b04">
+  <div class="shead"><span class="bno">B04</span><h2><span class="kicker">PLAN B</span>方案 B · 按设备房分卡片</h2></div>
+  <p class="sub">每间设备房一张卡片，卡头放房名、空间类型下拉与该房的配置行合计；卡内分「变动项（来自文字稿）」与「固定项（规则库补全）」两小块。更接近现场踏勘的心智模型，设备房边界一眼可见。</p>
+  <div id="planB"></div>
+  <div class="note"><b>代价：</b>与平台现有「一个表格字段 = 一张表」的渲染方式差异较大，<code>review.html</code> 需要为规则驱动的表格字段单独走一条渲染路径，<code>app.js</code> 的增删行与自动保存也要按卡片重写；41 行会撑成 6 张卡片、页面明显变长。好处是横向空间宽松，说明文字有地方放。</div>
+</section>
+
+<section id="b05">
+  <div class="shead"><span class="bno">B05</span><h2><span class="kicker">PREVIEW</span>预览页 · 传感器配置清单</h2></div>
+  <p class="sub">与将写入 Excel 的内容一致（需求 6.6）。按设备房分组，只读。改上面的数量，这里会同步。</p>
+  <div class="statbar">
+    <div class="stat"><b id="pvRooms">6</b><span>设备房间数</span></div>
+    <div class="stat"><b id="pvLines">39</b><span>配置行数</span></div>
+    <div class="stat"><b>5</b><span>Excel 列数（微决策 5）</span></div>
+    <div class="stat"><b>1.0.0</b><span>规则库版本</span></div>
+  </div>
+  <div class="scroll-x">
+    <table class="tbl">
+      <thead><tr><th style="width:190px">设备房名称</th><th>物业设备名称</th><th class="c" style="width:110px">设备数量</th><th style="width:250px">传感器类型</th><th class="c" style="width:110px">传感器数量</th></tr></thead>
+      <tbody id="previewBody"></tbody>
+    </table>
+  </div>
+  <div class="note"><b>需要你拍板：</b>决策 D3 明确「不做全项目跨设备房的传感器汇总」。所以上面只统计了房间数与行数，<b>没有</b>按传感器类型小计（例如「压力变送器共 9 台」）。但备货和报价其实很想要这个合计——要不要为它开一个例外？见 B07 第 5 问。</div>
+</section>
+
+<section id="b06">
+  <div class="shead"><span class="bno">B06</span><h2><span class="kicker">STATES</span>状态、文案与边界情况</h2></div>
+  <p class="sub">这些文案已经由后端产出并在浏览器里验证过，界面只是把它们贴到对应行上。</p>
+  <div class="scroll-x"><table class="tbl">
+    <thead><tr><th style="width:150px">情形</th><th style="width:96px">行状态</th><th>界面表现</th><th style="width:120px">能否生成</th></tr></thead>
+    <tbody>
+      <tr><td>数量已填、规则命中</td><td><span class="pill ok">可计算</span></td><td>计算列显示传感器类型与数量</td><td class="c">可以</td></tr>
+      <tr class="pending"><td>该有数量却留空<br><span style="color:#8a93a3;font-size:12px">如「2 个连通的生活水箱」</span></td><td><span class="pill err">待确认</span></td><td>整行标黄；传感器类型列显示红色「待确认」；状态列给出「独立水箱数未确定，请补齐后再计算；确实没有该项请取消勾选或填 0」</td><td class="c">阻断</td></tr>
+      <tr class="bad"><td>空间类型不在 7 类内</td><td><span class="pill err">待确认</span></td><td>「空间类型「发电机房」不在规则库的 7 类取值内，请重新选择」</td><td class="c">阻断</td></tr>
+      <tr class="bad"><td>物业设备不属于该空间类型</td><td><span class="pill err">待确认</span></td><td>「物业设备「三相电表」不在「配电房（基础）」的规则内，不会产出传感器」</td><td class="c">阻断</td></tr>
+      <tr><td>数量填 0</td><td><span class="pill mute">不配置</span></td><td>该行保留但不进清单、不进 Excel</td><td class="c">可以</td></tr>
+      <tr><td>取消勾选</td><td><span class="pill mute">已取消</span></td><td>整行置灰；与数量 0 等价，但意图更明确</td><td class="c">可以</td></tr>
+      <tr><td>非必填项留空<br><span style="color:#8a93a3;font-size:12px">空调机房管网数</span></td><td><span class="pill warn">留空即不配</span></td><td>黄色提示，不算错误、不阻断（微决策 2）</td><td class="c">可以</td></tr>
+      <tr><td>数量为负 / 非整数</td><td><span class="pill err">待确认</span></td><td>「设备数量不能为负数」「需要 0 或正整数」</td><td class="c">阻断</td></tr>
+      <tr><td>人工改过</td><td><span class="pill info">已人工确认</span></td><td>字段级标签，重新提取时受保护不被覆盖</td><td class="c">—</td></tr>
+    </tbody></table></div>
+  <h3>筛选</h3>
+  <p style="font-size:13px">沿用平台既有的「全部 / 待确认 / 必须补填 / 已填写」筛选条。表格字段的行级待确认要不要也进这套筛选（即「只看待确认的行」），见 B07 第 6 问。</p>
+</section>
+
+<section id="b07">
+  <div class="shead"><span class="bno">B07</span><h2><span class="kicker">DECIDE</span>请你拍板</h2></div>
+  <p class="sub">按编号回复即可，标了「建议」的是我的推荐。</p>
+
+  <div class="qbox"><b>1. 核对页布局取哪个？</b>
+    <p class="opt">A（B03）单表增强 — <span class="rec">建议</span>：改动小、复用平台既有表格控件与自动保存、一屏能看全；代价是 10 列偏宽。</p>
+    <p class="opt">B（B04）分房卡片 — 设备房边界清楚、说明有地方放；代价是要为规则驱动表格单开一条渲染路径，实现量明显更大。</p>
+    <p class="opt">A+B 混合 — 单表为主，另给一个「按设备房折叠」的开关。</p>
+  </div>
+
+  <div class="qbox"><b>2. 要不要「勾选」列？</b>
+    <p class="opt">要 — <span class="rec">建议</span>：需求 6.5 与 2.2 第 6 步都写了「勾选」，且能解决「删掉固定项又被补回来」的问题。需要在表格字段里增加一个 <code>on</code> 列（后端已预留 <code>enabled_column</code> 支持）。</p>
+    <p class="opt">不要 — 一律用「数量改 0」表达不配置，界面少一列，但意图不如勾选直观。</p>
+  </div>
+
+  <div class="qbox"><b>3. 物业设备要不要做成随空间类型联动的下拉？</b>
+    <p class="opt">联动下拉 — <span class="rec">建议</span>：从源头杜绝「设备名不在规则内」这类错误；候选项由 <code>rules.json</code> 下发，规则库改了界面自动跟着变。</p>
+    <p class="opt">保持文本框 + 同义词归一 — 录入更快、能写规则库没有的设备（会被标错但不丢信息）；口语写法如「生活水箱」已能归一到标准名。</p>
+    <p class="opt">下拉但允许自定义 — 折中，代价是多一条「自定义值」的校验与展示逻辑。</p>
+  </div>
+
+  <div class="qbox"><b>4. 计算列放在哪里？</b>
+    <p class="opt">核对页表内两列只读 — <span class="rec">建议</span>：改完数量当场看到换算结果，符合需求 6.5「实时重算」。</p>
+    <p class="opt">只在预览页看 — 核对页更窄更清爽，但用户要跳到下一步才知道自己填的对不对。</p>
+    <p class="opt">表内只显示传感器数量，类型放到悬浮提示 — 省一列宽度。</p>
+  </div>
+
+  <div class="qbox"><b>5. 预览页要不要按传感器类型小计？（会突破决策 D3）</b>
+    <p class="opt">不要 — 严守 D3「不做全项目传感器汇总」，只显示房间数与行数。<span class="rec">建议</span>：首版不动已签字的决策，真要合计让 Excel 的自动筛选去做。</p>
+    <p class="opt">要 — 备货与报价确实需要「压力变送器共几台」；那就是修改 D3，需要你在需求文档上改口径。</p>
+  </div>
+
+  <div class="qbox"><b>6. 行级「待确认」要不要进筛选条？</b>
+    <p class="opt">要 — <span class="rec">建议</span>：41 行里挑出 1 行待确认，靠筛选比靠滚动快；实现上给每行加 <code>data-status</code> 即可复用现有筛选逻辑。</p>
+    <p class="opt">不要 — 筛选条保持字段级语义，行级问题只在页面顶部的校验横幅里集中列出。</p>
+  </div>
+</section>
+
+</div></div>
+
+<script>
+
+var P = {"categories": [{"name": "独立生活水泵房", "remark": "", "items": [{"name": "给水生活管网始端（高/中/低区）", "kind": "variable", "sensor": "压力变送器(RS485)", "unit": "区", "qty_label": "区数", "default": null, "allow_empty": false, "remark": "每个区主供水管 1 台；高层分高、中、低区，每区只取一个点。"}, {"name": "给水生活水泵控制柜（高/中/低区）", "kind": "variable", "sensor": "串口开关量模块(RS485)", "unit": "台", "qty_label": "控制柜数", "default": null, "allow_empty": false, "remark": "决策 B1：每柜 1 台开关量模块，不追状态点位数。"}, {"name": "给水生活水池/水箱", "kind": "variable", "sensor": "水液位传感器(RS485)", "unit": "台", "qty_label": "独立水箱数", "default": null, "allow_empty": false, "remark": "决策 B2：用户直接填独立水箱数，连通的水箱按 1 个计。"}, {"name": "集水井（污水井）", "kind": "variable", "sensor": "水液位传感器(RS485)", "unit": "台", "qty_label": "独立集水井数", "default": null, "allow_empty": false, "remark": ""}, {"name": "集水井（污水井）水泵控制柜", "kind": "variable", "sensor": "串口开关量模块(RS485)", "unit": "台", "qty_label": "控制柜数", "default": null, "allow_empty": false, "remark": ""}, {"name": "设备房温湿度", "kind": "fixed", "sensor": "温湿度传感器", "unit": "台", "qty_label": "", "default": 1, "allow_empty": false, "remark": ""}, {"name": "设备房水浸", "kind": "fixed", "sensor": "水浸传感器(RS485)", "unit": "台", "qty_label": "", "default": 2, "allow_empty": false, "remark": "地势最低处设置；空间大或低洼关注点多可增配至 3 台。"}, {"name": "数据采集", "kind": "fixed", "sensor": "睿联网关 M1000PRO-A(含电箱+电源)", "unit": "套", "qty_label": "", "default": 1, "allow_empty": false, "remark": "决策 D1：网关+电箱+电源合并为 1 行。"}, {"name": "设备房摄像头", "kind": "fixed", "sensor": "摄像头", "unit": "台", "qty_label": "", "default": 1, "allow_empty": false, "remark": ""}]}, {"name": "独立消防水泵房", "remark": "", "items": [{"name": "喷淋管网始端", "kind": "variable", "sensor": "压力变送器(RS485)", "unit": "个", "qty_label": "喷淋主管网数", "default": null, "allow_empty": false, "remark": ""}, {"name": "喷淋泵控制柜", "kind": "variable", "sensor": "串口开关量模块(RS485)", "unit": "台", "qty_label": "控制柜数", "default": null, "allow_empty": false, "remark": ""}, {"name": "室内消火栓管网始端", "kind": "variable", "sensor": "压力变送器(RS485)", "unit": "个", "qty_label": "消防主管网数", "default": null, "allow_empty": false, "remark": ""}, {"name": "室内消火栓泵控制", "kind": "variable", "sensor": "串口开关量模块(RS485)", "unit": "台", "qty_label": "控制柜数", "default": null, "allow_empty": false, "remark": ""}, {"name": "消防水池/水箱", "kind": "variable", "sensor": "水液位传感器(RS485)", "unit": "台", "qty_label": "独立水箱数", "default": null, "allow_empty": false, "remark": ""}, {"name": "消防水泡", "kind": "variable", "sensor": "压力变送器(RS485)", "unit": "个", "qty_label": "水泡主管网数", "default": null, "allow_empty": false, "remark": ""}, {"name": "污水井泵控制柜", "kind": "variable", "sensor": "串口开关量模块(RS485)", "unit": "台", "qty_label": "控制柜数", "default": null, "allow_empty": false, "remark": ""}, {"name": "污水井", "kind": "variable", "sensor": "水液位传感器(RS485)", "unit": "台", "qty_label": "独立集水井数", "default": null, "allow_empty": false, "remark": ""}, {"name": "设备房温湿度", "kind": "fixed", "sensor": "温湿度传感器", "unit": "台", "qty_label": "", "default": 1, "allow_empty": false, "remark": ""}, {"name": "设备房水浸", "kind": "fixed", "sensor": "水浸传感器(RS485)", "unit": "台", "qty_label": "", "default": 2, "allow_empty": false, "remark": ""}, {"name": "数据采集", "kind": "fixed", "sensor": "睿联网关 M1000PRO-A(含电箱+电源)", "unit": "套", "qty_label": "", "default": 1, "allow_empty": false, "remark": ""}, {"name": "设备房摄像头", "kind": "fixed", "sensor": "摄像头", "unit": "台", "qty_label": "", "default": 1, "allow_empty": false, "remark": ""}]}, {"name": "楼顶稳压消防泵房", "remark": "", "items": [{"name": "喷淋管网末端放水测试点", "kind": "variable", "sensor": "压力变送器(RS485)", "unit": "个", "qty_label": "喷淋末端管数", "default": null, "allow_empty": false, "remark": ""}, {"name": "喷淋泵控制柜", "kind": "variable", "sensor": "串口开关量模块(RS485)", "unit": "台", "qty_label": "控制柜数", "default": null, "allow_empty": false, "remark": ""}, {"name": "消火栓管网末端最不利点", "kind": "variable", "sensor": "压力变送器(RS485)", "unit": "个", "qty_label": "消防末端管数", "default": null, "allow_empty": false, "remark": ""}, {"name": "室内消火栓泵控制", "kind": "variable", "sensor": "串口开关量模块(RS485)", "unit": "台", "qty_label": "控制柜数", "default": null, "allow_empty": false, "remark": ""}, {"name": "消防高位水池", "kind": "variable", "sensor": "水液位传感器(RS485)", "unit": "台", "qty_label": "独立水箱数", "default": null, "allow_empty": false, "remark": ""}, {"name": "设备房温湿度", "kind": "fixed", "sensor": "温湿度传感器", "unit": "台", "qty_label": "", "default": 1, "allow_empty": false, "remark": ""}, {"name": "设备房水浸", "kind": "fixed", "sensor": "水浸传感器(RS485)", "unit": "台", "qty_label": "", "default": 2, "allow_empty": false, "remark": ""}, {"name": "数据采集", "kind": "fixed", "sensor": "睿联网关 M1000PRO-A(含电箱+电源)", "unit": "套", "qty_label": "", "default": 1, "allow_empty": false, "remark": ""}, {"name": "设备房摄像头", "kind": "fixed", "sensor": "摄像头", "unit": "台", "qty_label": "", "default": 1, "allow_empty": false, "remark": ""}]}, {"name": "混合消防水泵房", "remark": "", "items": [{"name": "喷淋管网始端", "kind": "variable", "sensor": "压力变送器(RS485)", "unit": "个", "qty_label": "喷淋主管网数", "default": null, "allow_empty": false, "remark": ""}, {"name": "喷淋泵控制柜", "kind": "variable", "sensor": "串口开关量模块(RS485)", "unit": "台", "qty_label": "控制柜数", "default": null, "allow_empty": false, "remark": ""}, {"name": "室内消火栓管网始端", "kind": "variable", "sensor": "压力变送器(RS485)", "unit": "个", "qty_label": "消防主管网数", "default": null, "allow_empty": false, "remark": ""}, {"name": "室内消火栓泵控制", "kind": "variable", "sensor": "串口开关量模块(RS485)", "unit": "台", "qty_label": "控制柜数", "default": null, "allow_empty": false, "remark": ""}, {"name": "消防低位水池", "kind": "variable", "sensor": "水液位传感器(RS485)", "unit": "台", "qty_label": "独立水箱数", "default": null, "allow_empty": false, "remark": ""}, {"name": "消防水泡", "kind": "variable", "sensor": "压力变送器(RS485)", "unit": "个", "qty_label": "水泡主管网数", "default": null, "allow_empty": false, "remark": ""}, {"name": "给水生活管网始端（高/中/低区）", "kind": "variable", "sensor": "压力变送器(RS485)", "unit": "区", "qty_label": "区数", "default": null, "allow_empty": false, "remark": ""}, {"name": "给水生活水泵控制柜（高/中/低区）", "kind": "variable", "sensor": "串口开关量模块(RS485)", "unit": "台", "qty_label": "控制柜数", "default": null, "allow_empty": false, "remark": ""}, {"name": "给水生活水池/水箱", "kind": "variable", "sensor": "水液位传感器(RS485)", "unit": "台", "qty_label": "独立水箱数", "default": null, "allow_empty": false, "remark": ""}, {"name": "污水井泵控制柜", "kind": "variable", "sensor": "串口开关量模块(RS485)", "unit": "台", "qty_label": "控制柜数", "default": null, "allow_empty": false, "remark": ""}, {"name": "污水井", "kind": "variable", "sensor": "水液位传感器(RS485)", "unit": "台", "qty_label": "独立集水井数", "default": null, "allow_empty": false, "remark": ""}, {"name": "设备房温湿度", "kind": "fixed", "sensor": "温湿度传感器", "unit": "台", "qty_label": "", "default": 1, "allow_empty": false, "remark": ""}, {"name": "设备房水浸", "kind": "fixed", "sensor": "水浸传感器(RS485)", "unit": "台", "qty_label": "", "default": 2, "allow_empty": false, "remark": ""}, {"name": "数据采集", "kind": "fixed", "sensor": "睿联网关 M1000PRO-A(含电箱+电源)", "unit": "套", "qty_label": "", "default": 1, "allow_empty": false, "remark": ""}, {"name": "设备房摄像头", "kind": "fixed", "sensor": "摄像头", "unit": "台", "qty_label": "", "default": 2, "allow_empty": false, "remark": "混合消防水泵房摄像头默认 2 台（需求文档 8.3）。"}]}, {"name": "电梯机房", "remark": "", "items": [{"name": "设备房温湿度", "kind": "fixed", "sensor": "温湿度传感器", "unit": "台", "qty_label": "", "default": 1, "allow_empty": false, "remark": ""}, {"name": "设备房水浸", "kind": "fixed", "sensor": "水浸传感器(RS485)", "unit": "台", "qty_label": "", "default": 1, "allow_empty": false, "remark": ""}, {"name": "数据采集", "kind": "fixed", "sensor": "睿联网关 M1000PRO-A(含电箱+电源)", "unit": "套", "qty_label": "", "default": 1, "allow_empty": false, "remark": ""}, {"name": "设备房摄像头", "kind": "fixed", "sensor": "摄像头", "unit": "台", "qty_label": "", "default": 1, "allow_empty": false, "remark": ""}]}, {"name": "配电房（基础）", "remark": "决策 C1/C3 与微决策 1：基础版，不含三相电表、变压器漏电流监测与 NTC 温度探头。", "items": [{"name": "设备房温湿度", "kind": "fixed", "sensor": "温湿度传感器", "unit": "台", "qty_label": "", "default": 1, "allow_empty": false, "remark": ""}, {"name": "设备房水浸", "kind": "fixed", "sensor": "水浸传感器(RS485)", "unit": "台", "qty_label": "", "default": 1, "allow_empty": false, "remark": ""}, {"name": "数据采集", "kind": "fixed", "sensor": "睿联网关 M1000PRO-A(含电箱+电源)", "unit": "套", "qty_label": "", "default": 1, "allow_empty": false, "remark": ""}, {"name": "设备房摄像头", "kind": "fixed", "sensor": "摄像头", "unit": "台", "qty_label": "", "default": 1, "allow_empty": false, "remark": ""}]}, {"name": "空调机房", "remark": "决策 C2：不含冷冻/冷却供回水的有线管道温度传感器。微决策 2：管网数为非必填且无默认，留空即不配。", "items": [{"name": "冷冻供水管网", "kind": "variable", "sensor": "压力变送器(RS485)", "unit": "个", "qty_label": "冷冻供水主管网数", "default": null, "allow_empty": true, "remark": ""}, {"name": "冷冻回水管网", "kind": "variable", "sensor": "压力变送器(RS485)", "unit": "个", "qty_label": "冷冻回水主管网数", "default": null, "allow_empty": true, "remark": ""}, {"name": "冷却供水管网", "kind": "variable", "sensor": "压力变送器(RS485)", "unit": "个", "qty_label": "冷却供水主管网数", "default": null, "allow_empty": true, "remark": ""}, {"name": "冷却回水管网", "kind": "variable", "sensor": "压力变送器(RS485)", "unit": "个", "qty_label": "冷却回水主管网数", "default": null, "allow_empty": true, "remark": ""}, {"name": "设备房温湿度", "kind": "fixed", "sensor": "温湿度传感器", "unit": "台", "qty_label": "", "default": 1, "allow_empty": false, "remark": ""}, {"name": "设备房水浸", "kind": "fixed", "sensor": "水浸传感器(RS485)", "unit": "台", "qty_label": "", "default": 1, "allow_empty": false, "remark": ""}, {"name": "数据采集", "kind": "fixed", "sensor": "睿联网关 M1000PRO-A(含电箱+电源)", "unit": "套", "qty_label": "", "default": 1, "allow_empty": false, "remark": ""}, {"name": "设备房摄像头", "kind": "fixed", "sensor": "摄像头", "unit": "台", "qty_label": "", "default": 2, "allow_empty": false, "remark": ""}, {"name": "冷却水池", "kind": "fixed", "sensor": "水液位传感器(RS485)", "unit": "台", "qty_label": "", "default": 1, "allow_empty": false, "remark": "需求文档 8.4：冷却水池液位为固定项，默认 1，可调（B3）。"}]}], "rows": [{"room_name": "1#独立生活水泵房", "space_type": "独立生活水泵房", "device": "给水生活管网始端（高/中/低区）", "qty": 3}, {"room_name": "1#独立生活水泵房", "space_type": "独立生活水泵房", "device": "给水生活水泵控制柜（高/中/低区）", "qty": 3}, {"room_name": "1#独立生活水泵房", "space_type": "独立生活水泵房", "device": "给水生活水池/水箱", "qty": 1}, {"room_name": "1#独立生活水泵房", "space_type": "独立生活水泵房", "device": "集水井（污水井）", "qty": 1}, {"room_name": "1#独立生活水泵房", "space_type": "独立生活水泵房", "device": "集水井（污水井）水泵控制柜", "qty": 1}, {"room_name": "1#独立生活水泵房", "space_type": "独立生活水泵房", "device": "设备房温湿度", "qty": 1}, {"room_name": "1#独立生活水泵房", "space_type": "独立生活水泵房", "device": "设备房水浸", "qty": 2}, {"room_name": "1#独立生活水泵房", "space_type": "独立生活水泵房", "device": "数据采集", "qty": 1}, {"room_name": "1#独立生活水泵房", "space_type": "独立生活水泵房", "device": "设备房摄像头", "qty": 1}, {"room_name": "1#变配电房", "space_type": "配电房（基础）", "device": "设备房温湿度", "qty": 1}, {"room_name": "1#变配电房", "space_type": "配电房（基础）", "device": "设备房水浸", "qty": 1}, {"room_name": "1#变配电房", "space_type": "配电房（基础）", "device": "数据采集", "qty": 1}, {"room_name": "1#变配电房", "space_type": "配电房（基础）", "device": "设备房摄像头", "qty": 1}, {"room_name": "2#变配电房", "space_type": "配电房（基础）", "device": "设备房温湿度", "qty": 1}, {"room_name": "2#变配电房", "space_type": "配电房（基础）", "device": "设备房水浸", "qty": 1}, {"room_name": "2#变配电房", "space_type": "配电房（基础）", "device": "数据采集", "qty": 1}, {"room_name": "2#变配电房", "space_type": "配电房（基础）", "device": "设备房摄像头", "qty": 1}, {"room_name": "1#电梯机房", "space_type": "电梯机房", "device": "设备房温湿度", "qty": 1}, {"room_name": "1#电梯机房", "space_type": "电梯机房", "device": "设备房水浸", "qty": 1}, {"room_name": "1#电梯机房", "space_type": "电梯机房", "device": "数据采集", "qty": 1}, {"room_name": "1#电梯机房", "space_type": "电梯机房", "device": "设备房摄像头", "qty": 1}, {"room_name": "1#独立消防水泵房", "space_type": "独立消防水泵房", "device": "喷淋管网始端", "qty": 2}, {"room_name": "1#独立消防水泵房", "space_type": "独立消防水泵房", "device": "喷淋泵控制柜", "qty": 2}, {"room_name": "1#独立消防水泵房", "space_type": "独立消防水泵房", "device": "室内消火栓管网始端", "qty": 2}, {"room_name": "1#独立消防水泵房", "space_type": "独立消防水泵房", "device": "室内消火栓泵控制", "qty": 2}, {"room_name": "1#独立消防水泵房", "space_type": "独立消防水泵房", "device": "消防水池/水箱", "qty": 1}, {"room_name": "1#独立消防水泵房", "space_type": "独立消防水泵房", "device": "污水井泵控制柜", "qty": 1}, {"room_name": "1#独立消防水泵房", "space_type": "独立消防水泵房", "device": "污水井", "qty": 1}, {"room_name": "1#独立消防水泵房", "space_type": "独立消防水泵房", "device": "设备房温湿度", "qty": 1}, {"room_name": "1#独立消防水泵房", "space_type": "独立消防水泵房", "device": "设备房水浸", "qty": 2}, {"room_name": "1#独立消防水泵房", "space_type": "独立消防水泵房", "device": "数据采集", "qty": 1}, {"room_name": "1#独立消防水泵房", "space_type": "独立消防水泵房", "device": "设备房摄像头", "qty": 1}, {"room_name": "1#空调机房", "space_type": "空调机房", "device": "冷冻供水管网", "qty": 2}, {"room_name": "1#空调机房", "space_type": "空调机房", "device": "冷冻回水管网", "qty": 2}, {"room_name": "1#空调机房", "space_type": "空调机房", "device": "冷却供水管网", "qty": null}, {"room_name": "1#空调机房", "space_type": "空调机房", "device": "冷却回水管网", "qty": null}, {"room_name": "1#空调机房", "space_type": "空调机房", "device": "设备房温湿度", "qty": 1}, {"room_name": "1#空调机房", "space_type": "空调机房", "device": "设备房水浸", "qty": 1}, {"room_name": "1#空调机房", "space_type": "空调机房", "device": "数据采集", "qty": 1}, {"room_name": "1#空调机房", "space_type": "空调机房", "device": "设备房摄像头", "qty": 2}, {"room_name": "1#空调机房", "space_type": "空调机房", "device": "冷却水池", "qty": 1}], "computed": [{"sensor": "压力变送器(RS485)", "sensor_qty": 3, "unit": "台", "kind": "variable", "qty_label": "区数", "error": "", "warning": "", "remark": "每个区主供水管 1 台；高层分高、中、低区，每区只取一个点。"}, {"sensor": "串口开关量模块(RS485)", "sensor_qty": 3, "unit": "台", "kind": "variable", "qty_label": "控制柜数", "error": "", "warning": "", "remark": "决策 B1：每柜 1 台开关量模块，不追状态点位数。"}, {"sensor": "水液位传感器(RS485)", "sensor_qty": 1, "unit": "台", "kind": "variable", "qty_label": "独立水箱数", "error": "", "warning": "", "remark": "决策 B2：用户直接填独立水箱数，连通的水箱按 1 个计。"}, {"sensor": "水液位传感器(RS485)", "sensor_qty": 1, "unit": "台", "kind": "variable", "qty_label": "独立集水井数", "error": "", "warning": "", "remark": ""}, {"sensor": "串口开关量模块(RS485)", "sensor_qty": 1, "unit": "台", "kind": "variable", "qty_label": "控制柜数", "error": "", "warning": "", "remark": ""}, {"sensor": "温湿度传感器", "sensor_qty": 1, "unit": "台", "kind": "fixed", "qty_label": "", "error": "", "warning": "", "remark": ""}, {"sensor": "水浸传感器(RS485)", "sensor_qty": 2, "unit": "台", "kind": "fixed", "qty_label": "", "error": "", "warning": "", "remark": "地势最低处设置；空间大或低洼关注点多可增配至 3 台。"}, {"sensor": "睿联网关 M1000PRO-A(含电箱+电源)", "sensor_qty": 1, "unit": "套", "kind": "fixed", "qty_label": "", "error": "", "warning": "", "remark": "决策 D1：网关+电箱+电源合并为 1 行。"}, {"sensor": "摄像头", "sensor_qty": 1, "unit": "台", "kind": "fixed", "qty_label": "", "error": "", "warning": "", "remark": ""}, {"sensor": "温湿度传感器", "sensor_qty": 1, "unit": "台", "kind": "fixed", "qty_label": "", "error": "", "warning": "", "remark": ""}, {"sensor": "水浸传感器(RS485)", "sensor_qty": 1, "unit": "台", "kind": "fixed", "qty_label": "", "error": "", "warning": "", "remark": ""}, {"sensor": "睿联网关 M1000PRO-A(含电箱+电源)", "sensor_qty": 1, "unit": "套", "kind": "fixed", "qty_label": "", "error": "", "warning": "", "remark": ""}, {"sensor": "摄像头", "sensor_qty": 1, "unit": "台", "kind": "fixed", "qty_label": "", "error": "", "warning": "", "remark": ""}, {"sensor": "温湿度传感器", "sensor_qty": 1, "unit": "台", "kind": "fixed", "qty_label": "", "error": "", "warning": "", "remark": ""}, {"sensor": "水浸传感器(RS485)", "sensor_qty": 1, "unit": "台", "kind": "fixed", "qty_label": "", "error": "", "warning": "", "remark": ""}, {"sensor": "睿联网关 M1000PRO-A(含电箱+电源)", "sensor_qty": 1, "unit": "套", "kind": "fixed", "qty_label": "", "error": "", "warning": "", "remark": ""}, {"sensor": "摄像头", "sensor_qty": 1, "unit": "台", "kind": "fixed", "qty_label": "", "error": "", "warning": "", "remark": ""}, {"sensor": "温湿度传感器", "sensor_qty": 1, "unit": "台", "kind": "fixed", "qty_label": "", "error": "", "warning": "", "remark": ""}, {"sensor": "水浸传感器(RS485)", "sensor_qty": 1, "unit": "台", "kind": "fixed", "qty_label": "", "error": "", "warning": "", "remark": ""}, {"sensor": "睿联网关 M1000PRO-A(含电箱+电源)", "sensor_qty": 1, "unit": "套", "kind": "fixed", "qty_label": "", "error": "", "warning": "", "remark": ""}, {"sensor": "摄像头", "sensor_qty": 1, "unit": "台", "kind": "fixed", "qty_label": "", "error": "", "warning": "", "remark": ""}, {"sensor": "压力变送器(RS485)", "sensor_qty": 2, "unit": "台", "kind": "variable", "qty_label": "喷淋主管网数", "error": "", "warning": "", "remark": ""}, {"sensor": "串口开关量模块(RS485)", "sensor_qty": 2, "unit": "台", "kind": "variable", "qty_label": "控制柜数", "error": "", "warning": "", "remark": ""}, {"sensor": "压力变送器(RS485)", "sensor_qty": 2, "unit": "台", "kind": "variable", "qty_label": "消防主管网数", "error": "", "warning": "", "remark": ""}, {"sensor": "串口开关量模块(RS485)", "sensor_qty": 2, "unit": "台", "kind": "variable", "qty_label": "控制柜数", "error": "", "warning": "", "remark": ""}, {"sensor": "水液位传感器(RS485)", "sensor_qty": 1, "unit": "台", "kind": "variable", "qty_label": "独立水箱数", "error": "", "warning": "", "remark": ""}, {"sensor": "串口开关量模块(RS485)", "sensor_qty": 1, "unit": "台", "kind": "variable", "qty_label": "控制柜数", "error": "", "warning": "", "remark": ""}, {"sensor": "水液位传感器(RS485)", "sensor_qty": 1, "unit": "台", "kind": "variable", "qty_label": "独立集水井数", "error": "", "warning": "", "remark": ""}, {"sensor": "温湿度传感器", "sensor_qty": 1, "unit": "台", "kind": "fixed", "qty_label": "", "error": "", "warning": "", "remark": ""}, {"sensor": "水浸传感器(RS485)", "sensor_qty": 2, "unit": "台", "kind": "fixed", "qty_label": "", "error": "", "warning": "", "remark": ""}, {"sensor": "睿联网关 M1000PRO-A(含电箱+电源)", "sensor_qty": 1, "unit": "套", "kind": "fixed", "qty_label": "", "error": "", "warning": "", "remark": ""}, {"sensor": "摄像头", "sensor_qty": 1, "unit": "台", "kind": "fixed", "qty_label": "", "error": "", "warning": "", "remark": ""}, {"sensor": "压力变送器(RS485)", "sensor_qty": 2, "unit": "台", "kind": "variable", "qty_label": "冷冻供水主管网数", "error": "", "warning": "", "remark": ""}, {"sensor": "压力变送器(RS485)", "sensor_qty": 2, "unit": "台", "kind": "variable", "qty_label": "冷冻回水主管网数", "error": "", "warning": "", "remark": ""}, {"sensor": "压力变送器(RS485)", "sensor_qty": null, "unit": "台", "kind": "variable", "qty_label": "冷却供水主管网数", "error": "", "warning": "【1#空调机房 / 冷却供水管网】冷却供水主管网数未填写，按不配置处理。", "remark": ""}, {"sensor": "压力变送器(RS485)", "sensor_qty": null, "unit": "台", "kind": "variable", "qty_label": "冷却回水主管网数", "error": "", "warning": "【1#空调机房 / 冷却回水管网】冷却回水主管网数未填写，按不配置处理。", "remark": ""}, {"sensor": "温湿度传感器", "sensor_qty": 1, "unit": "台", "kind": "fixed", "qty_label": "", "error": "", "warning": "", "remark": ""}, {"sensor": "水浸传感器(RS485)", "sensor_qty": 1, "unit": "台", "kind": "fixed", "qty_label": "", "error": "", "warning": "", "remark": ""}, {"sensor": "睿联网关 M1000PRO-A(含电箱+电源)", "sensor_qty": 1, "unit": "套", "kind": "fixed", "qty_label": "", "error": "", "warning": "", "remark": ""}, {"sensor": "摄像头", "sensor_qty": 2, "unit": "台", "kind": "fixed", "qty_label": "", "error": "", "warning": "", "remark": ""}, {"sensor": "水液位传感器(RS485)", "sensor_qty": 1, "unit": "台", "kind": "fixed", "qty_label": "", "error": "", "warning": "", "remark": "需求文档 8.4：冷却水池液位为固定项，默认 1，可调（B3）。"}], "bom": [{"room_name": "1#独立生活水泵房", "device": "给水生活管网始端（高/中/低区）", "qty": 3, "qty_unit": "区", "qty_display": "3 区", "sensor": "压力变送器(RS485)", "sensor_qty": 3, "sensor_unit": "台", "sensor_qty_display": "3"}, {"room_name": "1#独立生活水泵房", "device": "给水生活水泵控制柜（高/中/低区）", "qty": 3, "qty_unit": "台", "qty_display": "3", "sensor": "串口开关量模块(RS485)", "sensor_qty": 3, "sensor_unit": "台", "sensor_qty_display": "3"}, {"room_name": "1#独立生活水泵房", "device": "给水生活水池/水箱", "qty": 1, "qty_unit": "台", "qty_display": "1", "sensor": "水液位传感器(RS485)", "sensor_qty": 1, "sensor_unit": "台", "sensor_qty_display": "1"}, {"room_name": "1#独立生活水泵房", "device": "集水井（污水井）", "qty": 1, "qty_unit": "台", "qty_display": "1", "sensor": "水液位传感器(RS485)", "sensor_qty": 1, "sensor_unit": "台", "sensor_qty_display": "1"}, {"room_name": "1#独立生活水泵房", "device": "集水井（污水井）水泵控制柜", "qty": 1, "qty_unit": "台", "qty_display": "1", "sensor": "串口开关量模块(RS485)", "sensor_qty": 1, "sensor_unit": "台", "sensor_qty_display": "1"}, {"room_name": "1#独立生活水泵房", "device": "设备房温湿度", "qty": 1, "qty_unit": "台", "qty_display": "1", "sensor": "温湿度传感器", "sensor_qty": 1, "sensor_unit": "台", "sensor_qty_display": "1"}, {"room_name": "1#独立生活水泵房", "device": "设备房水浸", "qty": 2, "qty_unit": "台", "qty_display": "2", "sensor": "水浸传感器(RS485)", "sensor_qty": 2, "sensor_unit": "台", "sensor_qty_display": "2"}, {"room_name": "1#独立生活水泵房", "device": "数据采集", "qty": 1, "qty_unit": "套", "qty_display": "1 套", "sensor": "睿联网关 M1000PRO-A(含电箱+电源)", "sensor_qty": 1, "sensor_unit": "套", "sensor_qty_display": "1 套"}, {"room_name": "1#独立生活水泵房", "device": "设备房摄像头", "qty": 1, "qty_unit": "台", "qty_display": "1", "sensor": "摄像头", "sensor_qty": 1, "sensor_unit": "台", "sensor_qty_display": "1"}, {"room_name": "1#变配电房", "device": "设备房温湿度", "qty": 1, "qty_unit": "台", "qty_display": "1", "sensor": "温湿度传感器", "sensor_qty": 1, "sensor_unit": "台", "sensor_qty_display": "1"}, {"room_name": "1#变配电房", "device": "设备房水浸", "qty": 1, "qty_unit": "台", "qty_display": "1", "sensor": "水浸传感器(RS485)", "sensor_qty": 1, "sensor_unit": "台", "sensor_qty_display": "1"}, {"room_name": "1#变配电房", "device": "数据采集", "qty": 1, "qty_unit": "套", "qty_display": "1 套", "sensor": "睿联网关 M1000PRO-A(含电箱+电源)", "sensor_qty": 1, "sensor_unit": "套", "sensor_qty_display": "1 套"}, {"room_name": "1#变配电房", "device": "设备房摄像头", "qty": 1, "qty_unit": "台", "qty_display": "1", "sensor": "摄像头", "sensor_qty": 1, "sensor_unit": "台", "sensor_qty_display": "1"}, {"room_name": "2#变配电房", "device": "设备房温湿度", "qty": 1, "qty_unit": "台", "qty_display": "1", "sensor": "温湿度传感器", "sensor_qty": 1, "sensor_unit": "台", "sensor_qty_display": "1"}, {"room_name": "2#变配电房", "device": "设备房水浸", "qty": 1, "qty_unit": "台", "qty_display": "1", "sensor": "水浸传感器(RS485)", "sensor_qty": 1, "sensor_unit": "台", "sensor_qty_display": "1"}, {"room_name": "2#变配电房", "device": "数据采集", "qty": 1, "qty_unit": "套", "qty_display": "1 套", "sensor": "睿联网关 M1000PRO-A(含电箱+电源)", "sensor_qty": 1, "sensor_unit": "套", "sensor_qty_display": "1 套"}, {"room_name": "2#变配电房", "device": "设备房摄像头", "qty": 1, "qty_unit": "台", "qty_display": "1", "sensor": "摄像头", "sensor_qty": 1, "sensor_unit": "台", "sensor_qty_display": "1"}, {"room_name": "1#电梯机房", "device": "设备房温湿度", "qty": 1, "qty_unit": "台", "qty_display": "1", "sensor": "温湿度传感器", "sensor_qty": 1, "sensor_unit": "台", "sensor_qty_display": "1"}, {"room_name": "1#电梯机房", "device": "设备房水浸", "qty": 1, "qty_unit": "台", "qty_display": "1", "sensor": "水浸传感器(RS485)", "sensor_qty": 1, "sensor_unit": "台", "sensor_qty_display": "1"}, {"room_name": "1#电梯机房", "device": "数据采集", "qty": 1, "qty_unit": "套", "qty_display": "1 套", "sensor": "睿联网关 M1000PRO-A(含电箱+电源)", "sensor_qty": 1, "sensor_unit": "套", "sensor_qty_display": "1 套"}, {"room_name": "1#电梯机房", "device": "设备房摄像头", "qty": 1, "qty_unit": "台", "qty_display": "1", "sensor": "摄像头", "sensor_qty": 1, "sensor_unit": "台", "sensor_qty_display": "1"}, {"room_name": "1#独立消防水泵房", "device": "喷淋管网始端", "qty": 2, "qty_unit": "个", "qty_display": "2 个", "sensor": "压力变送器(RS485)", "sensor_qty": 2, "sensor_unit": "台", "sensor_qty_display": "2"}, {"room_name": "1#独立消防水泵房", "device": "喷淋泵控制柜", "qty": 2, "qty_unit": "台", "qty_display": "2", "sensor": "串口开关量模块(RS485)", "sensor_qty": 2, "sensor_unit": "台", "sensor_qty_display": "2"}, {"room_name": "1#独立消防水泵房", "device": "室内消火栓管网始端", "qty": 2, "qty_unit": "个", "qty_display": "2 个", "sensor": "压力变送器(RS485)", "sensor_qty": 2, "sensor_unit": "台", "sensor_qty_display": "2"}, {"room_name": "1#独立消防水泵房", "device": "室内消火栓泵控制", "qty": 2, "qty_unit": "台", "qty_display": "2", "sensor": "串口开关量模块(RS485)", "sensor_qty": 2, "sensor_unit": "台", "sensor_qty_display": "2"}, {"room_name": "1#独立消防水泵房", "device": "消防水池/水箱", "qty": 1, "qty_unit": "台", "qty_display": "1", "sensor": "水液位传感器(RS485)", "sensor_qty": 1, "sensor_unit": "台", "sensor_qty_display": "1"}, {"room_name": "1#独立消防水泵房", "device": "污水井泵控制柜", "qty": 1, "qty_unit": "台", "qty_display": "1", "sensor": "串口开关量模块(RS485)", "sensor_qty": 1, "sensor_unit": "台", "sensor_qty_display": "1"}, {"room_name": "1#独立消防水泵房", "device": "污水井", "qty": 1, "qty_unit": "台", "qty_display": "1", "sensor": "水液位传感器(RS485)", "sensor_qty": 1, "sensor_unit": "台", "sensor_qty_display": "1"}, {"room_name": "1#独立消防水泵房", "device": "设备房温湿度", "qty": 1, "qty_unit": "台", "qty_display": "1", "sensor": "温湿度传感器", "sensor_qty": 1, "sensor_unit": "台", "sensor_qty_display": "1"}, {"room_name": "1#独立消防水泵房", "device": "设备房水浸", "qty": 2, "qty_unit": "台", "qty_display": "2", "sensor": "水浸传感器(RS485)", "sensor_qty": 2, "sensor_unit": "台", "sensor_qty_display": "2"}, {"room_name": "1#独立消防水泵房", "device": "数据采集", "qty": 1, "qty_unit": "套", "qty_display": "1 套", "sensor": "睿联网关 M1000PRO-A(含电箱+电源)", "sensor_qty": 1, "sensor_unit": "套", "sensor_qty_display": "1 套"}, {"room_name": "1#独立消防水泵房", "device": "设备房摄像头", "qty": 1, "qty_unit": "台", "qty_display": "1", "sensor": "摄像头", "sensor_qty": 1, "sensor_unit": "台", "sensor_qty_display": "1"}, {"room_name": "1#空调机房", "device": "冷冻供水管网", "qty": 2, "qty_unit": "个", "qty_display": "2 个", "sensor": "压力变送器(RS485)", "sensor_qty": 2, "sensor_unit": "台", "sensor_qty_display": "2"}, {"room_name": "1#空调机房", "device": "冷冻回水管网", "qty": 2, "qty_unit": "个", "qty_display": "2 个", "sensor": "压力变送器(RS485)", "sensor_qty": 2, "sensor_unit": "台", "sensor_qty_display": "2"}, {"room_name": "1#空调机房", "device": "设备房温湿度", "qty": 1, "qty_unit": "台", "qty_display": "1", "sensor": "温湿度传感器", "sensor_qty": 1, "sensor_unit": "台", "sensor_qty_display": "1"}, {"room_name": "1#空调机房", "device": "设备房水浸", "qty": 1, "qty_unit": "台", "qty_display": "1", "sensor": "水浸传感器(RS485)", "sensor_qty": 1, "sensor_unit": "台", "sensor_qty_display": "1"}, {"room_name": "1#空调机房", "device": "数据采集", "qty": 1, "qty_unit": "套", "qty_display": "1 套", "sensor": "睿联网关 M1000PRO-A(含电箱+电源)", "sensor_qty": 1, "sensor_unit": "套", "sensor_qty_display": "1 套"}, {"room_name": "1#空调机房", "device": "设备房摄像头", "qty": 2, "qty_unit": "台", "qty_display": "2", "sensor": "摄像头", "sensor_qty": 2, "sensor_unit": "台", "sensor_qty_display": "2"}, {"room_name": "1#空调机房", "device": "冷却水池", "qty": 1, "qty_unit": "台", "qty_display": "1", "sensor": "水液位传感器(RS485)", "sensor_qty": 1, "sensor_unit": "台", "sensor_qty_display": "1"}], "bomColumns": [{"key": "room_name", "label": "设备房名称"}, {"key": "device", "label": "物业设备名称"}, {"key": "qty_display", "label": "设备数量"}, {"key": "sensor", "label": "传感器类型"}, {"key": "sensor_qty_display", "label": "传感器数量"}], "rulesVersion": "1.0.0"};
+var CATS = {};
+P.categories.forEach(function (c) { CATS[c.name] = c; });
+var DEF_UNIT = '台';
+
+function fmt(n, unit) {
+  if (n === null || n === '' || n === undefined) return '';
+  return (unit && unit !== DEF_UNIT) ? (n + ' ' + unit) : String(n);
+}
+function lookup(spaceType, device) {
+  var c = CATS[spaceType];
+  if (!c) return null;
+  for (var i = 0; i < c.items.length; i++) if (c.items[i].name === device) return c.items[i];
+  return null;
+}
+/* 演示用：真实实现里计算发生在服务端 core/rules.py，前端不持有业务规则。
+   这里只是为了让你能当场改数量、看计算列跟着变。 */
+function compute(row) {
+  var it = lookup(row.space_type, row.device);
+  if (!it) return {sensor: '', qty: null, unit: '', kind: '', label: '', err: '物业设备不在该空间类型的规则内'};
+  var q = (row.qty === '' || row.qty === null || row.qty === undefined) ? null : Number(row.qty);
+  var err = '';
+  if (q === null && !it.allow_empty) err = (it.qty_label || '设备数量') + '未确定';
+  else if (q !== null && (!isFinite(q) || q < 0 || q % 1 !== 0)) err = '需要 0 或正整数';
+  return {sensor: it.sensor, qty: (q === null || q <= 0 || err) ? null : q,
+          unit: it.unit, kind: it.kind, label: it.qty_label, err: err,
+          warn: (q === null && it.allow_empty) ? '留空即不配' : ''};
+}
+
+/* ---------------- B03 方案 A：单表增强 ---------------- */
+function renderPlanA() {
+  var tb = document.getElementById('planA');
+  tb.innerHTML = '';
+  var lastRoom = null;
+  P.rows.forEach(function (row, i) {
+    var c = compute(row);
+    var tr = document.createElement('tr');
+    tr.className = (row.room_name !== lastRoom ? 'roomstart ' : '') +
+                   (c.err ? 'bad' : (row.qty === null ? 'pending' : ''));
+    lastRoom = row.room_name;
+    var it = lookup(row.space_type, row.device);
+    tr.innerHTML =
+      '<td class="c"><input type="checkbox" class="ck" checked data-i="' + i + '" aria-label="配置该行"></td>' +
+      '<td class="c" style="color:#98a2b3">' + (i + 1) + '</td>' +
+      '<td>' + (i === 0 || P.rows[i - 1].room_name !== row.room_name
+                 ? '<span class="roomtag">' + row.room_name + '</span>' : '<span style="color:#c3cad6">〃</span>') + '</td>' +
+      '<td style="min-width:132px">' + row.space_type + '</td>' +
+      '<td style="min-width:190px">' + row.device +
+        (it && it.kind === 'fixed' ? ' <span class="pill mute">固定</span>' : '') + '</td>' +
+      '<td class="qty"><span class="qtywrap"><input type="number" value="' +
+        (row.qty === null ? '' : row.qty) + '" data-i="' + i + '" aria-label="设备数量">' +
+        '<span class="qtyunit">' + (it ? (it.qty_label || it.unit) : '') + '</span></span></td>' +
+      '<td class="calc">' + (c.err ? '<span class="pill err">待确认</span>' : c.sensor) + '</td>' +
+      '<td class="calc c"><b>' + (c.qty === null ? '—' : fmt(c.qty, c.unit)) + '</b></td>' +
+      '<td class="c">' + (c.err ? '<span class="pill err">' + c.err + '</span>'
+                         : (c.warn ? '<span class="pill warn">' + c.warn + '</span>'
+                         : (row.qty === null ? '<span class="pill warn">待确认</span>' : '<span class="pill ok">可计算</span>'))) + '</td>' +
+      '<td class="c"><button class="btn danger" type="button">删除</button></td>';
+    tb.appendChild(tr);
+  });
+  tb.querySelectorAll('input[type=number]').forEach(function (inp) {
+    inp.addEventListener('input', function () {
+      var i = Number(inp.getAttribute('data-i'));
+      P.rows[i].qty = inp.value === '' ? null : Number(inp.value);
+      renderPlanA(); renderPlanB(); renderPreview(); syncStats();
+    });
+  });
+  tb.querySelectorAll('input.ck').forEach(function (ck) {
+    ck.addEventListener('change', function () {
+      var i = Number(ck.getAttribute('data-i'));
+      P.rows[i]._off = !ck.checked;
+      renderPlanA(); renderPlanB(); renderPreview(); syncStats();
+    });
+  });
+}
+
+/* ---------------- B04 方案 B：按设备房分卡片 ---------------- */
+function renderPlanB() {
+  var host = document.getElementById('planB');
+  host.innerHTML = '';
+  var rooms = [];
+  P.rows.forEach(function (row, i) {
+    if (!rooms.length || rooms[rooms.length - 1].name !== row.room_name) {
+      rooms.push({name: row.room_name, space_type: row.space_type, idx: []});
+    }
+    rooms[rooms.length - 1].idx.push(i);
+  });
+  rooms.forEach(function (rm) {
+    var variable = rm.idx.filter(function (i) { var it = lookup(P.rows[i].space_type, P.rows[i].device); return it && it.kind === 'variable'; });
+    var fixed = rm.idx.filter(function (i) { var it = lookup(P.rows[i].space_type, P.rows[i].device); return it && it.kind === 'fixed'; });
+    var lines = rm.idx.filter(function (i) { return !P.rows[i]._off; })
+                      .map(function (i) { return compute(P.rows[i]); })
+                      .filter(function (c) { return c.qty && c.sensor; });
+    var bad = rm.idx.map(function (i) { return compute(P.rows[i]); }).filter(function (c) { return c.err; }).length;
+    var box = document.createElement('div');
+    box.className = 'card2';
+    box.innerHTML =
+      '<div class="hd"><span class="roomtag">' + rm.name + '</span>' +
+        '<select style="width:auto;min-width:150px" aria-label="空间类型">' +
+          Object.keys(CATS).map(function (n) {
+            return '<option' + (n === rm.space_type ? ' selected' : '') + '>' + n + '</option>';
+          }).join('') + '</select>' +
+        '<span class="pill info">配置行 ' + lines.length + '</span>' +
+        (bad ? '<span class="pill err">待确认 ' + bad + '</span>' : '<span class="pill ok">可生成</span>') +
+        '<span style="margin-left:auto;font-size:12px;color:#6b7280">' + (CATS[rm.space_type] ? CATS[rm.space_type].remark || '' : '') + '</span>' +
+      '</div><div class="bd">' + cardTable('变动项（来自文字稿提取）', variable) + cardTable('固定项（规则库自动补全，可调整）', fixed) + '</div>';
+    host.appendChild(box);
+  });
+  function cardTable(title, idxs) {
+    if (!idxs.length) return '';
+    var body = idxs.map(function (i) {
+      var row = P.rows[i], c = compute(row), it = lookup(row.space_type, row.device);
+      return '<tr class="' + (row._off ? 'off' : (c.err ? 'bad' : '')) + '">' +
+        '<td class="c" style="width:34px"><input type="checkbox" class="ck" ' + (row._off ? '' : 'checked') + '></td>' +
+        '<td>' + row.device + '</td>' +
+        '<td class="qty" style="width:132px"><span class="qtywrap"><input type="number" value="' +
+          (row.qty === null ? '' : row.qty) + '"><span class="qtyunit">' + (it.qty_label || it.unit) + '</span></span></td>' +
+        '<td class="calc" style="width:200px">' + (c.err ? '<span class="pill err">待确认</span>' : c.sensor) + '</td>' +
+        '<td class="calc c" style="width:74px"><b>' + (c.qty === null ? '—' : fmt(c.qty, c.unit)) + '</b></td>' +
+        '<td style="width:150px;font-size:12px;color:#8a93a3">' + (c.err || c.warn || it.remark || '') + '</td></tr>';
+    }).join('');
+    return '<h3 style="margin:12px 0 5px">' + title + '</h3><div class="scroll-x"><table class="tbl">' +
+      '<thead><tr><th class="c">配</th><th>物业设备</th><th>设备数量</th><th>传感器类型（计算）</th>' +
+      '<th class="c">传感器数量</th><th>说明</th></tr></thead><tbody>' + body + '</tbody></table></div>';
+  }
+}
+
+/* ---------------- B05 预览页 ---------------- */
+function renderPreview() {
+  var host = document.getElementById('previewBody');
+  var rooms = [];
+  P.rows.forEach(function (row) {
+    if (row._off) return;
+    var c = compute(row);
+    if (!c.qty || !c.sensor) return;
+    if (!rooms.length || rooms[rooms.length - 1].name !== row.room_name) {
+      rooms.push({name: row.room_name, lines: []});
+    }
+    rooms[rooms.length - 1].lines.push([row.room_name, row.device, fmt(c.qty === null ? row.qty : row.qty,
+      (lookup(row.space_type, row.device) || {}).unit), c.sensor, fmt(c.qty, c.unit)]);
+  });
+  host.innerHTML = rooms.map(function (rm) {
+    return '<tr class="roomstart"><td colspan="5" style="background:#f7f9fc;font-weight:600;color:#33475f">' +
+      rm.name + ' <span class="pill mute" style="margin-left:6px">' + rm.lines.length + ' 行</span></td></tr>' +
+      rm.lines.map(function (l) {
+        return '<tr>' + l.map(function (v, i) {
+          return '<td' + (i === 2 || i === 4 ? ' class="c"' : '') + '>' + v + '</td>';
+        }).join('') + '</tr>';
+      }).join('');
+  }).join('');
+  var n = rooms.reduce(function (a, r) { return a + r.lines.length; }, 0);
+  document.getElementById('pvRooms').textContent = rooms.length;
+  document.getElementById('pvLines').textContent = n;
+}
+
+function syncStats() {
+  var cs = P.rows.map(compute);
+  document.getElementById('stRows').textContent = P.rows.length;
+  document.getElementById('stRooms').textContent = P.rows.filter(function (r, i) {
+    return i === 0 || P.rows[i - 1].room_name !== r.room_name; }).length;
+  document.getElementById('stBad').textContent = cs.filter(function (c) { return c.err; }).length;
+  document.getElementById('stOff').textContent = P.rows.filter(function (r) { return r._off; }).length;
+  renderPreview();
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  renderPlanA(); renderPlanB(); syncStats();
+  var links = document.querySelectorAll('.outline a');
+  var secs = [...document.querySelectorAll('section')];
+  window.addEventListener('scroll', function () {
+    var cur = secs[0].id;
+    secs.forEach(function (s) { if (s.getBoundingClientRect().top < 120) cur = s.id; });
+    links.forEach(function (a) { a.classList.toggle('on', a.getAttribute('href') === '#' + cur); });
+  });
+});
+
+</script>
+</body>
+</html>

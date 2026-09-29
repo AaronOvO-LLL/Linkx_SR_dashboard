@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>灵石解决方案工作台 · 应用总览（静态视觉稿 v1）</title>
+<style>
+:root{
+  --brand:#2F5597; --brand-dark:#24447b; --brand-soft:#e8eefb; --support:#E8EEF7;
+  --accent:#E2703A; --accent-soft:#fdf0e8;
+  --ink:#1f2937; --muted:#6b7280; --line:#e3e7ee; --bg:#f2f4f7;
+  --ok:#0f8a5f; --ok-bg:#eaf7f1;
+  --warn:#b45309; --warn-bg:#fff7ed; --warn-line:#fed7aa;
+  --err:#c0392b; --err-bg:#fdeeee; --err-line:#f5c6c2;
+  --radius:12px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+     background:var(--bg);color:var(--ink);font-size:14.5px;line-height:1.7}
+a{color:var(--brand);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ---------- 草稿提示条 ---------- */
+.draft{background:#fffbe6;border-bottom:1px solid #f5e0a3;color:#7a5c00;
+       font-size:12.5px;padding:7px 20px;text-align:center}
+.draft b{color:#5c4500}
+
+/* ---------- 顶栏 ---------- */
+.topbar{background:var(--brand);color:#fff;position:sticky;top:0;z-index:50;
+        box-shadow:0 2px 10px rgba(31,41,55,.12)}
+.topbar-in{max-width:1280px;margin:0 auto;padding:0 22px;height:58px;
+           display:flex;align-items:center;justify-content:space-between;gap:16px}
+.brand{color:#fff;font-weight:600;font-size:16px;display:flex;align-items:center;gap:9px}
+.brand:hover{text-decoration:none}
+.brand-mark{background:rgba(255,255,255,.18);padding:3px 9px;border-radius:7px;font-size:14px;letter-spacing:1px}
+.topmeta{display:flex;align-items:center;gap:10px;font-size:12px;color:#cdddf7}
+.chip{background:rgba(255,255,255,.16);padding:3px 10px;border-radius:20px;font-size:12px;white-space:nowrap}
+
+/* ---------- 布局骨架 ---------- */
+.shell{max-width:1280px;margin:0 auto;padding:22px;display:flex;gap:24px;align-items:flex-start}
+.outline{width:212px;flex:0 0 212px;position:sticky;top:80px;
+         background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:12px 0;
+         max-height:calc(100vh - 104px);overflow:auto}
+.outline h4{font-size:11.5px;color:#98a2b3;letter-spacing:1px;padding:0 14px 8px;font-weight:600}
+.outline a{display:flex;gap:8px;padding:5px 14px;font-size:12.5px;color:#4b5563;
+           border-left:2px solid transparent;line-height:1.45}
+.outline a:hover{background:#f7f9fc;text-decoration:none}
+.outline a.on{color:var(--brand);background:var(--brand-soft);border-left-color:var(--brand);font-weight:600}
+.outline a i{font-style:normal;color:#b6bfcc;font-size:11px;flex:0 0 22px}
+.outline a.on i{color:var(--brand)}
+.content{flex:1;min-width:0}
+
+/* ---------- 区块通用 ---------- */
+section{background:#fff;border:1px solid var(--line);border-radius:var(--radius);
+        padding:22px 24px;margin-bottom:18px;scroll-margin-top:76px}
+.shead{display:flex;align-items:flex-start;gap:12px;margin-bottom:6px}
+.bno{flex:0 0 auto;background:var(--support);color:var(--brand);font-size:11px;font-weight:700;
+     letter-spacing:.5px;padding:3px 8px;border-radius:6px;margin-top:4px}
+.shead h2{font-size:18px;line-height:1.4}
+.shead .kicker{display:block;font-size:11.5px;color:var(--accent);letter-spacing:1.5px;
+               font-weight:700;margin-bottom:2px}
+.sub{color:var(--muted);font-size:13px;margin:2px 0 16px}
+h3{font-size:14.5px;color:var(--brand);margin:20px 0 9px}
+h3:first-of-type{margin-top:14px}
+p{margin-bottom:9px}
+ul,ol{margin:0 0 10px 20px}
+li{margin-bottom:5px}
+.takeaway{background:var(--brand-soft);border-left:3px solid var(--brand);
+          padding:10px 14px;border-radius:0 8px 8px 0;font-size:13.5px;margin-top:14px}
+.takeaway b{color:var(--brand-dark)}
+.note{background:#f7f9fc;border:1px dashed #cfd8e6;border-radius:8px;padding:9px 13px;
+      font-size:12.5px;color:var(--muted);margin-top:12px}
+.src{display:inline-block;background:var(--accent-soft);color:var(--accent);border:1px solid #f3d3bf;
+     font-size:11px;padding:1px 8px;border-radius:20px;margin-left:8px;vertical-align:2px;white-space:nowrap}
+
+/* ---------- 表格 ---------- */
+.tbl{width:100%;border-collapse:collapse;font-size:13px;margin:6px 0 4px}
+.tbl th{background:var(--support);color:#33475f;text-align:left;font-weight:600;
+        padding:8px 10px;border:1px solid #d8e2f0;white-space:nowrap}
+.tbl td{padding:8px 10px;border:1px solid var(--line);vertical-align:top}
+.tbl tbody tr:nth-child(even){background:#fafbfd}
+.tbl td.c,.tbl th.c{text-align:center}
+.scroll-x{overflow-x:auto}
+
+/* ---------- 标签 ---------- */
+.pill{display:inline-block;font-size:11.5px;padding:1px 8px;border-radius:20px;
+      border:1px solid transparent;white-space:nowrap;line-height:1.7}
+.pill.ok{background:var(--ok-bg);color:var(--ok);border-color:#bfe4d3}
+.pill.warn{background:var(--warn-bg);color:var(--warn);border-color:var(--warn-line)}
+.pill.err{background:var(--err-bg);color:var(--err);border-color:var(--err-line)}
+.pill.info{background:var(--brand-soft);color:var(--brand);border-color:#c9d6ee}
+.pill.mute{background:#f1f3f7;color:#6b7280;border-color:#e3e7ee}
+.pill.acc{background:var(--accent-soft);color:var(--accent);border-color:#f3d3bf}
+code{background:#f1f3f7;border:1px solid var(--line);border-radius:4px;
+     padding:0 5px;font-size:12.5px;font-family:Consolas,"Courier New",monospace;color:#334155}
+
+/* ---------- Hero ---------- */
+.hero{background:linear-gradient(135deg,#2F5597 0%,#24406F 100%);color:#fff;border:none}
+.hero .shead h2{color:#fff;font-size:26px}
+.hero .bno{background:rgba(255,255,255,.18);color:#fff}
+.hero .sub{color:rgba(255,255,255,.78)}
+.hero-lead{font-size:15px;color:rgba(255,255,255,.94);max-width:760px;margin-bottom:18px}
+.hero-lead em{font-style:normal;color:#ffd9c2;font-weight:600}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:6px 0 18px}
+.stat{background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);
+      border-radius:10px;padding:12px 14px}
+.stat b{display:block;font-size:26px;font-weight:700;line-height:1.2;letter-spacing:-.5px}
+.stat span{font-size:12px;color:rgba(255,255,255,.72)}
+.hero-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.hero-3 div{background:rgba(255,255,255,.08);border-radius:9px;padding:11px 13px;font-size:13px}
+.hero-3 b{display:block;color:#cfe0ff;font-size:12px;margin-bottom:3px;letter-spacing:.5px}
+.hero-3 span{color:rgba(255,255,255,.85)}
+.ready{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;padding-top:16px;
+       border-top:1px solid rgba(255,255,255,.2);font-size:12.5px}
+.ready span{background:rgba(0,0,0,.16);padding:4px 11px;border-radius:20px;color:#fff}
+
+/* ---------- 双栏 ---------- */
+.cols{display:grid;gap:14px}
+.c-65{grid-template-columns:1.85fr 1fr}
+.c-50{grid-template-columns:1fr 1fr}
+.c-38{grid-template-columns:1fr 1.65fr}
+.panel{background:#fafbfd;border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.panel h4{font-size:13px;color:var(--brand);margin-bottom:8px}
+.panel.dark{background:var(--brand);border-color:var(--brand);color:#fff}
+.panel.dark h4{color:#cfe0ff}
+.panel.dark li{color:rgba(255,255,255,.9)}
+.pain{border-left:3px solid var(--accent);background:var(--accent-soft);
+      border-radius:0 9px 9px 0;padding:11px 14px;margin-bottom:10px}
+.pain b{display:block;font-size:13.5px;margin-bottom:2px}
+.pain span{font-size:12.5px;color:#7d5a45}
+
+/* ---------- 产品卡 ---------- */
+.prods{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.prod{border:1px solid var(--line);border-radius:10px;padding:15px 17px;background:#fff;
+      display:flex;flex-direction:column}
+.prod.new{border-color:#c9d6ee;background:linear-gradient(180deg,#fbfcff 0%,#fff 60%)}
+.prod-top{display:flex;align-items:baseline;gap:8px;margin-bottom:3px;flex-wrap:wrap}
+.prod-top b{font-size:16px}
+.ver{font-size:11.5px;color:var(--muted);font-family:Consolas,monospace}
+.prod-desc{font-size:13px;color:#374151;margin-bottom:9px}
+.kv{font-size:12.5px;color:var(--muted);margin-bottom:4px}
+.kv b{color:#4b5563;font-weight:600}
+.tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:auto;padding-top:11px}
+
+/* ---------- 流程带 ---------- */
+.flow{display:flex;align-items:stretch;gap:0;flex-wrap:wrap;margin:8px 0 4px}
+.fstep{flex:1;min-width:118px;position:relative;padding:0 6px}
+.fstep .dot{width:26px;height:26px;border-radius:50%;background:var(--brand-soft);color:var(--brand);
+            display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;
+            margin-bottom:7px;border:1px solid #c9d6ee}
+.fstep.man .dot{background:var(--accent-soft);color:var(--accent);border-color:#f3d3bf}
+.fstep b{display:block;font-size:13px;margin-bottom:2px}
+.fstep span{font-size:11.5px;color:var(--muted);line-height:1.5;display:block}
+.fstep:not(:last-child)::after{content:"";position:absolute;top:13px;left:calc(50% + 20px);
+            right:calc(-50% + 20px);height:1px;background:#d8e2f0}
+.legend{display:flex;gap:16px;font-size:12px;color:var(--muted);margin-top:12px;flex-wrap:wrap}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
+
+/* ---------- 架构图 ---------- */
+.arch{margin:10px 0 4px}
+.layer{border:1px solid #c9d6ee;background:#fbfcff;border-radius:9px;padding:10px 14px;margin-bottom:0}
+.layer b{font-size:13.5px;color:var(--brand-dark);display:block}
+.layer span{font-size:12px;color:var(--muted)}
+.layer .items{margin-top:6px;display:flex;gap:6px;flex-wrap:wrap}
+.arrow{text-align:center;color:#98a2b3;font-size:15px;line-height:1;margin:5px 0}
+.arrow em{font-style:normal;font-size:11px;color:#b6bfcc;margin-left:8px}
+.side{display:grid;grid-template-columns:1fr 210px;gap:14px;align-items:start}
+.providers{border:1px dashed #cfd8e6;border-radius:9px;padding:11px 13px;background:#fafbfd}
+.providers h4{font-size:12.5px;color:var(--brand);margin-bottom:7px}
+.providers div{font-size:12px;color:#4b5563;padding:4px 0;border-bottom:1px dotted #e3e7ee}
+.providers div:last-child{border:none}
+
+/* ---------- 代码块 ---------- */
+pre{background:#1f2937;color:#e5e7eb;border-radius:9px;padding:13px 15px;overflow-x:auto;
+    font-size:12.5px;line-height:1.65;font-family:Consolas,"Courier New",monospace;margin:8px 0}
+pre .c{color:#9ca3af}
+pre .k{color:#93c5fd}
+
+/* ---------- 时间线 ---------- */
+.tl{border-left:2px solid var(--line);margin:8px 0 4px 6px;padding-left:18px}
+.tl-i{position:relative;margin-bottom:15px}
+.tl-i::before{content:"";position:absolute;left:-24px;top:7px;width:9px;height:9px;border-radius:50%;
+              background:var(--brand);border:2px solid #fff;box-shadow:0 0 0 1px var(--brand)}
+.tl-i.plan::before{background:#fff;box-shadow:0 0 0 1px #c9d6ee}
+.tl-i b{font-size:13.5px}
+.tl-i .d{font-size:11.5px;color:var(--muted);font-family:Consolas,monospace;margin-left:7px}
+.tl-i ul{margin:5px 0 0 18px;font-size:13px;color:#4b5563}
+
+/* ---------- 反馈块 ---------- */
+.fb{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fb-q{border:1px solid var(--line);border-radius:9px;padding:12px 14px;background:#fafbfd}
+.fb-q b{display:block;font-size:13px;margin-bottom:5px;color:var(--brand-dark)}
+.fb-q .lines{border-top:1px dashed #cfd8e6;height:22px}
+.fb-q .lines:first-of-type{margin-top:6px}
+
+/* ---------- 页脚 ---------- */
+.foot{text-align:center;color:#9ca3af;font-size:12px;padding:22px;border-top:1px solid var(--line);
+      background:#fff;margin-top:6px}
+.totop{position:fixed;right:22px;bottom:22px;width:38px;height:38px;border-radius:50%;
+       background:var(--brand);color:#fff;border:none;font-size:16px;cursor:pointer;opacity:0;
+       pointer-events:none;transition:.2s;box-shadow:0 4px 14px rgba(47,85,151,.3)}
+.totop.show{opacity:1;pointer-events:auto}
+
+/* ---------- 窄屏 ---------- */
+@media(max-width:1080px){
+  .outline{display:none}
+  .shell{padding:16px}
+  .c-65,.c-50,.c-38,.prods,.fb,.hero-3,.side{grid-template-columns:1fr}
+  .stats{grid-template-columns:1fr 1fr}
+  .fstep{flex:0 0 50%;margin-bottom:14px}
+  .fstep:not(:last-child)::after{display:none}
+}
+</style>
+</head>
+<body>
+
+<div class="draft">
+  <b>静态视觉稿 v1</b> · 未接入应用、无任何后端请求，双击即可打开 · 正文数据取自当前代码与文档，
+  <b>B13 / B14 为占位内容</b> · 反馈请按区块编号（B01–B16）指出「保留 / 删除 / 合并 / 换位置 / 内容不对」
+</div>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <a class="brand" href="#b01"><span class="brand-mark">灵石</span><span>解决方案工作台 · 应用总览</span></a>
+    <div class="topmeta">
+      <span class="chip">app v0.1.0</span>
+      <span class="chip">4 个管家产品</span>
+      <span class="chip">2026-09-29</span>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+
+  <!-- ===================== 左侧目录 ===================== -->
+  <nav class="outline" id="outline">
+    <h4>本页内容块</h4>
+    <a href="#b01"><i>B01</i>概览与关键数字</a>
+    <a href="#b02"><i>B02</i>要解决的问题</a>
+    <a href="#b03"><i>B03</i>产品矩阵</a>
+    <a href="#b04"><i>B04</i>核心业务流程</a>
+    <a href="#b05"><i>B05</i>公共信息层与字段模型</a>
+    <a href="#b06"><i>B06</i>能力矩阵</a>
+    <a href="#b07"><i>B07</i>产出物一览</a>
+    <a href="#b08"><i>B08</i>系统架构</a>
+    <a href="#b09"><i>B09</i>技术栈与选型约束</a>
+    <a href="#b10"><i>B10</i>质量门禁</a>
+    <a href="#b11"><i>B11</i>运行与部署</a>
+    <a href="#b12"><i>B12</i>安全与数据边界</a>
+    <a href="#b13"><i>B13</i>README</a>
+    <a href="#b14"><i>B14</i>版本更新说明</a>
+    <a href="#b15"><i>B15</i>路线图与待拍板</a>
+    <a href="#b16"><i>B16</i>反馈</a>
+  </nav>
+
+  <main class="content">
+
+  <!-- ===================== B01 概览 ===================== -->
+  <section id="b01" class="hero">
+    <div class="shead">
+      <span class="bno">B01</span>
+      <h2><span class="kicker">OVERVIEW</span>从现场录音到标准方案材料</h2>
+    </div>
+    <p class="sub">踏勘录入 · AI 提取 · 方案生成 —— 一套平台，多个管家产品</p>
+
+    <p class="hero-lead">
+      把一次现场踏勘的口语录音，变成可直接流转给内部与客户的结构化方案材料。
+      <em>一份 66 分钟录音，约 2 分钟完成转写</em>，再由 AI 按各产品的字段模型提取、人工核对确认后一键生成产出物并打包。
+    </p>
+
+    <div class="stats">
+      <div class="stat"><b>4</b><span>管家产品（安全 / 消防 / 设备 / 能源）</span></div>
+      <div class="stat"><b>7</b><span>主流程步骤，其中 2 处必须人工</span></div>
+      <div class="stat"><b>11</b><span>字段包：5 个公共 + 6 个产品专属</span></div>
+      <div class="stat"><b>73</b><span>主流程自测检查项</span></div>
+    </div>
+
+    <div class="hero-3">
+      <div><b>这是什么</b><span>单机部署的模块化 Flask 应用：产品差异全部外置到 JSON 配置，公共代码不写产品分支。</span></div>
+      <div><b>给谁用</b><span>各分部的踏勘 / 方案人员。按分部登录，数据按分部隔离，互不可见。</span></div>
+      <div><b>怎么用</b><span>建项目 → 上传录音或粘文字稿 → AI 提字段 → 人工核对 → 预览生成 → 下载单文件或 ZIP。</span></div>
+    </div>
+
+    <div class="ready">
+      <span>本机演示 <b>✅ 满足</b></span>
+      <span>内网 / 局域网 <b>⚠️ 差 5 处必改项</b></span>
+      <span>公网 / 生产 <b>❌ 尚不满足</b></span>
+      <span>详见 B11 / B15</span>
+    </div>
+  </section>
+
+  <!-- ===================== B02 问题 ===================== -->
+  <section id="b02">
+    <div class="shead"><span class="bno">B02</span><h2><span class="kicker">WHY</span>要解决的问题</h2></div>
+    <p class="sub">瓶颈不在人不够，而在信息从「口语」到「结构化」这一段全靠手工。</p>
+
+    <div class="cols c-65">
+      <div>
+        <div class="pain"><b>踏勘录音整理耗时</b><span>2 小时现场录音，靠人工回听整理成踏勘表，通常要半天到一天。</span></div>
+        <div class="pain"><b>口径不统一、漏填错填</b><span>不同人填的踏勘表字段口径不一致，关键字段缺失要到写方案时才发现。</span></div>
+        <div class="pain"><b>方案材料每次从零重写</b><span>材料出得慢，商机响应就慢；同一份事实被反复誊抄进不同文档。</span></div>
+      </div>
+      <div class="panel">
+        <h4>现状 → 目标</h4>
+        <table class="tbl">
+          <tbody>
+            <tr><td>回听录音手敲表格</td><td class="c">→</td><td>转写 + AI 提字段</td></tr>
+            <tr><td>各产品各填一遍公共信息</td><td class="c">→</td><td>项目级录一次，多产品共用</td></tr>
+            <tr><td>字段口径靠个人经验</td><td class="c">→</td><td>字段模型 + 校验规则约束</td></tr>
+            <tr><td>方案材料手工排版</td><td class="c">→</td><td>模板渲染，一键生成打包</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="takeaway"><b>所以呢：</b>这个工作台要替代的不是「踏勘」这件事，而是踏勘之后的<b>信息结构化与材料生成</b>这段纯手工劳动。</div>
+  </section>
+
+  <!-- ===================== B03 产品矩阵 ===================== -->
+  <section id="b03">
+    <div class="shead"><span class="bno">B03</span><h2><span class="kicker">PRODUCTS</span>产品矩阵</h2></div>
+    <p class="sub">每个产品 = 一个 <code>config/products/&lt;product_type&gt;/</code> 目录（product.json + fields.json + artifacts.json + templates/）。新增产品只加配置，不改公共代码。</p>
+
+    <div class="prods">
+      <div class="prod">
+        <div class="prod-top"><b>安全管家</b><span class="ver">v0.3.0</span><span class="pill ok">active</span><span class="pill mute">最完整</span></div>
+        <p class="prod-desc">以远程值守 + 智能识别 + 现场巡检的组合服务，替代或补强客户现有安保力量。</p>
+        <p class="kv"><b>覆盖：</b>风险识别、告警响应、事件处置、隐患闭环与月度安全报告</p>
+        <p class="kv"><b>字段：</b>49 字段 / 11 分组 / 34 必填（字段模板 v0.4.0）</p>
+        <p class="kv"><b>产出物：</b>完整踏勘结果 · 价值卡片 · 交付内容 · 提资基础内容</p>
+        <div class="tags"><span class="pill info">text_input</span><span class="pill info">audio_asr</span><span class="pill info">field_extraction</span><span class="pill info">artifact_generation</span></div>
+      </div>
+
+      <div class="prod">
+        <div class="prod-top"><b>消防管家</b><span class="ver">v0.1.0</span><span class="pill ok">active</span></div>
+        <p class="prod-desc">围绕消控室、消防主机与维保现状开展踏勘，形成消防服务方案基础材料。</p>
+        <p class="kv"><b>覆盖：</b>消控室信号传输、主机主从关系、维保信息及一次性改造费用</p>
+        <p class="kv"><b>字段包：</b>3 个公共包 + <code>fire_survey</code></p>
+        <p class="kv"><b>产出物：</b>完整踏勘结果 · 价值卡片 · 交付内容 · 提资基础内容</p>
+        <div class="tags"><span class="pill info">text_input</span><span class="pill info">audio_asr</span><span class="pill info">field_extraction</span><span class="pill info">artifact_generation</span></div>
+      </div>
+
+      <div class="prod new">
+        <div class="prod-top"><b>设备管家</b><span class="ver">v0.1.0</span><span class="pill acc">接入中</span><span class="pill mute">新交互</span></div>
+        <p class="prod-desc">把设备房与需改造的物业设备按配置规则换算成应加装的传感器清单，输出可直接流转的 Excel。</p>
+        <p class="kv"><b>覆盖：</b>7 类设备房（生活水泵房 / 消防水泵房 / 楼顶稳压泵房 / 混合泵房 / 电梯机房 / 配电房 / 空调机房）</p>
+        <p class="kv"><b>核心新增：</b>确定性传感器规则计算引擎（规则库外置为配置，30KB）</p>
+        <p class="kv"><b>产出物：</b>传感器配置清单（xlsx，5 列）</p>
+        <div class="tags"><span class="pill info">text_input</span><span class="pill info">audio_asr</span><span class="pill info">field_extraction</span><span class="pill info">artifact_generation</span><span class="pill acc">表格式核对</span></div>
+      </div>
+
+      <div class="prod new">
+        <div class="prod-top"><b>能源管家</b><span class="ver">v0.1.0</span><span class="pill ok">active</span><span class="pill mute">2026-09-29 接入</span></div>
+        <p class="prod-desc">空调冷站节能管理：准入判断、设备清单与运行现状调研。</p>
+        <p class="kv"><b>覆盖：</b>可改造冷站及受控 VRV 的设备与运行基线</p>
+        <p class="kv"><b>核心新增：</b>产品级准入规则（不满足即阻断生成）+ 表格式设备清单 + xlsx renderer</p>
+        <p class="kv"><b>产出物：</b>设备清单（xlsx，10 列）<span class="pill mute" style="margin-left:6px">价值卡片仅预留 key</span></p>
+        <div class="tags"><span class="pill info">text_input</span><span class="pill info">audio_asr</span><span class="pill info">field_extraction</span><span class="pill info">artifact_generation</span><span class="pill acc">准入判断</span></div>
+      </div>
+    </div>
+
+    <div class="note">卡片信息全部来自 <code>config/products/*/product.json</code> 与 <code>artifacts.json</code>，未来可由应用直接渲染，不需要人工维护两份。</div>
+  </section>
+
+  <!-- ===================== B04 流程 ===================== -->
+  <section id="b04">
+    <div class="shead"><span class="bno">B04</span><h2><span class="kicker">FLOW</span>核心业务流程</h2></div>
+    <p class="sub">十个节点里只有两处必须人工：校对转写稿、补齐 / 确认字段。其余由平台自动完成。</p>
+
+    <div class="flow">
+      <div class="fstep"><div class="dot">1</div><b>分部登录</b><span>选分部 + 口令，数据按分部隔离</span></div>
+      <div class="fstep"><div class="dot">2</div><b>项目中心</b><span>建项 / 选项 / 复制 / 归档</span></div>
+      <div class="fstep"><div class="dot">3</div><b>项目概览</b><span>基础信息、产品进度、项目级录音</span></div>
+      <div class="fstep man"><div class="dot">4</div><b>录音转写</b><span>上传 → 异步转写 → <b>人工校对</b> → 确认</span></div>
+      <div class="fstep"><div class="dot">5</div><b>调研输入</b><span>粘贴文字稿或导入项目转写稿</span></div>
+      <div class="fstep man"><div class="dot">6</div><b>信息核对</b><span>AI 提字段 → <b>人工确认 / 补填</b></span></div>
+      <div class="fstep"><div class="dot">7</div><b>预览生成</b><span>校验通过后渲染产出物</span></div>
+      <div class="fstep"><div class="dot">8</div><b>结果中心</b><span>下载单文件或打包 ZIP</span></div>
+    </div>
+
+    <div class="legend">
+      <span><i style="background:var(--brand-soft);border:1px solid #c9d6ee"></i>平台自动</span>
+      <span><i style="background:var(--accent-soft);border:1px solid #f3d3bf"></i>必须人工介入</span>
+      <span>字段状态机：已提取 / 待确认 / 必须补填 / 可选缺失 / 已人工确认</span>
+    </div>
+
+    <div class="cols c-50" style="margin-top:16px">
+      <div class="panel">
+        <h4>两条设计红线</h4>
+        <ul>
+          <li><b>一份录音只转写一次。</b>录音与转写稿属于<b>项目级</b>资产，项目下各产品显式「导入」后各自微调，互不覆盖，也不重复计费。</li>
+          <li><b>同一任务不重复提交。</b>厂商任务 ID 入库，刷新页面不会重复触发 ASR 计费。</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h4>反幻觉约束</h4>
+        <ul>
+          <li>AI 提取必须附原文片段（quote），且 quote 必须是文字稿的真实子串，否则该字段降级为「待确认」。</li>
+          <li>信息含糊时留空并标记待确认，<b>不得编造默认值</b>。</li>
+          <li>人工确认过的字段受保护，重新提取不覆盖。</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== B05 字段模型 ===================== -->
+  <section id="b05">
+    <div class="shead"><span class="bno">B05</span><h2><span class="kicker">DATA MODEL</span>公共信息层与字段模型</h2></div>
+    <p class="sub">字段模型 = 引用公共字段包 + 产品专属字段包 + 产品内组装覆盖。<b>一次定义、多产品继承</b>，禁止复制一份公共字段后各自漂移。</p>
+
+    <div class="cols c-38">
+      <div class="panel dark">
+        <h4>为什么要有公共层</h4>
+        <ul style="margin-left:18px">
+          <li>项目基本情况、项目资料、物业信息在所有管家里都要填一遍 —— 重复成本随产品数量线性放大。</li>
+          <li>一次踏勘往往同时评估多个产品，公共事实只应录一次。</li>
+          <li>公共字段口径改一处，所有产品同步生效。</li>
+        </ul>
+      </div>
+      <div class="scroll-x">
+        <table class="tbl">
+          <thead><tr><th>字段包</th><th>层级</th><th>内容</th><th class="c">安全</th><th class="c">消防</th><th class="c">设备</th><th class="c">能源</th></tr></thead>
+          <tbody>
+            <tr><td><code>common_project</code></td><td>公共</td><td>项目基本情况（名称、客户、地址、规模等）</td><td class="c">✓</td><td class="c">✓</td><td class="c">✓</td><td class="c">✓</td></tr>
+            <tr><td><code>common_docs</code></td><td>公共</td><td>项目资料（图纸、清单、已有系统资料）</td><td class="c">✓</td><td class="c">✓</td><td class="c">✓</td><td class="c">✓</td></tr>
+            <tr><td><code>common_property</code></td><td>公共</td><td>物业信息（管理方、联系人、现场条件）</td><td class="c">✓</td><td class="c">✓</td><td class="c">✓</td><td class="c">✓</td></tr>
+            <tr><td><code>common_requirements</code></td><td>公共</td><td>特殊要求与预期重点</td><td class="c">✓</td><td class="c">—</td><td class="c">—</td><td class="c">—</td></tr>
+            <tr><td><code>common_decision</code></td><td>公共</td><td>决策地图（决策链、预算、时间窗）</td><td class="c">✓</td><td class="c">—</td><td class="c">—</td><td class="c">—</td></tr>
+            <tr><td><code>security_monitor / network / business</code></td><td>产品</td><td>监控中心、监控设备、网络与机柜、安全业务踏勘</td><td class="c">✓</td><td class="c">—</td><td class="c">—</td><td class="c">—</td></tr>
+            <tr><td><code>fire_survey</code></td><td>产品</td><td>消控室、主机主从、维保、一次性改造费用</td><td class="c">—</td><td class="c">✓</td><td class="c">—</td><td class="c">—</td></tr>
+            <tr><td><code>device_survey</code></td><td>产品</td><td>设备房踏勘清单（表格字段：设备房 / 空间类型 / 物业设备 / 数量）</td><td class="c">—</td><td class="c">—</td><td class="c">✓</td><td class="c">—</td></tr>
+            <tr><td><code>energy_survey</code></td><td>产品</td><td>准入字段 + 设备清单（表格字段）+ 运行现状 10 问</td><td class="c">—</td><td class="c">—</td><td class="c">—</td><td class="c">✓</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="note">上表勾选关系为视觉稿示意，实际以各产品 <code>fields.json</code> 的引用清单为准（待逐产品核对）。</div>
+  </section>
+
+  <!-- ===================== B06 能力矩阵 ===================== -->
+  <section id="b06">
+    <div class="shead"><span class="bno">B06</span><h2><span class="kicker">CAPABILITIES</span>能力矩阵</h2></div>
+    <p class="sub">能力必须<b>显式声明</b>。产品没声明某能力时，页面不显示入口、服务不调用、配置检查报错 —— 页面显示、服务调用、配置校验共用同一份声明。</p>
+
+    <div class="scroll-x">
+      <table class="tbl">
+        <thead><tr><th>capability</th><th>含义</th><th class="c">安全管家</th><th class="c">消防管家</th><th class="c">设备管家</th><th class="c">能源管家</th></tr></thead>
+        <tbody>
+          <tr><td><code>text_input</code></td><td>粘贴 / 保存文字稿，支持导入项目转写稿与样例</td><td class="c">✓</td><td class="c">✓</td><td class="c">✓</td><td class="c">✓</td></tr>
+          <tr><td><code>audio_asr</code></td><td>项目级录音上传与异步转写（腾讯云 ASR + COS 临时对象）</td><td class="c">✓</td><td class="c">✓</td><td class="c">✓</td><td class="c">✓</td></tr>
+          <tr><td><code>field_extraction</code></td><td>按字段模型提取，双通道：DeepSeek 兼容接口 / 内置离线规则引擎</td><td class="c">✓</td><td class="c">✓</td><td class="c">✓</td><td class="c">✓</td></tr>
+          <tr><td><code>artifact_generation</code></td><td>模板渲染生成产出物，支持重试、单文件下载与 ZIP 打包</td><td class="c">✓</td><td class="c">✓</td><td class="c">✓</td><td class="c">✓</td></tr>
+          <tr><td><code>eligibility_rules</code></td><td>产品级准入判断，不满足则阻断生成 / 重试 / 下载</td><td class="c">—</td><td class="c">—</td><td class="c">2 条（配置中）</td><td class="c">✓ 2 条</td></tr>
+          <tr><td><code>table_field</code></td><td>表格式字段（多行录入、逐行校验、增删行、人工修改保护）</td><td class="c">—</td><td class="c">—</td><td class="c">✓</td><td class="c">✓</td></tr>
+          <tr><td><code>rule_engine</code></td><td>确定性规则计算（同输入必同输出，不依赖大模型）</td><td class="c">—</td><td class="c">—</td><td class="c">✓ 传感器换算</td><td class="c">—</td></tr>
+          <tr><td><code>image_input</code></td><td>现场照片 / 点位图（统一媒体资产模型）</td><td class="c" colspan="4"><span class="pill mute">规划中 · 尚无产品声明</span></td></tr>
+          <tr><td><code>quotation</code></td><td>报价能力（价格表 / 报价规则）</td><td class="c" colspan="4"><span class="pill warn">已退出活动工作流 · 无受控价格表前不启用</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===================== B07 产出物 ===================== -->
+  <section id="b07">
+    <div class="shead"><span class="bno">B07</span><h2><span class="kicker">OUTPUTS</span>产出物一览</h2></div>
+    <p class="sub">产出物由 <code>artifacts.json</code> 声明：名称、用途、包含内容、格式、依赖的字段分组、ZIP 内目录。生成前会重新校验依赖分组与准入规则。</p>
+
+    <div class="scroll-x">
+      <table class="tbl">
+        <thead><tr><th>产品</th><th>产出物</th><th>格式</th><th>用途</th><th>ZIP 目录</th></tr></thead>
+        <tbody>
+          <tr><td rowspan="4">安全管家</td><td>完整踏勘结果</td><td>md / html</td><td>经确认的结构化调研内容，后续所有方案的事实基线</td><td><code>01_踏勘结果</code></td></tr>
+          <tr><td>价值卡片</td><td>md / html</td><td>一页纸讲清现状、核心问题、方案价值与预期收益</td><td><code>02_价值卡片</code></td></tr>
+          <tr><td>交付内容</td><td>md / html</td><td>界定交付范围、服务项、实施步骤、边界与验收</td><td><code>03_交付内容</code></td></tr>
+          <tr><td>提资基础内容</td><td>md / html</td><td>明确需客户提供的资料、接口、现场条件与责任人</td><td><code>04_提资清单</code></td></tr>
+          <tr><td rowspan="4">消防管家</td><td>完整踏勘结果</td><td>md / html</td><td>同上（消防口径）</td><td><code>01_踏勘结果</code></td></tr>
+          <tr><td>价值卡片</td><td>md / html</td><td>同上</td><td><code>02_价值卡片</code></td></tr>
+          <tr><td>交付内容</td><td>md / html</td><td>含消控室与主机现状、维保衔接、一次性改造费用</td><td><code>03_交付内容</code></td></tr>
+          <tr><td>提资基础内容</td><td>md / html</td><td>同上</td><td><code>04_提资清单</code></td></tr>
+          <tr><td>设备管家</td><td>传感器配置清单</td><td>xlsx</td><td>设备房踏勘清单按规则库换算为应加装传感器，供报价 / 施工 / 备货流转（不含型号、线缆、价格）</td><td><code>01_传感器配置清单</code></td></tr>
+          <tr><td>能源管家</td><td>设备清单</td><td>xlsx</td><td>可改造部分的冷站设备清单，10 列，相邻供冷区域合并</td><td><code>equipment_list</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note">ZIP 内同时写入 <code>manifest.json</code> 与 <code>README.txt</code>，记录所用输入版本、规则库版本、模板版本与生成时间，保证可追溯。</div>
+  </section>
+
+  <!-- ===================== B08 架构 ===================== -->
+  <section id="b08">
+    <div class="shead"><span class="bno">B08</span><h2><span class="kicker">ARCHITECTURE</span>系统架构</h2></div>
+    <p class="sub">模块化单体，四层单向依赖，下层不得反向导入上层。厂商被 provider 接口隔离 —— 换掉语音识别厂商只换一个实现。</p>
+
+    <div class="side">
+      <div class="arch">
+        <div class="layer"><b>templates / routes　<span class="pill mute">app.py · templates/ · static/</span></b><span>只处理 HTTP、会话、参数与页面跳转，不写业务规则</span></div>
+        <div class="arrow">▼<em>调用</em></div>
+        <div class="layer"><b>services　<span class="pill mute">audio.py · survey.py · artifacts.py</span></b><span>表达一个完整业务动作，负责事务顺序与跨模块编排</span></div>
+        <div class="arrow">▼<em>调用</em></div>
+        <div class="layer"><b>core domain + repositories　<span class="pill mute">config · capabilities · fieldmodel · extract · validate · generate · packaging · repo · db · migrations</span></b><span>稳定的领域能力，不依赖 Flask 的 request / session / 模板上下文</span></div>
+        <div class="arrow">▼<em>读写</em></div>
+        <div class="layer"><b>database / providers / filesystem　<span class="pill mute">SQLite(WAL) · data/ · config/</span></b><span>外部厂商只在这一层落地，业务层只依赖接口</span></div>
+      </div>
+
+      <div class="providers">
+        <h4>provider 接口实现</h4>
+        <div>腾讯云 ASR<br><span style="color:#98a2b3">异步任务、可恢复、幂等提交</span></div>
+        <div>腾讯云 COS<br><span style="color:#98a2b3">私有桶 + 6 小时签名 URL</span></div>
+        <div>DeepSeek（OpenAI 兼容）<br><span style="color:#98a2b3">密钥仅来自环境变量</span></div>
+        <div style="border:none;padding-top:8px"><span class="pill warn">约束</span> 不得把永久公网地址写入数据库；不得把 SDK 调用写进路由</div>
+      </div>
+    </div>
+
+    <h3>关键目录职责</h3>
+    <div class="scroll-x">
+      <table class="tbl">
+        <thead><tr><th>路径</th><th>承担</th><th>不应承担</th></tr></thead>
+        <tbody>
+          <tr><td><code>app.py</code></td><td>Flask 初始化、路由、权限入口、HTTP 响应</td><td>字段提取规则、厂商调用、跨步骤业务编排</td></tr>
+          <tr><td><code>services/</code></td><td>录音转写、文字稿保存与提取、生成物用例</td><td>HTML 渲染、直接读 session、产品字段规则</td></tr>
+          <tr><td><code>core/</code></td><td>配置装载、能力声明、字段模型、提取、校验、生成、打包、数据访问、迁移</td><td>处理 HTTP、调用外部厂商、产品名分支</td></tr>
+          <tr><td><code>providers/</code></td><td>隔离腾讯云等外部厂商</td><td>业务判定</td></tr>
+          <tr><td><code>config/products/&lt;type&gt;/</code></td><td>产品差异：身份、版本、能力、字段组装、产出物、模板</td><td>密钥、运行时可变状态</td></tr>
+          <tr><td><code>config/</code>（只读）</td><td>部署后进程不需要写权限（最小权限）</td><td>任何运行时会被改写的状态</td></tr>
+          <tr><td><code>data/</code>（可写）</td><td>SQLite、运行时凭据、输出与导出文件；已被 .gitignore 排除</td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="takeaway"><b>所以呢：</b>新增一个产品只改配置目录，不动公共代码 —— 这决定了后续加产品的边际成本，也是「多管家矩阵」能成立的前提。</div>
+  </section>
+
+  <!-- ===================== B09 技术栈 ===================== -->
+  <section id="b09">
+    <div class="shead"><span class="bno">B09</span><h2><span class="kicker">STACK</span>技术栈与选型约束</h2></div>
+    <p class="sub">明确不引入 Vue / React —— 当前交互复杂度不值得背上前端构建链。业务知识全部外置到配置，代码零业务硬编码。</p>
+
+    <div class="scroll-x">
+      <table class="tbl">
+        <thead><tr><th>层次</th><th>技术</th><th>约束</th></tr></thead>
+        <tbody>
+          <tr><td>Web</td><td>Python 3 + Flask + Jinja2</td><td>路由保持薄，页面不承担业务判定</td></tr>
+          <tr><td>前端</td><td>原生 HTML / CSS / JavaScript</td><td>不引入前端框架；复杂媒体交互出现后再单独评估</td></tr>
+          <tr><td>数据</td><td>SQLite（WAL 模式）</td><td>结构变化必须登记迁移；业务代码通过 repository 访问</td></tr>
+          <tr><td>配置</td><td>JSON + Jinja 模板</td><td>产品差异优先配置化，配置必须有校验器与版本号</td></tr>
+          <tr><td>对象存储</td><td>provider 接口，首个实现腾讯 COS</td><td>私有桶、短时签名 URL</td></tr>
+          <tr><td>语音识别</td><td>provider 接口，首个实现腾讯云 ASR</td><td>异步、可恢复、幂等；音频按临时对象管理</td></tr>
+          <tr><td>结构化梳理</td><td>DeepSeek OpenAI 兼容接口</td><td>密钥仅来自环境变量；模型输出仍须字段校验 + 人工核对</td></tr>
+          <tr><td>表格输出</td><td>openpyxl（xlsx renderer）</td><td>按格式注册独立 renderer，不在 generate.py 里判断具体 artifact key</td></tr>
+          <tr><td>测试</td><td>unittest + Flask test client + 端到端自测</td><td>每次变更至少跑配置检查、单元测试、主流程自测</td></tr>
+          <tr><td>生产承载</td><td>Waitress（+ Nginx 反向代理、systemd 守护）</td><td>不使用 Flask 开发服务器对外提供服务</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===================== B10 质量门禁 ===================== -->
+  <section id="b10">
+    <div class="shead"><span class="bno">B10</span><h2><span class="kicker">QUALITY</span>质量门禁</h2></div>
+    <p class="sub">一次功能调整只有同时满足「配置通过、测试通过、页面主流程通过、文档同步」才算完成。</p>
+
+    <div class="cols c-50">
+      <div>
+        <table class="tbl">
+          <thead><tr><th>自检</th><th>命令</th><th class="c">基线结果</th></tr></thead>
+          <tbody>
+            <tr><td>配置校验</td><td><code>python check_config.py --strict</code></td><td class="c"><span class="pill ok">0 错 0 警</span></td></tr>
+            <tr><td>单元测试</td><td><code>python -m unittest discover</code></td><td class="c"><span class="pill ok">全部通过</span></td></tr>
+            <tr><td>主流程自测</td><td><code>python selftest.py</code></td><td class="c"><span class="pill ok">73 / 73</span></td></tr>
+            <tr><td>单产品校验</td><td><code>python check_config.py &lt;product_type&gt;</code></td><td class="c"><span class="pill ok">按产品</span></td></tr>
+          </tbody>
+        </table>
+        <div class="note">基线取自 2026-09-21 就绪度评估（字段模板 v0.4.0 / 49 字段 / 34 必填）。能源、设备管家接入后测试数已变化，此处数字待刷新。</div>
+      </div>
+      <div class="panel">
+        <h4>实测证据（2026-09-19）</h4>
+        <table class="tbl">
+          <tbody>
+            <tr><td>真实手机录音时长</td><td class="c"><b>66 分钟</b></td></tr>
+            <tr><td>文件大小</td><td class="c"><b>33.9 MB</b></td></tr>
+            <tr><td>上传 → 转写完成</td><td class="c"><b style="color:var(--accent);font-size:16px">约 2 分钟</b></td></tr>
+            <tr><td>说话人分离</td><td class="c"><span class="pill ok">支持</span></td></tr>
+          </tbody>
+        </table>
+        <p style="font-size:12.5px;color:var(--muted);margin-top:9px">不是演示脚本跑通，是真实数据跑通。客户原始录音不入库、不进代码库。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== B11 部署 ===================== -->
+  <section id="b11">
+    <div class="shead"><span class="bno">B11</span><h2><span class="kicker">DEPLOY</span>运行与部署</h2></div>
+    <p class="sub">同一份代码三档环境，环境差异全部由环境变量决定 —— 从本机到服务器不需要改代码。</p>
+
+    <div class="scroll-x">
+      <table class="tbl">
+        <thead><tr><th>档位</th><th>启动方式</th><th>访问地址</th><th>适用场景</th><th class="c">就绪度</th></tr></thead>
+        <tbody>
+          <tr><td>本机演示</td><td>双击 <code>启动 Demo.bat</code></td><td><code>127.0.0.1:8770</code></td><td>自己看效果、给人演示</td><td class="c"><span class="pill ok">✅ 满足</span></td></tr>
+          <tr><td>生产模式本机</td><td>双击 <code>启动 生产模式测试.bat</code></td><td><code>127.0.0.1:8770</code></td><td>用生产服务器（Waitress）在本机验证</td><td class="c"><span class="pill ok">✅ 满足</span></td></tr>
+          <tr><td>内网 / 局域网</td><td><code>deploy/ubuntu</code> 脚本 + systemd</td><td>内网 IP:端口</td><td>分部试点，多人同时用</td><td class="c"><span class="pill warn">⚠️ 差 5 处必改</span></td></tr>
+          <tr><td>公网 / 生产</td><td>Nginx + Waitress + systemd + HTTPS</td><td>域名 / 公网 IP</td><td>正式对外</td><td class="c"><span class="pill err">❌ 尚不满足</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="cols c-50" style="margin-top:14px">
+      <div class="panel">
+        <h4>两阶段上线</h4>
+        <ul>
+          <li><b>阶段一：</b>公网 IP + HTTP，<b>不需要备案，现在就能上</b>。</li>
+          <li><b>阶段二：</b>备案通过后切域名 + HTTPS。</li>
+          <li>两阶段之间<b>应用代码完全不变</b>，只改反向代理配置 —— 备案不是上线的前置条件。</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h4>运行成本量级</h4>
+        <table class="tbl">
+          <tbody>
+            <tr><td>2 小时录音转写</td><td class="c">约 ¥0.6 – 1.6</td></tr>
+            <tr><td>按每月 20 次踏勘估算</td><td class="c"><b style="color:var(--accent)">约 ¥12 – 32 / 月</b></td></tr>
+            <tr><td>服务器</td><td class="c">一台最低规格轻量应用服务器</td></tr>
+          </tbody>
+        </table>
+        <p style="font-size:12.5px;color:var(--muted);margin-top:8px">运行成本不构成决策约束，真正的投入是人力和字段口径的确认。</p>
+      </div>
+    </div>
+
+    <h3>上线前 P0 阻断项（5）</h3>
+    <ul>
+      <li>服务只绑 <code>127.0.0.1</code>，外部访问不到；</li>
+      <li>仍在用 Flask 开发服务器承载；</li>
+      <li>session 密钥硬编码在配置里（<code>lingshi-demo-secret-change-me</code>）；</li>
+      <li>分部默认口令为弱口令，且 5 个分部初始口令必须全部更换；</li>
+      <li>无 HTTPS。</li>
+    </ul>
+  </section>
+
+  <!-- ===================== B12 安全边界 ===================== -->
+  <section id="b12">
+    <div class="shead"><span class="bno">B12</span><h2><span class="kicker">SECURITY</span>安全与数据边界</h2></div>
+    <p class="sub">本项目的高风险不在算法，而在数据生命周期、权限、外部计费与历史兼容。</p>
+
+    <div class="cols c-50">
+      <div class="panel">
+        <h4>已经做到的</h4>
+        <ul>
+          <li>密钥只从环境变量读取，不进 JSON、数据库、日志、示例命令或截图。</li>
+          <li><code>config/</code> 只读、<code>data/</code> 可写：分部口令种子哈希后落 <code>data/departments.json</code>，明文不写运行时文件。</li>
+          <li><code>.gitignore</code> 覆盖敏感文件与运行数据；客户原始录音与未脱敏图片不入代码库。</li>
+          <li>数据按分部隔离，跨分部不可见；改密只写运行时文件。</li>
+          <li>COS 私有桶 + 6 小时签名 URL，不存永久公网地址。</li>
+          <li>数据库只通过迁移演进，已发布迁移不改写，破坏性迁移先备份。</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h4>需要盯住的</h4>
+        <ul>
+          <li><b>录音能否上公有云</b>：含客户敏感信息，若要「音频不出内网」需要本地 ASR 方案（待拍板，见 B15）。</li>
+          <li><b>ASR 词表漂移</b>：运行时词表是项目级的，产品目录下是素材，两者目前靠人工合并。</li>
+          <li><b>SQLite 单写</b>：并发写入能力有限，试点人数上来后需要评估。</li>
+          <li><b>依赖未锁版本</b>：已补 <code>requirements-prod.txt</code>，仍需固定完整锁文件。</li>
+          <li><b>运行数据无清理策略</b>：录音、转写稿、导出文件会持续累积。</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== B13 README ===================== -->
+  <section id="b13">
+    <div class="shead">
+      <span class="bno">B13</span>
+      <h2><span class="kicker">README</span>快速开始<span class="src">占位内容 · 未来由单一 .md 事实来源渲染</span></h2>
+    </div>
+    <p class="sub">以下为版式示意文字，不是最终文案。确认布局后，本区块整体替换为一份 Markdown 文档的渲染结果。</p>
+
+    <div class="cols c-50">
+      <div>
+        <h3>环境要求</h3>
+        <ul>
+          <li>Windows / Linux，Python 3.x</li>
+          <li>项目自带 <code>workbench/.venv</code>（含 openpyxl 3.1.5）</li>
+          <li>外部服务（可选）：腾讯云 ASR / COS、DeepSeek API Key</li>
+        </ul>
+        <h3>启动</h3>
+        <pre><span class="c"># 方式一：双击启动脚本（Windows）</span>
+启动 Demo.bat
+启动 生产模式测试.bat
+
+<span class="c"># 方式二：命令行</span>
+<span class="k">cd</span> workbench
+.venv/Scripts/python.exe app.py
+<span class="c"># → http://127.0.0.1:8770</span></pre>
+      </div>
+      <div>
+        <h3>环境变量</h3>
+        <pre><span class="c"># 参见 workbench/.env.example</span>
+DEEPSEEK_API_KEY=...
+LS_LLM_BASE_URL=...
+LS_LLM_MODEL=...
+TENCENT_SECRET_ID=...
+TENCENT_SECRET_KEY=...
+LS_SESSION_SECRET=...
+LINGSHI_PYTHON=...   <span class="c"># 显式指定解释器</span></pre>
+        <h3>常用命令</h3>
+        <pre>python check_config.py --strict
+python -m unittest discover
+python selftest.py
+python seed_demo.py</pre>
+      </div>
+    </div>
+
+    <div class="note">建议的事实来源文件：<code>灵石解决方案工作台/工作台说明.md</code>（README + 版本更新说明合并为一份，或拆成两份由同一页面渲染 —— 待定，见 B16 提问）。</div>
+  </section>
+
+  <!-- ===================== B14 版本更新说明 ===================== -->
+  <section id="b14">
+    <div class="shead">
+      <span class="bno">B14</span>
+      <h2><span class="kicker">CHANGELOG</span>版本更新说明<span class="src">占位内容 · 未来由单一 .md 事实来源渲染</span></h2>
+    </div>
+    <p class="sub">版式示意：按日期倒序，每条区分「新增 / 变更 / 修复 / 待办」，并标出影响的产品。</p>
+
+    <div class="tl">
+      <div class="tl-i">
+        <b>能源管家首版接入</b><span class="d">2026-09-29</span>
+        <span class="pill ok" style="margin-left:6px">新增</span><span class="pill info" style="margin-left:4px">energy_butler v0.1.0</span>
+        <ul>
+          <li>准入规则（contains_any / not_equals）由通用校验消费，失败即阻断生成、重试、单文件下载与 ZIP。</li>
+          <li>表格式设备清单：增删行、连续序号、数字列、工/变频选择、逐行必填校验、人工修改受保护。</li>
+          <li>新增 <code>xlsx_table</code> renderer：10 列、相邻供冷区域合并、文本按文字类型写出。</li>
+          <li>新增 <code>tests/test_energy_butler.py</code>；脱敏样例落 <code>samples/energy_butler/</code>。</li>
+        </ul>
+      </div>
+      <div class="tl-i">
+        <b>设备管家配置就位</b><span class="d">2026-09-29</span>
+        <span class="pill acc" style="margin-left:6px">进行中</span><span class="pill info" style="margin-left:4px">device_butler v0.1.0</span>
+        <ul>
+          <li>传感器配置规则库落 <code>config/products/device_butler/rules.json</code>（7 类设备房、三种计算模式、固定项默认值表）。</li>
+          <li>新增字段包 <code>device_survey</code>；产出物声明为 <code>sensor_bom</code>（xlsx，5 列）。</li>
+          <li>待完成：规则计算引擎、表格式核对页（新交互）、端到端自测。</li>
+        </ul>
+      </div>
+      <div class="tl-i">
+        <b>部署上线就绪度评估</b><span class="d">2026-09-20</span>
+        <span class="pill warn" style="margin-left:6px">评估</span>
+        <ul>
+          <li>三道自检实测通过（配置 0 错、单测 16/16、自测 73/73）。</li>
+          <li>产出《部署上线评估报告_v1.md》：P0 阻断 5 项、P1 运维项、P2 卫生项 + 两条上线路径。</li>
+          <li>分部口令改造：凭据移至 <code>data/</code> 并哈希存储；登录页不再提示初始口令。</li>
+        </ul>
+      </div>
+      <div class="tl-i">
+        <b>录音转写提升为项目级</b><span class="d">2026-09-21</span>
+        <span class="pill ok" style="margin-left:6px">变更</span>
+        <ul>
+          <li>一份录音只转写一次，转写稿由项目下各产品显式导入后共用。</li>
+          <li>响应式布局与选择字段组件落地（responsive.css / _choice_field.html）。</li>
+        </ul>
+      </div>
+      <div class="tl-i plan">
+        <b>消防管家首版</b><span class="d">2026-09-21</span>
+        <span class="pill ok" style="margin-left:6px">新增</span><span class="pill info" style="margin-left:4px">fire_butler v0.1.0</span>
+        <ul><li>4 类产出物，复用安全管家公共字段包与生成编排。</li></ul>
+      </div>
+      <div class="tl-i plan">
+        <b>安全管家字段模型与录音导入</b><span class="d">2026-09-15</span>
+        <span class="pill ok" style="margin-left:6px">变更</span><span class="pill info" style="margin-left:4px">safety_butler → v0.3.0</span>
+        <ul><li>字段模板 v0.4.0：49 字段 / 11 分组 / 34 必填；录音导入需求与字段模型对照文档定稿。</li></ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== B15 路线图 ===================== -->
+  <section id="b15">
+    <div class="shead"><span class="bno">B15</span><h2><span class="kicker">ROADMAP</span>路线图与待拍板事项</h2></div>
+    <p class="sub">先把一个分部的踏勘链路真正跑顺，再谈规模化。</p>
+
+    <div class="cols c-65">
+      <div>
+        <h3>演进顺序</h3>
+        <table class="tbl">
+          <tbody>
+            <tr><td class="c"><span class="pill ok">已完成</span></td><td>建立 COS / ASR provider、持久化任务与恢复机制</td></tr>
+            <tr><td class="c"><span class="pill ok">已完成</span></td><td>录音转写从产品级提升为项目级，一份转写稿供多产品共用</td></tr>
+            <tr><td class="c"><span class="pill ok">已完成</span></td><td>报价能力退出活动工作流（以此验证模块边界）</td></tr>
+            <tr><td class="c"><span class="pill acc">进行中</span></td><td>设备管家 / 能源管家接入，验证「表格字段 + 规则引擎 + xlsx renderer」扩展点</td></tr>
+            <tr><td class="c"><span class="pill mute">待做</span></td><td>项目级 ASR 词表由 <code>tools/</code> 自动生成，消除与产品词表的漂移</td></tr>
+            <tr><td class="c"><span class="pill mute">待做</span></td><td>建立统一媒体资产模型，接入现场图片存储与查看</td></tr>
+            <tr><td class="c"><span class="pill mute">待做</span></td><td>把安全管家专用校验、提示词迁入产品配置范围</td></tr>
+            <tr><td class="c"><span class="pill mute">待做</span></td><td>公共「项目基础信息」层：一次录入、多产品继承（消除重复填写）</td></tr>
+            <tr><td class="c"><span class="pill mute">待做</span></td><td>扩充迁移与契约测试；上线 P0 五项加固（见 B11）</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div>
+        <h3>需要拍板的三件事</h3>
+        <div class="pain"><b>① 录音能否上公有云</b><span>含客户敏感信息。不决策的后果：无法确定是否需要「音频不出内网」的本地 ASR 方案，部署形态悬空。</span></div>
+        <div class="pain"><b>② 域名备案进度</b><span>不决策的后果：只能停在阶段一（公网 IP + HTTP），无法上 HTTPS。</span></div>
+        <div class="pain"><b>③ 有无真实受控价格表</b><span>当前演示单价为假设值，报价能力已停用。不决策的后果：不能对外说钱，价值卡片收益部分只能定性。</span></div>
+        <div class="note" style="margin-top:12px">另有一条上线前硬性动作：<b>5 个分部初始口令必须全部更换</b>。</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== B16 反馈 ===================== -->
+  <section id="b16">
+    <div class="shead"><span class="bno">B16</span><h2><span class="kicker">FEEDBACK</span>反馈</h2></div>
+    <p class="sub">本区块为版式占位。静态稿阶段直接在对话里按区块编号反馈即可；接入应用后可换成真实提交入口。</p>
+
+    <div class="fb">
+      <div class="fb-q">
+        <b>这一页的读者是谁？</b>
+        <span style="font-size:12.5px;color:var(--muted)">领导汇报 / 新同事上手 / 分部使用者 / 外部介绍 —— 读者不同，B08–B12 这些技术块的取舍完全不同。</span>
+        <div class="lines"></div><div class="lines"></div>
+      </div>
+      <div class="fb-q">
+        <b>哪些块该删 / 该合并？</b>
+        <span style="font-size:12.5px;color:var(--muted)">例如 B06 能力矩阵与 B03 产品卡片信息重叠；B09 技术栈与 B08 架构可合并。</span>
+        <div class="lines"></div><div class="lines"></div>
+      </div>
+      <div class="fb-q">
+        <b>缺了哪些块？</b>
+        <span style="font-size:12.5px;color:var(--muted)">候选：界面截图墙、字段字典、常见问题、术语表、演示脚本、联系人。</span>
+        <div class="lines"></div><div class="lines"></div>
+      </div>
+      <div class="fb-q">
+        <b>README / 更新说明的事实来源怎么放？</b>
+        <span style="font-size:12.5px;color:var(--muted)">一份 .md 含两节，还是两份 .md？放项目根还是 <code>workbench/</code>？页面是运行时渲染还是构建时生成？</span>
+        <div class="lines"></div><div class="lines"></div>
+      </div>
+    </div>
+  </section>
+
+  </main>
+</div>
+
+<footer class="foot">
+  灵石解决方案工作台 · 应用总览静态视觉稿 v1 · 2026-09-29 ·
+  独立 HTML 文件，不依赖网络与应用后端 · 内容以代码与文档为准，B13 / B14 为占位
+</footer>
+
+<button class="totop" id="totop" title="回到顶部">↑</button>
+
+<script>
+(function(){
+  var links = Array.prototype.slice.call(document.querySelectorAll('#outline a'));
+  var secs  = links.map(function(a){ return document.querySelector(a.getAttribute('href')); });
+  var top   = document.getElementById('totop');
+
+  function onScroll(){
+    var y = window.scrollY + 96, cur = 0;
+    for (var i = 0; i < secs.length; i++) { if (secs[i] && secs[i].offsetTop <= y) cur = i; }
+    links.forEach(function(a, i){ a.classList.toggle('on', i === cur); });
+    top.classList.toggle('show', window.scrollY > 500);
+  }
+  window.addEventListener('scroll', onScroll, {passive:true});
+  top.addEventListener('click', function(){ window.scrollTo({top:0, behavior:'smooth'}); });
+  onScroll();
+})();
+</script>
+</body>
+</html>

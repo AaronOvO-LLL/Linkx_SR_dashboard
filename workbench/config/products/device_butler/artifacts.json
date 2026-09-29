@@ -1,0 +1,82 @@
+{
+  "template_version": "0.1.0",
+  "artifacts": [
+    {
+      "key": "sensor_bom",
+      "name": "传感器配置清单",
+      "purpose": "把已确认的设备房踏勘清单按规则库换算为应加装的传感器清单，供后续报价、施工与备货直接流转使用。",
+      "includes": [
+        "设备房名称",
+        "物业设备名称",
+        "设备数量",
+        "传感器类型",
+        "传感器数量"
+      ],
+      "formats": [
+        "xlsx"
+      ],
+      "renderer": "xlsx_dataset",
+      "dataset": "sensor_bom",
+      "sheet_name": "传感器配置清单",
+      "title": "传感器配置清单",
+      "filename": "{project}_设备管家_传感器配置清单_{date}",
+      "columns": [
+        {
+          "key": "room_name",
+          "width": 20
+        },
+        {
+          "key": "device",
+          "width": 30
+        },
+        {
+          "key": "qty_display",
+          "width": 12,
+          "align": "center"
+        },
+        {
+          "key": "sensor",
+          "width": 32
+        },
+        {
+          "key": "sensor_qty_display",
+          "width": 12,
+          "align": "center"
+        }
+      ],
+      "meta": [
+        {
+          "label": "项目名称",
+          "path": "project.name"
+        },
+        {
+          "label": "客户",
+          "path": "project.customer_name"
+        },
+        {
+          "label": "项目地址",
+          "path": "project.location"
+        },
+        {
+          "label": "生成时间",
+          "path": "meta.generated_at"
+        },
+        {
+          "label": "规则库版本",
+          "path": "meta.rules_version"
+        },
+        {
+          "label": "字段模板版本",
+          "path": "meta.field_template_version"
+        }
+      ],
+      "footer": "本清单由灵石解决方案工作台按传感器配置规则库换算生成，数量均经人工确认；不含型号与线缆规格，不含价格，不做跨设备房汇总。",
+      "folder_key": "sensor_bom",
+      "required_groups": [
+        "basic",
+        "device_survey"
+      ],
+      "order": 1
+    }
+  ]
+}

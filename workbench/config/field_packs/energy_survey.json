@@ -1,0 +1,453 @@
+{
+  "pack": "energy_survey",
+  "name": "能源踏勘",
+  "scope": "product",
+  "groups": [
+    {
+      "key": "energy_eligibility",
+      "name": "第一步：准入判断",
+      "order": 0,
+      "desc": "确认受支持系统与电费门槛"
+    },
+    {
+      "key": "energy_equipment",
+      "name": "第二步：设备清单",
+      "order": 1,
+      "desc": "仅覆盖可改造部分"
+    },
+    {
+      "key": "energy_operation",
+      "name": "第三步：运行现状",
+      "order": 2,
+      "desc": "10问全部选填"
+    }
+  ],
+  "fields": [
+    {
+      "key": "energy_system_types",
+      "label": "项目空调系统类型（可多选）",
+      "group": "energy_eligibility",
+      "type": "multiselect",
+      "required": true,
+      "options": [
+        {
+          "value": "水冷机组中央空调（无冰/水蓄冷）",
+          "synonyms": []
+        },
+        {
+          "value": "中央空调（带冰蓄冷或水蓄冷辅助）",
+          "synonyms": []
+        },
+        {
+          "value": "VRV（末端面板可被 BA 控制且 BA 正常运行）",
+          "synonyms": []
+        },
+        {
+          "value": "VRV（无 BA 或 BA 不正常）",
+          "synonyms": []
+        },
+        {
+          "value": "其他系统（风冷机组等）",
+          "synonyms": []
+        }
+      ],
+      "extract": {
+        "mode": "enum",
+        "keywords": [
+          "空调",
+          "水冷",
+          "VRV"
+        ],
+        "patterns": [
+          {
+            "value": "水冷机组中央空调（无冰/水蓄冷）",
+            "pattern": "水冷[^。\\n]*(?:无|没有|不带)(?:冰/水蓄冷|冰蓄冷|水蓄冷|蓄冷)",
+            "exclude_patterns": [
+              "(?<!没)(?<!不)(?:带|有)(?:冰蓄冷|水蓄冷)"
+            ]
+          },
+          {
+            "value": "中央空调（带冰蓄冷或水蓄冷辅助）",
+            "pattern": "(?<!不)(?<!没)(?:带|有)(?:冰蓄冷|水蓄冷)"
+          },
+          {
+            "value": "VRV（末端面板可被 BA 控制且 BA 正常运行）",
+            "pattern": "VRV[^。\\n]*面板[^。\\n]*BA[^。\\n]*(?<!不)正常运行",
+            "exclude_patterns": [
+              "不能|不可|无法|不正常|无\\s*BA"
+            ]
+          },
+          {
+            "value": "VRV（无 BA 或 BA 不正常）",
+            "pattern": "VRV[^。\\n]*(?:无\\s*BA|BA\\s*不正常)"
+          },
+          {
+            "value": "其他系统（风冷机组等）",
+            "pattern": "风冷机组"
+          }
+        ]
+      },
+      "ai_hint": "仅按原文选择。没有冰蓄冷不等于带蓄冷；水冷须明确无蓄冷，VRV须面板可被BA控制且BA正常。混合系统可多选，未知不推断。"
+    },
+    {
+      "key": "energy_fee_over_1m",
+      "label": "可改造部分的空调电费是否大于100万？",
+      "group": "energy_eligibility",
+      "type": "select",
+      "required": true,
+      "options": [
+        {
+          "value": "是"
+        },
+        {
+          "value": "否"
+        }
+      ],
+      "extract": {
+        "mode": "enum",
+        "keywords": [
+          "空调电费"
+        ],
+        "patterns": [
+          {
+            "value": "是",
+            "pattern": "可改造部分[^。\\n]*电费(?:大于|超过)100万"
+          },
+          {
+            "value": "否",
+            "pattern": "可改造部分[^。\\n]*电费(?:不大于|不超过|小于|等于)100万"
+          }
+        ]
+      },
+      "ai_hint": "只判断可改造部分；不明确口径或金额时留空。大于100万为是，否则为否。"
+    },
+    {
+      "key": "energy_equipment_list",
+      "label": "可改造部分设备清单",
+      "group": "energy_equipment",
+      "type": "table",
+      "required": true,
+      "columns": [
+        {
+          "key": "supply_area",
+          "label": "供冷区域",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "building",
+          "label": "楼栋",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "equipment",
+          "label": "设备",
+          "type": "select",
+          "required": true,
+          "options": [
+            {
+              "value": "制冷主机"
+            },
+            {
+              "value": "冷冻水总管（出）"
+            },
+            {
+              "value": "冷冻水总管（回）"
+            },
+            {
+              "value": "冷冻水支管（出）（如有）"
+            },
+            {
+              "value": "冷冻水支管（回）（如有）"
+            },
+            {
+              "value": "冷却水总管（出）"
+            },
+            {
+              "value": "冷却水总管（回）"
+            },
+            {
+              "value": "冷冻泵"
+            },
+            {
+              "value": "冷却泵"
+            },
+            {
+              "value": "阀门"
+            },
+            {
+              "value": "冷却塔"
+            },
+            {
+              "value": "末端环境"
+            },
+            {
+              "value": "板式换热器两侧进出水（如有）"
+            },
+            {
+              "value": "支管换能泵（如有）"
+            },
+            {
+              "value": "VRV机组"
+            }
+          ]
+        },
+        {
+          "key": "brand",
+          "label": "品牌",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "power_kw",
+          "label": "功率(KW)",
+          "type": "number",
+          "required": false,
+          "min": 0,
+          "exclusive_min": false,
+          "integer": false
+        },
+        {
+          "key": "cooling_kw",
+          "label": "制冷量(KW)",
+          "type": "number",
+          "required": false,
+          "min": 0,
+          "exclusive_min": false,
+          "integer": false
+        },
+        {
+          "key": "quantity",
+          "label": "数量",
+          "type": "number",
+          "required": true,
+          "min": 0,
+          "exclusive_min": true,
+          "integer": true
+        },
+        {
+          "key": "freq_type",
+          "label": "工/变频",
+          "type": "select",
+          "required": false,
+          "options": [
+            {
+              "value": "变频"
+            },
+            {
+              "value": "定频"
+            },
+            {
+              "value": "待确认"
+            }
+          ],
+          "default": "待确认"
+        },
+        {
+          "key": "remark",
+          "label": "备注",
+          "type": "text",
+          "required": false
+        }
+      ],
+      "help": "仅登记可改造部分；供冷区域→楼栋(机房)→设备，同类不同规格分行。板式换热器不登记；VRV一行概括，数量填套数，备注填接入范围。制冷量仅冷水主机填写。",
+      "ai_hint": "返回对象数组，按columns的key。只登记可改造部分，排除板式换热器。不同机房或规格分别成行，禁止编造功率、制冷量和数量；未知留空，freq_type未知填待确认。VRV数量为套数、备注为接入范围。",
+      "extract": {
+        "mode": "table",
+        "keywords": [
+          "冷水主机",
+          "水泵",
+          "冷却塔",
+          "VRV"
+        ],
+        "labeled_columns": true
+      },
+      "validate": {
+        "excluded_equipment": [
+          "板式换热器",
+          "板换"
+        ],
+        "excluded_message": "板式换热器不登记，请删除该行。"
+      }
+    },
+    {
+      "key": "energy_schedule",
+      "label": "平时开关机时间（制冷季几点到几点、非制冷季几点到几点）？人工操作还是系统操作？",
+      "group": "energy_operation",
+      "type": "textarea",
+      "required": false,
+      "help": "按原文填写，季节统一为制冷季/非制冷季。",
+      "ai_hint": "按原文填写，季节统一为制冷季/非制冷季。",
+      "extract": {
+        "mode": "sentence",
+        "keywords": [
+          "开关机",
+          "人工操作",
+          "系统操作"
+        ],
+        "negation_guard": false,
+        "preserve_lines": true
+      }
+    },
+    {
+      "key": "energy_season_combination",
+      "label": "非制冷季和制冷季一般怎么搭配设备（几台主机、几台水泵、几个冷却塔）？",
+      "group": "energy_operation",
+      "type": "textarea",
+      "required": false,
+      "help": "每个机房（楼栋）一行，行首注明机房名，与设备清单对应。",
+      "ai_hint": "每个机房（楼栋）一行，行首注明机房名，与设备清单对应。",
+      "extract": {
+        "mode": "sentence",
+        "keywords": [
+          "搭配",
+          "制冷季"
+        ],
+        "negation_guard": false,
+        "preserve_lines": true
+      }
+    },
+    {
+      "key": "energy_pump_frequency",
+      "label": "水泵一般设定多少频率？多久调节一次？如何评判是否要调节？",
+      "group": "energy_operation",
+      "type": "textarea",
+      "required": false,
+      "help": "按原文填写，季节统一为制冷季/非制冷季。",
+      "ai_hint": "按原文填写，季节统一为制冷季/非制冷季。",
+      "extract": {
+        "mode": "sentence",
+        "keywords": [
+          "频率",
+          "调节"
+        ],
+        "negation_guard": false,
+        "preserve_lines": true
+      }
+    },
+    {
+      "key": "energy_fee_charging",
+      "label": "空调电费如何向租户收费？",
+      "group": "energy_operation",
+      "type": "textarea",
+      "required": false,
+      "help": "按原文填写，季节统一为制冷季/非制冷季。",
+      "ai_hint": "按原文填写，季节统一为制冷季/非制冷季。",
+      "extract": {
+        "mode": "sentence",
+        "keywords": [
+          "收费",
+          "租户电费"
+        ],
+        "negation_guard": false,
+        "preserve_lines": true
+      }
+    },
+    {
+      "key": "energy_chiller_adjust",
+      "label": "根据什么情况决定现场加减主机或调节出水温度？",
+      "group": "energy_operation",
+      "type": "textarea",
+      "required": false,
+      "help": "每个机房（楼栋）一行，行首注明机房名，与设备清单对应。",
+      "ai_hint": "每个机房（楼栋）一行，行首注明机房名，与设备清单对应。",
+      "extract": {
+        "mode": "sentence",
+        "keywords": [
+          "加减主机",
+          "出水温度"
+        ],
+        "negation_guard": false,
+        "preserve_lines": true
+      }
+    },
+    {
+      "key": "energy_pump_adjust",
+      "label": "根据什么情况决定现场加减水泵？",
+      "group": "energy_operation",
+      "type": "textarea",
+      "required": false,
+      "help": "每个机房（楼栋）一行，行首注明机房名，与设备清单对应。",
+      "ai_hint": "每个机房（楼栋）一行，行首注明机房名，与设备清单对应。",
+      "extract": {
+        "mode": "sentence",
+        "keywords": [
+          "加减水泵"
+        ],
+        "negation_guard": false,
+        "preserve_lines": true
+      }
+    },
+    {
+      "key": "energy_complaints",
+      "label": "现场哪些地方投诉较多？主要原因？",
+      "group": "energy_operation",
+      "type": "textarea",
+      "required": false,
+      "help": "按原文填写，季节统一为制冷季/非制冷季。",
+      "ai_hint": "按原文填写，季节统一为制冷季/非制冷季。",
+      "extract": {
+        "mode": "sentence",
+        "keywords": [
+          "投诉"
+        ],
+        "negation_guard": false,
+        "preserve_lines": true
+      }
+    },
+    {
+      "key": "energy_terminal_management",
+      "label": "末端空调出风口哪些是物业负责开关的？如何管理的？",
+      "group": "energy_operation",
+      "type": "textarea",
+      "required": false,
+      "help": "按原文填写，季节统一为制冷季/非制冷季。",
+      "ai_hint": "按原文填写，季节统一为制冷季/非制冷季。",
+      "extract": {
+        "mode": "sentence",
+        "keywords": [
+          "出风口",
+          "末端"
+        ],
+        "negation_guard": false,
+        "preserve_lines": true
+      }
+    },
+    {
+      "key": "energy_supply_scope",
+      "label": "冷站供冷区域是哪些楼层？包不包括租户私区？",
+      "group": "energy_operation",
+      "type": "textarea",
+      "required": false,
+      "help": "按原文填写，季节统一为制冷季/非制冷季。",
+      "ai_hint": "按原文填写，季节统一为制冷季/非制冷季。",
+      "extract": {
+        "mode": "sentence",
+        "keywords": [
+          "供冷区域",
+          "私区"
+        ],
+        "negation_guard": false,
+        "preserve_lines": true
+      }
+    },
+    {
+      "key": "energy_other_difficulties",
+      "label": "还有哪些管理难点？",
+      "group": "energy_operation",
+      "type": "textarea",
+      "required": false,
+      "help": "按原文填写，季节统一为制冷季/非制冷季。",
+      "ai_hint": "按原文填写，季节统一为制冷季/非制冷季。",
+      "extract": {
+        "mode": "sentence",
+        "keywords": [
+          "难点"
+        ],
+        "negation_guard": false,
+        "preserve_lines": true
+      }
+    }
+  ]
+}

@@ -83,7 +83,9 @@ core domain + repositories
 | `core/fieldmodel.py` | 字段包组装、覆盖、移除和契约校验 | 发布后的字段 key 不得改名 |
 | `core/extract.py` | 文本到字段的提取器 | 产品提示词和特殊规则逐步迁到产品配置 |
 | `core/validate.py` | 通用字段校验 | 产品专用跨字段规则不得长期写死在这里 |
-| `core/generate.py` | 通用模板渲染与文件生成 | 不为某个 artifact key 增加硬编码分支 |
+| `core/generate.py` | 通用模板渲染与文件生成、渲染上下文装配 | 不为某个 artifact key 增加硬编码分支 |
+| `core/rules.py` | 规则计算引擎：按产品 `rules.json` 把录入行换算为派生结果行 | 纯函数、确定性、不落库；不用产品名写分支；算不出就留空报错，不填默认值 |
+| `core/renderers.py` | 非文本格式的独立渲染器注册表 | 新增文件格式在这里注册，不在 `generate.py` 里按 artifact key 分支 |
 | `core/packaging.py` | 通用 ZIP、manifest 和 README | 不引用已经移除或未声明的能力 |
 | `core/repo.py` | 数据访问和聚合查询 | 不处理 HTTP，不调用外部厂商 |
 | `core/db.py` | 连接管理、基础表和迁移入口 | 不存业务流程代码 |
@@ -98,7 +100,8 @@ config/products/<product_type>/
   product.json       # 产品身份、版本、能力声明
   fields.json        # 字段包组装清单
   artifacts.json     # 生成物清单
-  templates/         # 生成物模板
+  rules.json         # 可选：规则库，声明「录入行 → 派生结果行」的换算规则
+  templates/         # 生成物模板（只出二进制格式的产品可以没有）
   asr_terms.json     # 产品词表素材，仅供 tools/ 生成厂商热词表，运行时不读取
 ```
 
@@ -226,3 +229,23 @@ python selftest.py
 5. 建立统一媒体资产模型，接入图片存储和查看。
 6. 把安全管家专用校验、提示词迁入产品范围。
 7. 扩充迁移、契约测试和其他产品试点。
+
+## 9. 能源管家首版扩展契约
+
+产品 product.json 的 eligibility_rules 声明准入规则（contains_any / not_equals），由通用校验消费。table.columns 支持 type、required、default、options、min、exclusive_min、integer。表格提取向 LLM 传递完整 columns；离线规则支持带列名的逐行输入，不猜测缺失列。extract.patterns 用于保守的配置化枚举匹配；preserve_lines 保留机房逐行原文。
+
+生成物 renderer 注册表按格式调用独立渲染器，xlsx_table 通过 table_field 与 merge_columns 定义输出。所有生成、重试、打包与下载入口重新检查准入。xlsx 样式暂按需求文档10列实现，参考图精确对齐待确认。价值卡片仅预留 key，不开放。
+
+## 10. 规则计算引擎（设备管家首版扩展契约）
+
+有些产品的产出不是把调研文字改写成叙述性文档，而是把录入行按既定规则**换算**成另一组行（设备管家：设备房 + 物业设备数量 → 传感器清单）。这类换算落在 `core/rules.py`，规则数据落在产品的 `rules.json`，两者都不得出现产品名分支。
+
+约定：
+
+- `rules.json` 声明 `outputs[]`，每个 output 指定输入表格字段（`source_field`）与列角色（`group_column` / `category_column` / `item_column` / `qty_column`），以及 `categories[]`（分组类别，含同义词、固定项、变动项）。
+- 计算模式只有三种：`fixed_per_room`（数量取类别默认值，用户可调）、`per_device`、`per_sub_unit`（后两者当前都是 1:1）。新增一种换算口径必须同时改 `_sensor_qty`，未知模式直接抛错而不回落成 1:1——规则库改了、结果却按旧口径静默算，是最难发现的一类错误。
+- 引擎是纯函数：不落库、不读 Flask 上下文，相同输入必得相同输出。派生结果由 `generate.build_context` 在装配渲染上下文时按当下录入重算并放进 `ctx['datasets']`，因此预览与生成永远看到同一份最新结果，不存在陈旧派生数据。
+- 固定项由引擎补全为**可编辑行**（`materialize`，幂等），因此人工调整数量走的是平台既有的字段保存与保护机制，不需要第二套存储。不要某项时把数量改成 0，而不是删行——删掉的行会在下次保存时被重新补出，因为「主动删除」与「尚未补全」在数据上无法区分。
+- 提取新增 `rules_table` 模式：词表与行语义来自规则库，rule 与 llm 两个通道提取后统一走 `rules.postprocess`（归一 → 补全固定项 → 有算不出的行就降为待确认），避免两个通道口径漂移。
+- 规则库自带 `rules_version` 与 `validate_rules` 自检，`check_config.py` 会一并体检。规则库变更必须回归 `samples/<product>/expected.json` 金标准。
+- `xlsx_dataset` renderer 消费 `ctx['datasets']`：列标签只在规则库的 `result_columns` 定义一次，`artifacts.json` 仅补宽度与对齐，避免同一份列名两处各写一遍后各自漂移。

@@ -17,7 +17,23 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
-from core import capabilities, config, fieldmodel, paths  # noqa: E402
+from core import capabilities, config, fieldmodel, paths, rules  # noqa: E402
+
+MARKS = {'error': '❌', 'warn': '⚠️ ', 'info': 'ℹ️ '}
+
+
+def _print_issues(issues, scope):
+    """按 fieldmodel.render_report 的同款格式打印，让 --strict 能一致地识别警告。"""
+    errors = warns = 0
+    for i in issues:
+        mark = MARKS.get(i['level'], '·')
+        if i['level'] == 'error':
+            errors += 1
+            print('  %s [%s] %s' % (mark, scope, i['message']))
+        else:
+            warns += 1 if i['level'] == 'warn' else 0
+            print('  %s [%s] [%s] %s' % (mark, scope, i['where'], i['message']))
+    return errors, warns
 
 
 def main(argv):
@@ -41,8 +57,11 @@ def main(argv):
         for issue in capability_issues:
             print('  ❌ %s' % issue)
         errs += len(capability_issues)
+        # 规则库是独立于字段模型的一层配置，同样要在跑页面之前先体检。
+        rule_errors, rule_warns = _print_issues(rules.validate_rules(t), 'rules')
+        errs += rule_errors
         print()
-        if errs or (strict and '⚠️' in report):
+        if errs or (strict and ('⚠️' in report or rule_warns)):
             failed += 1
 
     print('-' * 68)

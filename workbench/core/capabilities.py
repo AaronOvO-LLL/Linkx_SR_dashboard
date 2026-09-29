@@ -42,7 +42,31 @@ def validate_capabilities(product_type):
     """验证能力声明，返回可被配置检查器直接展示的问题列表。"""
     declared = product_capabilities(product_type)
     unknown = sorted(declared - set(KNOWN_CAPABILITIES))
-    return ['未知 capability：%s' % key for key in unknown]
+    issues = ['未知 capability：%s' % key for key in unknown]
+    from .config import field_map, artifacts_config
+    from .renderers import RENDERERS
+    fields = field_map(product_type)
+    for rule in product_config(product_type).get('eligibility_rules', []):
+        if rule.get('field') not in fields or rule.get('operator') not in ('contains_any', 'not_equals'):
+            issues.append('准入规则引用未知字段或操作符')
+        elif rule['operator'] == 'contains_any' and not rule.get('values'):
+            issues.append('contains_any 准入规则需提供 values')
+        elif rule['operator'] == 'not_equals' and 'value' not in rule:
+            issues.append('not_equals 准入规则需提供 value')
+        if not rule.get('message'): issues.append('准入规则需提供 message')
+    if 'artifact_generation' in declared:
+        for artifact in artifacts_config(product_type)['artifacts']:
+            renderer = artifact.get('renderer')
+            if renderer and renderer not in RENDERERS:
+                issues.append('未知 renderer：%s' % renderer)
+            if renderer == 'xlsx_table':
+                field = fields.get(artifact.get('table_field'), {})
+                if field.get('type') != 'table': issues.append('xlsx_table 必须引用 table 字段')
+                if not artifact.get('filename'): issues.append('xlsx_table 必须声明 filename')
+                if artifact.get('formats') != ['xlsx']: issues.append('xlsx_table 仅支持 xlsx 格式')
+                if any(k not in [c['key'] for c in field.get('columns', [])] for k in artifact.get('merge_columns', [])):
+                    issues.append('merge_columns 引用了不存在的列')
+    return issues
 
 
 def require_capability(product_type, capability):

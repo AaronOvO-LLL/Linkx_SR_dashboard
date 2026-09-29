@@ -75,10 +75,22 @@ def artifacts_config(product_type):
     return load_json(os.path.join(paths.product_dir(product_type), 'artifacts.json'))
 
 
+def rules_config(product_type):
+    """产品规则库（可选配置）。没有 rules.json 的产品返回 None。
+
+    规则库承载「一组录入行 → 一组派生结果行」的业务换算规则（如设备管家的
+    传感器配置）。它是只读配置，与字段模型分离：字段模型描述用户填什么，
+    规则库描述填完之后怎么算。消费方是 core/rules.py，公共代码不解读其内容。
+    """
+    path = os.path.join(paths.product_dir(product_type), 'rules.json')
+    return load_json(path) if os.path.isfile(path) else None
+
+
 def fields_by_group(product_type):
     """返回 [(group, [field,...]), ...]，按分组顺序与字段顺序排列。"""
     cfg = field_config(product_type)
-    groups = sorted(cfg['groups'], key=lambda g: g['order'])
+    # 组装清单已按 group_order 排序，不能再按各包局部 order 重排。
+    groups = cfg['groups'] if cfg.get('source') == 'manifest' else sorted(cfg['groups'], key=lambda g: g['order'])
     bucket = {g['key']: [] for g in groups}
     for f in cfg['fields']:
         bucket.setdefault(f['group'], []).append(f)

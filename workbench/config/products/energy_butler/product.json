@@ -1,0 +1,31 @@
+{
+  "product_type": "energy_butler",
+  "name": "能源管家",
+  "version": "0.1.0",
+  "status": "active",
+  "short_desc": "空调冷站节能管理：准入判断、设备清单与运行现状调研。",
+  "coverage": "可改造冷站及受控 VRV 的设备与运行基线。",
+  "capabilities": [
+    "text_input",
+    "audio_asr",
+    "field_extraction",
+    "artifact_generation"
+  ],
+  "eligibility_rules": [
+    {
+      "field": "energy_system_types",
+      "operator": "contains_any",
+      "values": [
+        "水冷机组中央空调（无冰/水蓄冷）",
+        "VRV（末端面板可被 BA 控制且 BA 正常运行）"
+      ],
+      "message": "无法匹配该产品：未选择受支持的空调系统。"
+    },
+    {
+      "field": "energy_fee_over_1m",
+      "operator": "not_equals",
+      "value": "否",
+      "message": "无法匹配该产品：可改造部分的空调电费不大于100万。"
+    }
+  ]
+}

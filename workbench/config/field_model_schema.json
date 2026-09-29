@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.1.0",
+  "schema_version": "1.3.0",
   "note": "字段模型的元定义（契约）。它不描述业务，只描述『字段模型可以怎么写』。新增产品、新增字段前先读这份文件；写完用 `python check_config.py` 校验。",
   "layers": [
     {
@@ -113,9 +113,73 @@
       "require": [
         "columns"
       ],
-      "note": "用于设备清单类结构化的多行数据。"
+      "note": "用于设备清单类结构化的多行数据。列属性见 table_column_attributes。"
     }
   },
+  "table_column_attributes": [
+    {
+      "key": "key",
+      "type": "string",
+      "required": true,
+      "desc": "列标识，snake_case。行对象以此为准；保存时未声明的键会被丢弃。"
+    },
+    {
+      "key": "label",
+      "type": "string",
+      "required": true,
+      "desc": "列显示名，同时是带列名逐行提取时的列名匹配依据。"
+    },
+    {
+      "key": "type",
+      "type": "enum",
+      "required": false,
+      "default": "text",
+      "desc": "text / number / select。决定核对页渲染成什么控件以及 core/validate.py::table_issues 用哪套校验。"
+    },
+    {
+      "key": "required",
+      "type": "boolean",
+      "required": false,
+      "default": false,
+      "desc": "true = 逐行必填。空行也会被拦，防止用增行绕过必填。"
+    },
+    {
+      "key": "options",
+      "type": "array",
+      "required": false,
+      "desc": "仅 select 列。每项 {value}；取值不在其中即报错。"
+    },
+    {
+      "key": "default",
+      "type": "any",
+      "required": false,
+      "desc": "新增行与该列为空时的回填值（如「待确认」）。"
+    },
+    {
+      "key": "min",
+      "type": "number",
+      "required": false,
+      "desc": "仅 number 列的下限。"
+    },
+    {
+      "key": "exclusive_min",
+      "type": "boolean",
+      "required": false,
+      "desc": "仅 number 列。true 表示必须严格大于 min（如数量不能为 0）。"
+    },
+    {
+      "key": "integer",
+      "type": "boolean",
+      "required": false,
+      "desc": "仅 number 列。true 表示必须为整数。"
+    },
+    {
+      "key": "message",
+      "type": "string",
+      "required": false,
+      "desc": "仅 number 列校验失败时的提示语。"
+    }
+  ],
   "extract_modes": {
     "sentence": {
       "enabled": true,
@@ -169,7 +233,14 @@
     },
     "table": {
       "enabled": true,
-      "note": "按内置设备词表（摄像头/门禁/烟感…）扫出多行结构。词表在 core/extract.py，暂未配置化。"
+      "note": "支持配置 labeled_columns 的逐行列名提取；LLM接收完整columns契约。"
+    },
+    "rules_table": {
+      "enabled": true,
+      "require": [
+        "keywords"
+      ],
+      "note": "表格的行语义与词表来自产品规则库（config/products/<t>/rules.json），由 core/rules.py::extract_rows 执行：识别分组实体（如设备房）、同类多个分别成行、按同义词归一到规则库标准名、数量说不清就留空。keywords 仍用于关联度检查。提取后统一走 core/rules.py::postprocess 归一并补全固定项。"
     }
   },
   "field_attributes": [
@@ -250,7 +321,7 @@
       "type": "array",
       "required": false,
       "consumed_by": "templates/review.html",
-      "desc": "table 的列定义，每项 {key, label}。"
+      "desc": "列定义 {key,label,type,required,default,options,min,exclusive_min,integer}，贯穿表单、AI提取、逐行校验与Excel渲染。"
     },
     {
       "key": "validate",

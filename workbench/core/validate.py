@@ -5,10 +5,11 @@
 只有 error 才会阻止进入生成步骤。
 """
 import json
+import math
 import re
 from datetime import datetime
 
-from .config import field_map
+from .config import field_map, product_config
 from .repo import field_values
 from .choices import other_detail_error
 
@@ -64,6 +65,9 @@ def validate_fields(pp_id, product_type):
             issues.append({'level': 'error', 'field': key,
                            'message': '【%s】%s' % (label, error)})
 
+        if f['type'] == 'table':
+            issues.extend(table_issues(f, v))
+
         # 类型与格式
         if f['type'] == 'number':
             n = as_number(v)
@@ -112,7 +116,22 @@ def validate_fields(pp_id, product_type):
                                'message': '【%s】包含无效取值：%s。' % (label, '、'.join(bad))})
 
     issues.extend(_business_rules(get, fmap))
+    issues.extend(eligibility_issues(product_type, get))
+    issues.extend(rules_issues(product_type, values))
     return issues
+
+
+def rules_issues(product_type, values):
+    """规则库驱动的录入校验：换算不出结果的行就地报错，不等到生成 Excel 才暴露。
+
+    没有 rules.json 的产品返回空列表，因此公共校验流程不需要知道产品是谁
+    （ARCHITECTURE §1.5：公共代码不用产品名写分支）。
+    """
+    from . import rules
+    if not rules.has_rules(product_type):
+        return []
+    parsed = {key: parse_value(row['value_json']) for key, row in values.items()}
+    return rules.field_issues(product_type, parsed)
 
 
 def _business_rules(get, fmap):
@@ -132,3 +151,50 @@ def validate(pp_id, product_type):
     issues = validate_fields(pp_id, product_type)
     ok = not any(i['level'] == 'error' for i in issues)
     return ok, issues
+
+
+def eligibility_issues(product_type, get):
+    """只读取当前产品的准入配置，缺失值交给必填校验。"""
+    out = []
+    for rule in product_config(product_type).get('eligibility_rules', []):
+        value = get(rule['field'])
+        if is_empty(value):
+            continue
+        failed = (rule['operator'] == 'contains_any' and
+                  (not isinstance(value, list) or not any(x in value for x in rule['values'])))
+        failed |= rule['operator'] == 'not_equals' and value == rule['value']
+        if failed:
+            out.append(dict(level='error', field=rule['field'], message=rule['message'], kind='eligibility'))
+    return out
+
+
+def table_issues(field, value):
+    """允许不完整行保存，但生成前逐列验证，防止空行绕过必填。"""
+    out = []
+    def error(message):
+        out.append(dict(level='error', field=field['key'], message=message))
+    if not isinstance(value, list) or any(not isinstance(row, dict) for row in value):
+        error('【%s】需要设备行列表。' % field['label'])
+        return out
+    for index, row in enumerate(value, 1):
+        for col in field['columns']:
+            v = row.get(col['key'])
+            prefix = '第%d行【%s】' % (index, col['label'])
+            if is_empty(v):
+                if col.get('required'): error(prefix + '为必填项。')
+                continue
+            if col.get('type') == 'number':
+                try:
+                    n = float(v)
+                    valid = not isinstance(v, bool) and math.isfinite(n)
+                    valid &= n >= col.get('min', float('-inf'))
+                    valid &= not col.get('exclusive_min') or n > col.get('min', 0)
+                    valid &= not col.get('integer') or n.is_integer()
+                except (ValueError, TypeError): valid = False
+                if not valid: error(prefix + col.get('message', '需要符合范围与整数约束的有效数字。'))
+            elif col.get('type') == 'select':
+                if v not in [o['value'] for o in col['options']]: error(prefix + '不在候选范围内。')
+            elif not isinstance(v, str): error(prefix + '需要文字。')
+        if any(x in str(row.get('equipment', '')) for x in field.get('validate', {}).get('excluded_equipment', [])):
+            error('第%d行：%s' % (index, field['validate'].get('excluded_message', '包含不应登记的设备，请删除该行。')))
+    return out

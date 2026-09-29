@@ -45,7 +45,8 @@
       "survey_result": "01_踏勘结果",
       "value_card": "02_价值卡片",
       "delivery": "03_交付内容",
-      "data_request": "04_提资清单"
+      "data_request": "04_提资清单",
+      "sensor_bom": "01_传感器配置清单"
     },
     "manifest_file": "manifest.json",
     "readme_file": "README.txt"

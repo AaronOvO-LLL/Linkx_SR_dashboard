@@ -12,7 +12,7 @@ from datetime import datetime
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape, StrictUndefined
 
-from . import paths, repo
+from . import paths, repo, rules
 from .config import (artifact_map, artifacts_config, app_config, field_map,
                      fields_by_group, product_config, field_config)
 from .repo import (FIELD_STATUS_LABELS, field_values, get_pp, latest_extraction_run,
@@ -86,6 +86,7 @@ def build_context(pp_id, product_type):
             'updated_by': row['updated_by'] if row else '',
             'unit': f.get('unit', ''),
             'type': f['type'],
+            'columns': f.get('columns', []),
         }
 
     groups = []
@@ -104,11 +105,15 @@ def build_context(pp_id, product_type):
         'data': data,
         'display': display,
         'detail': detail,
+        # 规则库派生的结果集（如设备管家的传感器配置清单）。每次构造上下文都按
+        # 当下录入重算、不落库，避免「改了数量但清单还是旧的」这类陈旧派生数据。
+        'datasets': rules.compute_all(product_type, data),
         'meta': {
             'generated_at': datetime.now().strftime('%Y-%m-%d %H:%M'),
             'product_version': cfg_ver,
             'template_version': artifacts_config(product_type)['template_version'],
             'field_template_version': field_config(product_type)['template_version'],
+            'rules_version': rules.rules_version(product_type),
             'extraction_provider': (run['provider'] if run else '-'),
             'source_chars': (src['char_count'] if src else 0),
         },
@@ -241,6 +246,9 @@ def render_artifact(pp_id, product_type, artifact_key):
     """渲染单个生成物。成功返回 files 列表；失败抛出异常由调用方记录。"""
     adef = artifact_map(product_type)[artifact_key]
     ctx = build_context(pp_id, product_type)
+    if adef.get('renderer'):
+        from .renderers import RENDERERS
+        return RENDERERS[adef['renderer']](adef, ctx, field_map(product_type), artifact_output_dir(pp_id, artifact_key))
     env = _env_for(product_type)
     tpl = env.get_template(adef['template'])
     md = tpl.render(**ctx)

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>使用说明 · 灵石解决方案工作台（静态视觉稿 v1）</title>
+<style>
+:root{
+  --brand:#2F5597; --brand-dark:#24447b; --brand-soft:#e8eefb;
+  --ink:#1f2937; --muted:#6b7280; --line:#e3e7ee; --bg:#f2f4f7;
+  --ok:#0f8a5f; --ok-bg:#e6f6ef;
+  --warn:#b45309; --warn-bg:#fff7ed; --warn-line:#fed7aa;
+  --err:#c0392b; --err-bg:#fdeeee; --err-line:#f5c6c2;
+  --radius:12px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+     background:var(--bg);color:var(--ink);font-size:14px;line-height:1.65}
+a{color:var(--brand);text-decoration:none}
+a:hover{text-decoration:underline}
+button{font-family:inherit;cursor:pointer;border:none}
+
+/* ---------- 草稿提示条 ---------- */
+.draft{background:#fffbe6;border-bottom:1px solid #f5e0a3;color:#7a5c00;
+       font-size:12.5px;padding:7px 20px;text-align:center}
+
+/* ---------- 顶栏（复用应用模式） ---------- */
+.topbar{background:var(--brand);color:#fff}
+.topbar-inner{max-width:1180px;margin:0 auto;padding:0 20px;height:56px;display:flex;align-items:center;justify-content:space-between}
+.brand{color:#fff;font-weight:600;font-size:16px;display:flex;align-items:center;gap:8px}
+.brand:hover{text-decoration:none}
+.brand-mark{background:rgba(255,255,255,.18);padding:3px 9px;border-radius:7px;font-size:14px;letter-spacing:1px}
+.topnav{display:flex;align-items:center;gap:18px;font-size:13px}
+.topnav a{color:#dbe6fb}
+.dept-chip{background:rgba(255,255,255,.16);padding:3px 10px;border-radius:20px;font-size:12px}
+
+/* ---------- 布局 ---------- */
+.page{max-width:1180px;margin:0 auto;padding:22px 20px 60px;min-height:calc(100vh - 160px)}
+.footer{text-align:center;color:#9ca3af;font-size:12px;padding:18px;border-top:1px solid var(--line);background:#fff}
+.page-head{display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap}
+.page-head h2{margin:0;font-size:17px}
+.page-sub{color:var(--muted);font-size:12.5px;margin-bottom:18px}
+
+/* ---------- 通用组件（复用 app.css 模式） ---------- */
+.card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;margin-bottom:16px}
+.card h2{font-size:16px;margin-bottom:4px;color:var(--ink)}
+.card h3{font-size:14px;margin:16px 0 8px;color:var(--brand)}
+.card .sub{color:var(--muted);font-size:12.5px;margin-bottom:14px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:9px;
+     font-size:13.5px;font-weight:500;background:var(--brand);color:#fff;transition:.15s}
+.btn:hover{background:var(--brand-dark);text-decoration:none}
+.btn.ghost{background:#fff;color:var(--brand);border:1px solid #c9d6ee}
+.btn.ghost:hover{background:var(--brand-soft)}
+.tag{display:inline-block;font-size:11.5px;padding:1.5px 8px;border-radius:5px;background:#f1f3f7;color:var(--muted)}
+.tag.blue{background:var(--brand-soft);color:var(--brand)}
+.tag.green{background:var(--ok-bg);color:var(--ok)}
+.tag.orange{background:#fff4e5;color:var(--warn)}
+.hint{font-size:12.5px;color:var(--muted);line-height:1.7}
+
+/* ---------- 分段 Tab（复用 .seg 模式） ---------- */
+.seg{display:inline-flex;background:#fff;border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-bottom:18px}
+.seg button{padding:7px 18px;font-size:13px;color:var(--muted);background:#fff}
+.seg button.on{background:var(--brand);color:#fff;font-weight:500}
+.pane{display:none}
+.pane.on{display:block;animation:fade .18s ease}
+@keyframes fade{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+
+/* ---------- README：产品卡（复用 .prod 模式） ---------- */
+.prod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
+.prod{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:15px 17px}
+.prod h4{font-size:15px;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.prod p{font-size:12.5px;color:var(--muted);line-height:1.6}
+
+/* ---------- README：流程步骤（复用 .flow-strip 模式） ---------- */
+.flow-strip{display:flex;align-items:center;gap:9px;margin:6px 0 4px;color:#98a2b3;font-size:12.5px;flex-wrap:wrap}
+.flow-strip span{display:flex;align-items:center;gap:6px}
+.flow-strip i{width:20px;height:20px;border-radius:50%;background:var(--brand);color:#fff;
+  display:inline-flex;align-items:center;justify-content:center;font-style:normal;font-size:11.5px}
+.flow-strip b{font-weight:400;color:#d0d5dd}
+
+/* ---------- README / changelog 的正文排版（对应 md 语义） ---------- */
+.doc h3{font-size:14.5px;margin:20px 0 8px;color:var(--brand);padding-left:9px;border-left:4px solid var(--brand)}
+.doc h3:first-child{margin-top:0}
+.doc p{font-size:13.5px;line-height:1.8;margin:6px 0}
+.doc ul{padding-left:20px;margin:6px 0;font-size:13.5px;line-height:1.9}
+.doc li b{color:var(--ink)}
+.doc table{border-collapse:collapse;width:100%;margin:10px 0;font-size:13px}
+.doc th,.doc td{border:1px solid var(--line);padding:6px 9px;text-align:left}
+.doc th{background:#f7f9fc;color:var(--brand);font-weight:500}
+
+/* ---------- 版本时间线 ---------- */
+.ver{border-left:2px solid var(--line);padding:0 0 8px 18px;position:relative;margin-left:6px}
+.ver:last-child{padding-bottom:0}
+.ver::before{content:"";position:absolute;left:-6px;top:5px;width:10px;height:10px;border-radius:50%;
+  background:#fff;border:2px solid var(--brand)}
+.ver-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px}
+.ver-head b{font-size:14.5px}
+.ver-head time{font-size:12px;color:var(--muted)}
+.ver ul{padding-left:18px;margin:6px 0 10px;font-size:13px;line-height:2}
+.ver .tag{margin-right:6px}
+
+/* ---------- 反馈 ---------- */
+.fb-hero{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.fb-hero .sub{margin:4px 0 0}
+.fb-tips{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.fb-tip{flex:1;min-width:180px;background:#f7f9fc;border:1px solid var(--line);border-radius:10px;padding:11px 14px;font-size:12.5px;color:var(--muted);line-height:1.6}
+.fb-tip b{display:block;color:var(--ink);font-size:13px;margin-bottom:2px}
+
+@media(max-width:680px){
+  .page-head h2{font-size:16px}
+  .seg{width:100%}.seg button{flex:1;padding:7px 0}
+}
+</style>
+</head>
+<body>
+
+<div class="draft">静态视觉稿 v1 · 内容块为占位文案 · README 与更新说明未来将改为读取单一 .md 文件渲染</div>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="#">
+      <span class="brand-mark">灵石</span>
+      <span class="brand-text">解决方案工作台</span>
+    </a>
+    <nav class="topnav">
+      <a href="#">项目中心</a>
+      <a href="#">修改密码</a>
+      <span class="dept-chip">示例分部</span>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+
+  <div class="page-head">
+    <h2>使用说明</h2>
+    <span class="tag blue">v0.1.0</span>
+    <span class="tag">最近更新 2026-09-29</span>
+  </div>
+  <p class="page-sub">面向踏勘与方案编制同事的使用指引。使用中遇到问题，请先看「版本说明」确认是否已知问题，再通过「反馈」提交。</p>
+
+  <div class="seg" role="tablist">
+    <button class="on" data-pane="readme">使用指南</button>
+    <button data-pane="changelog">版本更新说明</button>
+    <button data-pane="feedback">问题反馈</button>
+  </div>
+
+  <!-- ==================== 区块 1：README（未来来源：README.md） ==================== -->
+  <section class="pane on doc" id="pane-readme">
+
+    <div class="card">
+      <h2>这是什么</h2>
+      <p class="sub">一句话定位 + 产品矩阵，对应 README.md 的开头两节</p>
+      <p>灵石解决方案工作台是一个把<b>踏勘录音与调研信息</b>变成<b>结构化踏勘数据和成套方案文档</b>的内部工具：你上传踏勘录音、核对系统提取的信息，剩下的文档由系统自动生成并打包下载。</p>
+
+      <div class="prod-grid" style="margin-top:14px">
+        <div class="prod">
+          <h4>安全管家 <span class="tag blue">已上线</span></h4>
+          <p>安全踏勘录入与风险信息提取，产出踏勘结果、价值卡片、交付内容与提资清单。</p>
+        </div>
+        <div class="prod">
+          <h4>设备管家 <span class="tag blue">已上线</span></h4>
+          <p>设备踏勘信息结构化，产出传感器配置清单等设备方案文档。</p>
+        </div>
+        <div class="prod">
+          <h4>能源管家 <span class="tag">建设中</span></h4>
+          <p>能源踏勘与用能信息整理，产出用能分析与节能建议初稿。</p>
+        </div>
+        <div class="prod">
+          <h4>消防管家 <span class="tag">规划中</span></h4>
+          <p>消防踏勘信息结构化，产出消防管控方案初稿。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>怎么用</h2>
+      <p class="sub">主流程共 7 步，对应页面顶部的步骤条</p>
+
+      <div class="flow-strip">
+        <span><i>1</i>分部入口</span><b>→</b>
+        <span><i>2</i>项目中心</span><b>→</b>
+        <span><i>3</i>项目与转写</span><b>→</b>
+        <span><i>4</i>调研输入</span><b>→</b>
+        <span><i>5</i>信息核对</span><b>→</b>
+        <span><i>6</i>预览与生成</span><b>→</b>
+        <span><i>7</i>结果中心</span>
+      </div>
+
+      <h3>① 进入工作台</h3>
+      <ul>
+        <li>打开工作台地址，选择你所在的<b>分部</b>，输入分部口令进入。</li>
+        <li>口令由管理员发放；忘记口令请联系管理员重置。</li>
+      </ul>
+
+      <h3>② 建立项目</h3>
+      <ul>
+        <li>在「项目中心」新建项目，填写项目名称、客户等基本信息。</li>
+        <li>进入项目后，选择本次要使用的产品（如「安全管家」）。</li>
+      </ul>
+
+      <h3>③ 上传踏勘录音</h3>
+      <ul>
+        <li>在项目页上传踏勘现场录音（支持常见音频格式），系统自动转写为文字。</li>
+        <li>转写需要几分钟，长录音请耐心等待；也可直接粘贴已有的访谈文字记录。</li>
+      </ul>
+
+      <h3>④ 确认识别结果</h3>
+      <ul>
+        <li>系统会从转写文字中自动提取踏勘信息，填入对应字段。</li>
+        <li>在「信息核对」页逐项检查：<b>标黄的字段</b>需要你确认，<b>标红的必填字段</b>必须补齐。</li>
+      </ul>
+
+      <h3>⑤ 生成并下载文档</h3>
+      <ul>
+        <li>核对完成后进入「预览与生成」，勾选需要的文档，一键生成。</li>
+        <li>在「结果中心」单独下载某个文件，或打包下载全套 zip。</li>
+      </ul>
+
+      <h3>注意事项</h3>
+      <ul>
+        <li>项目数据保存在工作台部署机器的 data 目录，请勿在公共电脑保存敏感录音。</li>
+        <li>AI 提取结果仅供参考，<b>生成前务必完成人工核对</b>。</li>
+        <li>同一项目可多次上传录音、多次生成，历史版本保留在结果中心。</li>
+      </ul>
+    </div>
+
+  </section>
+
+  <!-- ==================== 区块 2：版本更新说明（未来来源：CHANGELOG.md） ==================== -->
+  <section class="pane" id="pane-changelog">
+    <div class="card">
+      <h2>版本更新说明</h2>
+      <p class="sub">每个版本一条记录：新增 = 蓝，优化 = 绿，修复 = 橙。以下内容为版式示例。</p>
+
+      <div class="ver">
+        <div class="ver-head">
+          <b>v0.1.1</b><time>规划中</time><span class="tag">示例</span>
+        </div>
+        <ul>
+          <li><span class="tag green">优化</span>长录音转写的稳定性与等待提示</li>
+          <li><span class="tag orange">修复</span>核对页个别字段保存后状态未刷新的问题</li>
+        </ul>
+      </div>
+
+      <div class="ver">
+        <div class="ver-head">
+          <b>v0.1.0</b><time>2026-09-29</time><span class="tag blue">当前版本</span>
+        </div>
+        <ul>
+          <li><span class="tag blue">新增</span>项目中心：项目新建、编辑、归档与复制</li>
+          <li><span class="tag blue">新增</span>踏勘录音上传与自动转写</li>
+          <li><span class="tag blue">新增</span>AI 信息提取与字段核对（必填校验、待确认标记）</li>
+          <li><span class="tag blue">新增</span>方案文档预览、生成与结果中心打包下载（zip）</li>
+          <li><span class="tag blue">新增</span>安全管家、设备管家两条产品线</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 区块 3：反馈入口 ==================== -->
+  <section class="pane" id="pane-feedback">
+    <div class="card">
+      <div class="fb-hero">
+        <div>
+          <h2>问题反馈</h2>
+          <p class="sub">使用中遇到问题，或有功能建议，请填写在线反馈表，产品组会逐条处理并回复。</p>
+        </div>
+        <!-- TODO: 替换为企业微信在线文档真实链接 -->
+        <a class="btn" href="#" target="_blank" rel="noopener">打开反馈表（企业微信文档）→</a>
+      </div>
+      <div class="fb-tips">
+        <div class="fb-tip"><b>① 所在分部</b>告诉我们你是哪个分部的同事，方便定位权限与数据范围。</div>
+        <div class="fb-tip"><b>② 项目名称</b>带上出问题的项目名称和所在步骤（如「信息核对」）。</div>
+        <div class="fb-tip"><b>③ 页面截图</b>一张截图胜过十句描述，报错页面请完整截图。</div>
+      </div>
+      <p class="hint" style="margin-top:14px">反馈表由企业微信在线文档承载，填写无需额外注册；一般 1 个工作日内响应。</p>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  灵石解决方案工作台 v0.1.0 · Demo 版本，数据保存在本机 data 目录
+</footer>
+
+<script>
+document.querySelectorAll('.seg button').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    document.querySelectorAll('.seg button').forEach(function(b){ b.classList.remove('on'); });
+    document.querySelectorAll('.pane').forEach(function(p){ p.classList.remove('on'); });
+    btn.classList.add('on');
+    document.getElementById('pane-' + btn.dataset.pane).classList.add('on');
+  });
+});
+</script>
+</body>
+</html>

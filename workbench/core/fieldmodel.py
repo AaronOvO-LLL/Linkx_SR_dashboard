@@ -253,6 +253,15 @@ def validate_field_model(product_type):
             for c in cols:
                 if not (c.get('key') and c.get('label')):
                     issues.append(_issue('error', w, 'columns 每项必须含 key 与 label'))
+                if c.get('type', 'text') not in ('text', 'number', 'select'):
+                    issues.append(_issue('error', w, '表格列 type 必须为 text / number / select'))
+                if c.get('type') == 'select':
+                    values = [o.get('value') for o in c.get('options', [])]
+                    if not values or len(values) != len(set(values)) or (c.get('default') and c['default'] not in values):
+                        issues.append(_issue('error', w, '表格选择列需提供唯一选项，默认值必须属于选项'))
+            if len([c.get('key') for c in cols]) != len(set(c.get('key') for c in cols)):
+                issues.append(_issue('error', w, '表格列 key 不可重复'))
+
         if t == 'number' and not f.get('unit'):
             issues.append(_issue('info', w, 'number 类型建议提供 unit（如 m² / 路 / 台）'))
         for b in ('required', 'allow_custom', 'require_other_detail'):

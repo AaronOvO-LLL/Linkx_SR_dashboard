@@ -1,0 +1,915 @@
+{
+  "rules_version": "1.0.0",
+  "source": "《设备管家-踏勘要求.xlsx》「设备管家踏勘」表，经《设备管家Demo需求文档.md》第 15 章决策裁剪。",
+  "note": "传感器配置规则库（只读配置）。空间类型=category，物业设备=item。三种计算模式对应需求文档 8.1：fixed_per_room=A 固定每房（数量取 default，用户可调，B3）；per_device=B 按设备数量；per_sub_unit=C 按子参数（区/主管网/末端管）。B 与 C 在本版都是 1:1 换算，区别只在设备数量的计量口径（qty_label / unit），保留两个模式名是为了后续出现非 1:1 规则时不需要改数据结构。排除项见需求文档 8.5：三相电表、漏电流监测装置+NTC 温度探头、有线管道温度传感器、对接空调系统，均不进入本文件。配电房按决策 C1/微决策 1 采用基础版（温湿度 1、摄像头 1），与源 xlsx 的 2/2 不同，以本文件为准。",
+  "display": {
+    "default_unit": "台"
+  },
+  "outputs": [
+    {
+      "key": "sensor_bom",
+      "label": "传感器配置清单",
+      "source_field": "device_room_survey",
+      "group_column": "room_name",
+      "category_column": "space_type",
+      "item_column": "device",
+      "qty_column": "qty",
+      "materialize_fixed": true,
+      "result_columns": [
+        {
+          "key": "room_name",
+          "label": "设备房名称"
+        },
+        {
+          "key": "device",
+          "label": "物业设备名称"
+        },
+        {
+          "key": "qty_display",
+          "label": "设备数量"
+        },
+        {
+          "key": "sensor",
+          "label": "传感器类型"
+        },
+        {
+          "key": "sensor_qty_display",
+          "label": "传感器数量"
+        }
+      ],
+      "categories": [
+        {
+          "key": "life_water_pump_room",
+          "name": "独立生活水泵房",
+          "synonyms": [
+            "独立生活水泵房",
+            "生活水泵房",
+            "生活泵房",
+            "给水泵房",
+            "生活给水泵房"
+          ],
+          "fixed": [
+            {
+              "item": "设备房温湿度",
+              "sensor": "温湿度传感器",
+              "default": 1,
+              "unit": "台",
+              "synonyms": [
+                "温湿度",
+                "温度湿度"
+              ]
+            },
+            {
+              "item": "设备房水浸",
+              "sensor": "水浸传感器(RS485)",
+              "default": 2,
+              "unit": "台",
+              "synonyms": [
+                "水浸",
+                "漏水"
+              ],
+              "remark": "地势最低处设置；空间大或低洼关注点多可增配至 3 台。"
+            },
+            {
+              "item": "数据采集",
+              "sensor": "睿联网关 M1000PRO-A(含电箱+电源)",
+              "default": 1,
+              "unit": "套",
+              "sensor_unit": "套",
+              "synonyms": [
+                "网关",
+                "数据采集",
+                "睿联网关"
+              ],
+              "remark": "决策 D1：网关+电箱+电源合并为 1 行。"
+            },
+            {
+              "item": "设备房摄像头",
+              "sensor": "摄像头",
+              "default": 1,
+              "unit": "台",
+              "synonyms": [
+                "摄像头",
+                "摄像机"
+              ]
+            }
+          ],
+          "variable": [
+            {
+              "item": "给水生活管网始端（高/中/低区）",
+              "sensor": "压力变送器(RS485)",
+              "mode": "per_sub_unit",
+              "qty_label": "区数",
+              "unit": "区",
+              "synonyms": [
+                "给水生活管网始端",
+                "生活管网始端",
+                "生活给水管网",
+                "给水管网始端",
+                "生活给水分",
+                "生活供水区"
+              ],
+              "remark": "每个区主供水管 1 台；高层分高、中、低区，每区只取一个点。"
+            },
+            {
+              "item": "给水生活水泵控制柜（高/中/低区）",
+              "sensor": "串口开关量模块(RS485)",
+              "mode": "per_device",
+              "qty_label": "控制柜数",
+              "unit": "台",
+              "synonyms": [
+                "给水生活水泵控制柜",
+                "生活水泵控制柜",
+                "生活泵控制柜",
+                "生活水泵柜"
+              ],
+              "remark": "决策 B1：每柜 1 台开关量模块，不追状态点位数。"
+            },
+            {
+              "item": "给水生活水池/水箱",
+              "sensor": "水液位传感器(RS485)",
+              "mode": "per_device",
+              "qty_label": "独立水箱数",
+              "unit": "台",
+              "ambiguous_cues": [
+                "连通",
+                "联通",
+                "相通"
+              ],
+              "ambiguous_note": "决策 B2：连通的水箱/集水井按 1 个独立体计，独立数由用户填写，不由系统推算。",
+              "synonyms": [
+                "给水生活水池",
+                "给水生活水箱",
+                "生活水池",
+                "生活水箱"
+              ],
+              "remark": "决策 B2：用户直接填独立水箱数，连通的水箱按 1 个计。"
+            },
+            {
+              "item": "集水井（污水井）",
+              "sensor": "水液位传感器(RS485)",
+              "mode": "per_device",
+              "qty_label": "独立集水井数",
+              "unit": "台",
+              "ambiguous_cues": [
+                "连通",
+                "联通",
+                "相通"
+              ],
+              "ambiguous_note": "决策 B2：连通的水箱/集水井按 1 个独立体计，独立数由用户填写，不由系统推算。",
+              "synonyms": [
+                "集水井",
+                "污水井",
+                "集水坑"
+              ]
+            },
+            {
+              "item": "集水井（污水井）水泵控制柜",
+              "sensor": "串口开关量模块(RS485)",
+              "mode": "per_device",
+              "qty_label": "控制柜数",
+              "unit": "台",
+              "synonyms": [
+                "集水井水泵控制柜",
+                "集水井泵控制柜",
+                "污水井泵控制柜",
+                "集水井控制柜"
+              ]
+            }
+          ]
+        },
+        {
+          "key": "fire_water_pump_room",
+          "name": "独立消防水泵房",
+          "synonyms": [
+            "独立消防水泵房",
+            "消防水泵房",
+            "消防泵房",
+            "消防泵房间"
+          ],
+          "fixed": [
+            {
+              "item": "设备房温湿度",
+              "sensor": "温湿度传感器",
+              "default": 1,
+              "unit": "台",
+              "synonyms": [
+                "温湿度"
+              ]
+            },
+            {
+              "item": "设备房水浸",
+              "sensor": "水浸传感器(RS485)",
+              "default": 2,
+              "unit": "台",
+              "synonyms": [
+                "水浸",
+                "漏水"
+              ]
+            },
+            {
+              "item": "数据采集",
+              "sensor": "睿联网关 M1000PRO-A(含电箱+电源)",
+              "default": 1,
+              "unit": "套",
+              "sensor_unit": "套",
+              "synonyms": [
+                "网关",
+                "数据采集",
+                "睿联网关"
+              ]
+            },
+            {
+              "item": "设备房摄像头",
+              "sensor": "摄像头",
+              "default": 1,
+              "unit": "台",
+              "synonyms": [
+                "摄像头",
+                "摄像机"
+              ]
+            }
+          ],
+          "variable": [
+            {
+              "item": "喷淋管网始端",
+              "sensor": "压力变送器(RS485)",
+              "mode": "per_sub_unit",
+              "qty_label": "喷淋主管网数",
+              "unit": "个",
+              "synonyms": [
+                "喷淋管网始端",
+                "喷淋主管网",
+                "喷淋管网"
+              ]
+            },
+            {
+              "item": "喷淋泵控制柜",
+              "sensor": "串口开关量模块(RS485)",
+              "mode": "per_device",
+              "qty_label": "控制柜数",
+              "unit": "台",
+              "synonyms": [
+                "喷淋泵控制柜",
+                "喷淋水泵控制柜",
+                "喷淋控制柜"
+              ]
+            },
+            {
+              "item": "室内消火栓管网始端",
+              "sensor": "压力变送器(RS485)",
+              "mode": "per_sub_unit",
+              "qty_label": "消防主管网数",
+              "unit": "个",
+              "synonyms": [
+                "室内消火栓管网始端",
+                "消火栓管网始端",
+                "消防主管网",
+                "消火栓管网"
+              ]
+            },
+            {
+              "item": "室内消火栓泵控制",
+              "sensor": "串口开关量模块(RS485)",
+              "mode": "per_device",
+              "qty_label": "控制柜数",
+              "unit": "台",
+              "synonyms": [
+                "室内消火栓泵控制",
+                "消火栓泵控制柜",
+                "消火栓泵控制",
+                "消防泵控制柜"
+              ]
+            },
+            {
+              "item": "消防水池/水箱",
+              "sensor": "水液位传感器(RS485)",
+              "mode": "per_device",
+              "qty_label": "独立水箱数",
+              "unit": "台",
+              "ambiguous_cues": [
+                "连通",
+                "联通",
+                "相通"
+              ],
+              "ambiguous_note": "决策 B2：连通的水箱/集水井按 1 个独立体计，独立数由用户填写，不由系统推算。",
+              "synonyms": [
+                "消防水池",
+                "消防水箱"
+              ]
+            },
+            {
+              "item": "消防水泡",
+              "sensor": "压力变送器(RS485)",
+              "mode": "per_sub_unit",
+              "qty_label": "水泡主管网数",
+              "unit": "个",
+              "synonyms": [
+                "消防水泡",
+                "消防水炮",
+                "水泡管网"
+              ]
+            },
+            {
+              "item": "污水井泵控制柜",
+              "sensor": "串口开关量模块(RS485)",
+              "mode": "per_device",
+              "qty_label": "控制柜数",
+              "unit": "台",
+              "synonyms": [
+                "污水井泵控制柜",
+                "污水井水泵控制柜",
+                "污水井控制柜"
+              ]
+            },
+            {
+              "item": "污水井",
+              "sensor": "水液位传感器(RS485)",
+              "mode": "per_device",
+              "qty_label": "独立集水井数",
+              "unit": "台",
+              "ambiguous_cues": [
+                "连通",
+                "联通",
+                "相通"
+              ],
+              "ambiguous_note": "决策 B2：连通的水箱/集水井按 1 个独立体计，独立数由用户填写，不由系统推算。",
+              "synonyms": [
+                "污水井",
+                "集水井"
+              ]
+            }
+          ]
+        },
+        {
+          "key": "rooftop_pressure_pump_room",
+          "name": "楼顶稳压消防泵房",
+          "synonyms": [
+            "楼顶稳压消防泵房",
+            "稳压消防泵房",
+            "楼顶消防泵房",
+            "稳压泵房",
+            "稳压消防泵"
+          ],
+          "fixed": [
+            {
+              "item": "设备房温湿度",
+              "sensor": "温湿度传感器",
+              "default": 1,
+              "unit": "台",
+              "synonyms": [
+                "温湿度"
+              ]
+            },
+            {
+              "item": "设备房水浸",
+              "sensor": "水浸传感器(RS485)",
+              "default": 2,
+              "unit": "台",
+              "synonyms": [
+                "水浸",
+                "漏水"
+              ]
+            },
+            {
+              "item": "数据采集",
+              "sensor": "睿联网关 M1000PRO-A(含电箱+电源)",
+              "default": 1,
+              "unit": "套",
+              "sensor_unit": "套",
+              "synonyms": [
+                "网关",
+                "数据采集",
+                "睿联网关"
+              ]
+            },
+            {
+              "item": "设备房摄像头",
+              "sensor": "摄像头",
+              "default": 1,
+              "unit": "台",
+              "synonyms": [
+                "摄像头",
+                "摄像机"
+              ]
+            }
+          ],
+          "variable": [
+            {
+              "item": "喷淋管网末端放水测试点",
+              "sensor": "压力变送器(RS485)",
+              "mode": "per_sub_unit",
+              "qty_label": "喷淋末端管数",
+              "unit": "个",
+              "synonyms": [
+                "喷淋管网末端放水测试点",
+                "喷淋管网末端",
+                "喷淋末端管",
+                "喷淋末端"
+              ]
+            },
+            {
+              "item": "喷淋泵控制柜",
+              "sensor": "串口开关量模块(RS485)",
+              "mode": "per_device",
+              "qty_label": "控制柜数",
+              "unit": "台",
+              "synonyms": [
+                "喷淋泵控制柜",
+                "喷淋水泵控制柜",
+                "喷淋控制柜"
+              ]
+            },
+            {
+              "item": "消火栓管网末端最不利点",
+              "sensor": "压力变送器(RS485)",
+              "mode": "per_sub_unit",
+              "qty_label": "消防末端管数",
+              "unit": "个",
+              "synonyms": [
+                "消火栓管网末端最不利点",
+                "消火栓管网末端",
+                "消防末端管",
+                "最不利点"
+              ]
+            },
+            {
+              "item": "室内消火栓泵控制",
+              "sensor": "串口开关量模块(RS485)",
+              "mode": "per_device",
+              "qty_label": "控制柜数",
+              "unit": "台",
+              "synonyms": [
+                "室内消火栓泵控制",
+                "消火栓泵控制柜",
+                "消火栓泵控制"
+              ]
+            },
+            {
+              "item": "消防高位水池",
+              "sensor": "水液位传感器(RS485)",
+              "mode": "per_device",
+              "qty_label": "独立水箱数",
+              "unit": "台",
+              "ambiguous_cues": [
+                "连通",
+                "联通",
+                "相通"
+              ],
+              "ambiguous_note": "决策 B2：连通的水箱/集水井按 1 个独立体计，独立数由用户填写，不由系统推算。",
+              "synonyms": [
+                "消防高位水池",
+                "消防高位水箱",
+                "高位水池",
+                "高位水箱"
+              ]
+            }
+          ]
+        },
+        {
+          "key": "mixed_fire_pump_room",
+          "name": "混合消防水泵房",
+          "synonyms": [
+            "混合消防水泵房",
+            "混合消防泵房",
+            "混合泵房",
+            "消防生活合用水泵房"
+          ],
+          "fixed": [
+            {
+              "item": "设备房温湿度",
+              "sensor": "温湿度传感器",
+              "default": 1,
+              "unit": "台",
+              "synonyms": [
+                "温湿度"
+              ]
+            },
+            {
+              "item": "设备房水浸",
+              "sensor": "水浸传感器(RS485)",
+              "default": 2,
+              "unit": "台",
+              "synonyms": [
+                "水浸",
+                "漏水"
+              ]
+            },
+            {
+              "item": "数据采集",
+              "sensor": "睿联网关 M1000PRO-A(含电箱+电源)",
+              "default": 1,
+              "unit": "套",
+              "sensor_unit": "套",
+              "synonyms": [
+                "网关",
+                "数据采集",
+                "睿联网关"
+              ]
+            },
+            {
+              "item": "设备房摄像头",
+              "sensor": "摄像头",
+              "default": 2,
+              "unit": "台",
+              "synonyms": [
+                "摄像头",
+                "摄像机"
+              ],
+              "remark": "混合消防水泵房摄像头默认 2 台（需求文档 8.3）。"
+            }
+          ],
+          "variable": [
+            {
+              "item": "喷淋管网始端",
+              "sensor": "压力变送器(RS485)",
+              "mode": "per_sub_unit",
+              "qty_label": "喷淋主管网数",
+              "unit": "个",
+              "synonyms": [
+                "喷淋管网始端",
+                "喷淋主管网",
+                "喷淋管网"
+              ]
+            },
+            {
+              "item": "喷淋泵控制柜",
+              "sensor": "串口开关量模块(RS485)",
+              "mode": "per_device",
+              "qty_label": "控制柜数",
+              "unit": "台",
+              "synonyms": [
+                "喷淋泵控制柜",
+                "喷淋水泵控制柜",
+                "喷淋控制柜"
+              ]
+            },
+            {
+              "item": "室内消火栓管网始端",
+              "sensor": "压力变送器(RS485)",
+              "mode": "per_sub_unit",
+              "qty_label": "消防主管网数",
+              "unit": "个",
+              "synonyms": [
+                "室内消火栓管网始端",
+                "消火栓管网始端",
+                "消防主管网",
+                "消火栓管网"
+              ]
+            },
+            {
+              "item": "室内消火栓泵控制",
+              "sensor": "串口开关量模块(RS485)",
+              "mode": "per_device",
+              "qty_label": "控制柜数",
+              "unit": "台",
+              "synonyms": [
+                "室内消火栓泵控制",
+                "消火栓泵控制柜",
+                "消火栓泵控制",
+                "消防泵控制柜"
+              ]
+            },
+            {
+              "item": "消防低位水池",
+              "sensor": "水液位传感器(RS485)",
+              "mode": "per_device",
+              "qty_label": "独立水箱数",
+              "unit": "台",
+              "ambiguous_cues": [
+                "连通",
+                "联通",
+                "相通"
+              ],
+              "ambiguous_note": "决策 B2：连通的水箱/集水井按 1 个独立体计，独立数由用户填写，不由系统推算。",
+              "synonyms": [
+                "消防低位水池",
+                "消防低位水箱",
+                "消防水池",
+                "消防水箱"
+              ]
+            },
+            {
+              "item": "消防水泡",
+              "sensor": "压力变送器(RS485)",
+              "mode": "per_sub_unit",
+              "qty_label": "水泡主管网数",
+              "unit": "个",
+              "synonyms": [
+                "消防水泡",
+                "消防水炮",
+                "水泡管网"
+              ]
+            },
+            {
+              "item": "给水生活管网始端（高/中/低区）",
+              "sensor": "压力变送器(RS485)",
+              "mode": "per_sub_unit",
+              "qty_label": "区数",
+              "unit": "区",
+              "synonyms": [
+                "给水生活管网始端",
+                "生活管网始端",
+                "生活给水管网",
+                "给水管网始端",
+                "生活给水分",
+                "生活供水区"
+              ]
+            },
+            {
+              "item": "给水生活水泵控制柜（高/中/低区）",
+              "sensor": "串口开关量模块(RS485)",
+              "mode": "per_device",
+              "qty_label": "控制柜数",
+              "unit": "台",
+              "synonyms": [
+                "给水生活水泵控制柜",
+                "生活水泵控制柜",
+                "生活泵控制柜",
+                "生活水泵柜"
+              ]
+            },
+            {
+              "item": "给水生活水池/水箱",
+              "sensor": "水液位传感器(RS485)",
+              "mode": "per_device",
+              "qty_label": "独立水箱数",
+              "unit": "台",
+              "ambiguous_cues": [
+                "连通",
+                "联通",
+                "相通"
+              ],
+              "ambiguous_note": "决策 B2：连通的水箱/集水井按 1 个独立体计，独立数由用户填写，不由系统推算。",
+              "synonyms": [
+                "给水生活水池",
+                "给水生活水箱",
+                "生活水池",
+                "生活水箱"
+              ]
+            },
+            {
+              "item": "污水井泵控制柜",
+              "sensor": "串口开关量模块(RS485)",
+              "mode": "per_device",
+              "qty_label": "控制柜数",
+              "unit": "台",
+              "synonyms": [
+                "污水井泵控制柜",
+                "污水井水泵控制柜",
+                "污水井控制柜"
+              ]
+            },
+            {
+              "item": "污水井",
+              "sensor": "水液位传感器(RS485)",
+              "mode": "per_device",
+              "qty_label": "独立集水井数",
+              "unit": "台",
+              "ambiguous_cues": [
+                "连通",
+                "联通",
+                "相通"
+              ],
+              "ambiguous_note": "决策 B2：连通的水箱/集水井按 1 个独立体计，独立数由用户填写，不由系统推算。",
+              "synonyms": [
+                "污水井",
+                "集水井"
+              ]
+            }
+          ]
+        },
+        {
+          "key": "elevator_room",
+          "name": "电梯机房",
+          "synonyms": [
+            "电梯机房",
+            "电梯设备间",
+            "电梯控制机房"
+          ],
+          "fixed": [
+            {
+              "item": "设备房温湿度",
+              "sensor": "温湿度传感器",
+              "default": 1,
+              "unit": "台",
+              "synonyms": [
+                "温湿度"
+              ]
+            },
+            {
+              "item": "设备房水浸",
+              "sensor": "水浸传感器(RS485)",
+              "default": 1,
+              "unit": "台",
+              "synonyms": [
+                "水浸",
+                "漏水"
+              ]
+            },
+            {
+              "item": "数据采集",
+              "sensor": "睿联网关 M1000PRO-A(含电箱+电源)",
+              "default": 1,
+              "unit": "套",
+              "sensor_unit": "套",
+              "synonyms": [
+                "网关",
+                "数据采集",
+                "睿联网关"
+              ]
+            },
+            {
+              "item": "设备房摄像头",
+              "sensor": "摄像头",
+              "default": 1,
+              "unit": "台",
+              "synonyms": [
+                "摄像头",
+                "摄像机"
+              ]
+            }
+          ],
+          "variable": []
+        },
+        {
+          "key": "power_distribution_room",
+          "name": "配电房（基础）",
+          "synonyms": [
+            "变配电房",
+            "配电房",
+            "变配电站",
+            "配电站",
+            "高低压配电房",
+            "变电房"
+          ],
+          "remark": "决策 C1/C3 与微决策 1：基础版，不含三相电表、变压器漏电流监测与 NTC 温度探头。",
+          "fixed": [
+            {
+              "item": "设备房温湿度",
+              "sensor": "温湿度传感器",
+              "default": 1,
+              "unit": "台",
+              "synonyms": [
+                "温湿度"
+              ]
+            },
+            {
+              "item": "设备房水浸",
+              "sensor": "水浸传感器(RS485)",
+              "default": 1,
+              "unit": "台",
+              "synonyms": [
+                "水浸",
+                "漏水"
+              ]
+            },
+            {
+              "item": "数据采集",
+              "sensor": "睿联网关 M1000PRO-A(含电箱+电源)",
+              "default": 1,
+              "unit": "套",
+              "sensor_unit": "套",
+              "synonyms": [
+                "网关",
+                "数据采集",
+                "睿联网关"
+              ]
+            },
+            {
+              "item": "设备房摄像头",
+              "sensor": "摄像头",
+              "default": 1,
+              "unit": "台",
+              "synonyms": [
+                "摄像头",
+                "摄像机"
+              ]
+            }
+          ],
+          "variable": []
+        },
+        {
+          "key": "hvac_room",
+          "name": "空调机房",
+          "synonyms": [
+            "空调机房",
+            "中央空调机房",
+            "制冷机房",
+            "冷冻机房",
+            "冷站"
+          ],
+          "remark": "决策 C2：不含冷冻/冷却供回水的有线管道温度传感器。微决策 2：管网数为非必填且无默认，留空即不配。",
+          "fixed": [
+            {
+              "item": "设备房温湿度",
+              "sensor": "温湿度传感器",
+              "default": 1,
+              "unit": "台",
+              "synonyms": [
+                "温湿度"
+              ]
+            },
+            {
+              "item": "设备房水浸",
+              "sensor": "水浸传感器(RS485)",
+              "default": 1,
+              "unit": "台",
+              "synonyms": [
+                "水浸",
+                "漏水"
+              ]
+            },
+            {
+              "item": "数据采集",
+              "sensor": "睿联网关 M1000PRO-A(含电箱+电源)",
+              "default": 1,
+              "unit": "套",
+              "sensor_unit": "套",
+              "synonyms": [
+                "网关",
+                "数据采集",
+                "睿联网关"
+              ]
+            },
+            {
+              "item": "设备房摄像头",
+              "sensor": "摄像头",
+              "default": 2,
+              "unit": "台",
+              "synonyms": [
+                "摄像头",
+                "摄像机"
+              ]
+            },
+            {
+              "item": "冷却水池",
+              "sensor": "水液位传感器(RS485)",
+              "default": 1,
+              "unit": "台",
+              "synonyms": [
+                "冷却水池",
+                "冷却水箱"
+              ],
+              "remark": "需求文档 8.4：冷却水池液位为固定项，默认 1，可调（B3）。"
+            }
+          ],
+          "variable": [
+            {
+              "item": "冷冻供水管网",
+              "sensor": "压力变送器(RS485)",
+              "mode": "per_sub_unit",
+              "qty_label": "冷冻供水主管网数",
+              "unit": "个",
+              "allow_empty": true,
+              "synonyms": [
+                "冷冻供水管网",
+                "冷冻供水管",
+                "冷冻水供水管"
+              ]
+            },
+            {
+              "item": "冷冻回水管网",
+              "sensor": "压力变送器(RS485)",
+              "mode": "per_sub_unit",
+              "qty_label": "冷冻回水主管网数",
+              "unit": "个",
+              "allow_empty": true,
+              "synonyms": [
+                "冷冻回水管网",
+                "冷冻回水管",
+                "冷冻水回水管"
+              ]
+            },
+            {
+              "item": "冷却供水管网",
+              "sensor": "压力变送器(RS485)",
+              "mode": "per_sub_unit",
+              "qty_label": "冷却供水主管网数",
+              "unit": "个",
+              "allow_empty": true,
+              "synonyms": [
+                "冷却供水管网",
+                "冷却供水管",
+                "冷却水供水管"
+              ]
+            },
+            {
+              "item": "冷却回水管网",
+              "sensor": "压力变送器(RS485)",
+              "mode": "per_sub_unit",
+              "qty_label": "冷却回水主管网数",
+              "unit": "个",
+              "allow_empty": true,
+              "synonyms": [
+                "冷却回水管网",
+                "冷却回水管",
+                "冷却水回水管"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

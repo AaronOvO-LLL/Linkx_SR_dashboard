@@ -1,0 +1,20 @@
+{
+  "template_version": "0.1.0",
+  "product_type": "device_butler",
+  "note": "来源：《设备管家Demo需求文档.md》第 7 章。复用三个 common 字段包，产品差异全部落在 device_survey 包的表格字段与同目录 rules.json。首版按需求 7.1 精简，不引入 common_decision / common_requirements。传感器类型与传感器数量是规则引擎的派生结果，不作为用户输入字段存储（需求 7.2）。",
+  "packs": [
+    "common_project",
+    "common_docs",
+    "common_property",
+    "device_survey"
+  ],
+  "group_order": [
+    "basic",
+    "docs",
+    "property",
+    "device_survey"
+  ],
+  "overrides": {},
+  "extra_fields": [],
+  "remove_fields": []
+}

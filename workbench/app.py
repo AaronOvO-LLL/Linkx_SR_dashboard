@@ -596,7 +596,12 @@ def review(pp_id):
     groups = []
     for g, fs in fields_by_group(ptype):
         items = []
-        for f in fs:
+        for original_field in fs:
+            f = original_field
+            output_def = extract.rules_output_for(ptype, f)
+            if output_def:
+                from core import rules
+                f = dict(f, rules_ui=rules.table_ui(ptype, output_def))
             row = values.get(f['key'])
             if row:
                 row = dict(row, status=repo.field_status(row, f))
@@ -632,6 +637,7 @@ def save_field(pp_id):
     return jsonify({'ok': True, 'status': status,
                     'status_label': repo.FIELD_STATUS_LABELS[status],
                     'validation_ok': ok,
+                    'issues': validate(pp_id, pp['product_type'])[1],
                     'required_done': stats['required_done'],
                     'required_total': stats['required_total'],
                     'pending_confirm': stats['pending_confirm'],
@@ -722,6 +728,11 @@ def artifact_file(pp_id, artifact_key, filename):
     if r:
         return r
     pp, project = load_pp(pp_id)
+    try:
+        artifact_service.require_valid_artifacts(pp)
+    except artifact_service.ArtifactServiceError as exc:
+        flash_msg(str(exc), 'warn')
+        return redirect(url_for('review', pp_id=pp_id))
     if artifact_key not in artifact_map(pp['product_type']):
         abort(404)
     d = generate.artifact_output_dir(pp_id, artifact_key)
@@ -754,6 +765,11 @@ def package_download(pp_id):
     if r:
         return r
     pp, project = load_pp(pp_id)
+    try:
+        artifact_service.require_valid_artifacts(pp)
+    except artifact_service.ArtifactServiceError as exc:
+        flash_msg(str(exc), 'warn')
+        return redirect(url_for('review', pp_id=pp_id))
     export = artifact_service.latest_current_export(pp)
     if not export or not os.path.isfile(export['file_path']):
         flash_msg('尚未生成打包文件。', 'warn')

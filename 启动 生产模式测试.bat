@@ -16,6 +16,8 @@ rem —— 定位 Python 解释器（与 启动 Demo.bat 一致的策略）—�
 set "PYTHON_EXE="
 set "PYTHON_ARGS="
 if defined LINGSHI_PYTHON if exist "%LINGSHI_PYTHON%" set "PYTHON_EXE=%LINGSHI_PYTHON%"
+if not defined PYTHON_EXE if exist ".venv\Scripts\python.exe" set "PYTHON_EXE=%CD%\.venv\Scripts\python.exe"
+
 if not defined PYTHON_EXE for /f "delims=" %%I in ('where python 2^>nul') do if not defined PYTHON_EXE set "PYTHON_EXE=%%I"
 if not defined PYTHON_EXE (
     where py >nul 2>&1
@@ -27,10 +29,10 @@ if not defined PYTHON_EXE (
 )
 
 rem —— 确保 waitress 已安装 ——
-"%PYTHON_EXE%" %PYTHON_ARGS% -c "import waitress" >nul 2>&1
+"%PYTHON_EXE%" %PYTHON_ARGS% -c "import waitress, flask, openpyxl" >nul 2>&1
 if errorlevel 1 (
     echo [SETUP] 正在安装 waitress ...
-    "%PYTHON_EXE%" %PYTHON_ARGS% -m pip install --user waitress==3.0.2
+    "%PYTHON_EXE%" %PYTHON_ARGS% -m pip install -r requirements-prod.txt
     if errorlevel 1 ( echo [ERROR] waitress 安装失败。 & pause & exit /b 1 )
 )
 

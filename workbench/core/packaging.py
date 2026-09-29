@@ -8,7 +8,7 @@ import re
 import zipfile
 from datetime import datetime
 
-from . import paths, repo
+from . import paths, repo, rules
 from .config import app_config, artifact_map, artifacts_config, product_config
 from .repo import artifact_runs, get_pp, latest_extraction_run, latest_source
 
@@ -65,6 +65,9 @@ def package_zip(pp_id, product_type, keys=None):
         'artifacts': [],
         'files': [],
     }
+    # 规则库版本只在有规则库的产品上出现，避免给其它产品的清单添一个恒为空的字段。
+    if rules.rules_version(product_type):
+        manifest['product']['rules_version'] = rules.rules_version(product_type)
 
     src = latest_source(pp_id)
     run = latest_extraction_run(pp_id)

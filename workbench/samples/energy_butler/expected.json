@@ -1,0 +1,41 @@
+{
+  "energy_system_types": [
+    "水冷机组中央空调（无冰/水蓄冷）"
+  ],
+  "energy_fee_over_1m": "是",
+  "energy_equipment_list": [
+    {
+      "supply_area": "办公区",
+      "building": "东塔55F",
+      "equipment": "冷水主机",
+      "brand": "约克",
+      "power_kw": "500",
+      "cooling_kw": "2800",
+      "quantity": "2",
+      "freq_type": "定频",
+      "remark": ""
+    },
+    {
+      "supply_area": "办公区",
+      "building": "东塔55F",
+      "equipment": "冷冻水泵",
+      "brand": "塞莱默",
+      "power_kw": "37",
+      "cooling_kw": "",
+      "quantity": "3",
+      "freq_type": "变频",
+      "remark": ""
+    },
+    {
+      "supply_area": "办公区",
+      "building": "西塔机房",
+      "equipment": "冷水主机",
+      "brand": "约克",
+      "power_kw": "350",
+      "cooling_kw": "1800",
+      "quantity": "1",
+      "freq_type": "待确认",
+      "remark": ""
+    }
+  ]
+}

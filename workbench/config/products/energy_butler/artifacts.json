@@ -1,0 +1,33 @@
+{
+  "template_version": "0.1.0",
+  "reserved_artifacts": [
+    "value_card"
+  ],
+  "artifacts": [
+    {
+      "key": "equipment_list",
+      "name": "设备清单",
+      "purpose": "导出可改造部分的冷站设备清单。",
+      "includes": [
+        "设备清单（10列）"
+      ],
+      "formats": [
+        "xlsx"
+      ],
+      "renderer": "xlsx_table",
+      "table_field": "energy_equipment_list",
+      "merge_columns": [
+        "supply_area",
+        "building"
+      ],
+      "sheet_name": "设备清单",
+      "filename": "{project}_能源管家_设备清单_{date}",
+      "folder_key": "equipment_list",
+      "required_groups": [
+        "energy_eligibility",
+        "energy_equipment"
+      ],
+      "order": 1
+    }
+  ]
+}

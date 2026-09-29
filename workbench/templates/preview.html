@@ -45,7 +45,11 @@
       <tr>
         <th scope="row">{{ f.label }}</th>
         <td>
-          {% if f.text %}{{ f.text|replace('\n',' ')|truncate(200) }}
+          {% if f.type == 'table' and f.value %}
+          <div class="table-scroll"><table class="tbl"><thead><tr><th>序号</th>{% for c in f.columns %}<th>{{ c.label }}</th>{% endfor %}</tr></thead><tbody>
+          {% for row in f.value %}<tr><td>{{ loop.index }}</td>{% for c in f.columns %}<td>{{ row.get(c.key,'') if row.get(c.key) is not none else '' }}</td>{% endfor %}</tr>{% endfor %}
+          </tbody></table></div>
+          {% elif f.text %}<span style="white-space:pre-wrap">{{ f.text }}</span>
             {% if f.unit %}<span class="tag" style="margin-left:6px">{{ f.unit }}</span>{% endif %}
           {% else %}<span style="color:#9ca3af">（未填写）</span>{% endif %}
           <span class="tag {{ tag_class(f.status) }}" style="margin-left:8px">{{ f.status_label }}</span>
