@@ -1,0 +1,9 @@
+{
+  "product_type": "asset_butler",
+  "name": "资产管家",
+  "version": "0.1.0",
+  "short_desc": "围绕经营性资产、租赁规模和数字化需求开展客户调研，整理经核对的客户信息。",
+  "coverage": "覆盖客户基本信息、资产业态、在租客户规模、业务痛点、部署方式及增值服务。",
+  "status": "active",
+  "capabilities": ["text_input", "audio_asr", "field_extraction", "artifact_generation"]
+}

@@ -11,6 +11,8 @@
 
 {% include '_input_modes.html' %}
 
+<div class="flash ok">「项目基本情况」「物业信息」中的公共字段在同一项目的各管家之间共享。修改后自动保存，其他管家刷新页面即可看到；各管家的必填要求仍分别校验。</div>
+
 <div class="stat-bar">
   <div class="stat green"><b id="sDone">{{ stats.required_done }}/{{ stats.required_total }}</b><span>必填已完成</span></div>
   <div class="stat orange"><b id="sConfirm">{{ stats.pending_confirm }}</b><span>待确认</span></div>
@@ -62,13 +64,34 @@
          data-status="{{ st }}" data-filled="{{ '1' if row and row.value_json not in ('""','[]','{}','null') else '0' }}">
       <div class="fld-head">
         <span class="lb">{{ f.label }}</span>
+        {% if f.value_scope == 'project' %}<span class="tag blue">项目共享</span>{% endif %}
         {% if f.required %}<span class="tag red">必填</span>{% endif %}
         <span class="tag {{ tag_class(st) }}" data-role="status">{{ status_labels[st] }}</span>
         {% if row and row.updated_by == 'human' %}<span class="tag green">人工</span>
         {% elif row and row.updated_by == 'ai' %}<span class="tag">AI</span>{% endif %}
+        {% if row and row.updated_by == 'system' %}<span class="tag">系统</span>{% endif %}
         <span class="spacer"></span>
         <span class="saved" data-role="saved">已保存</span>
       </div>
+
+      {% if f.key in conflicts %}
+      <div class="flash warn" data-shared-conflict="{{ f.key }}">
+        <b>历史答案不同，请选择一份共享，或在下方重新填写。</b>
+        {% for candidate in conflicts[f.key] %}
+        <div style="margin-top:10px">
+          <span class="tag">{{ candidate.product_name }}</span>
+          <span class="hint">{{ candidate.updated_at }} · {{ '人工确认' if candidate.protected else '提取结果' }}</span>
+          <div style="white-space:pre-wrap;margin:6px 0">{{ candidate.display }}</div>
+          {% if candidate.source_quote %}<div class="hint">原文依据：{{ candidate.source_quote }}</div>{% endif %}
+          <form method="post" action="{{ url_for('resolve_shared_field', pp_id=pp.id) }}">
+            <input type="hidden" name="key" value="{{ f.key }}">
+            <input type="hidden" name="candidate" value="{{ loop.index0 }}">
+            <button class="btn gray sm" type="submit">采用这份答案并共享</button>
+          </form>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
 
       {% if f.help %}<div class="hint" style="margin-bottom:5px">{{ f.help }}</div>{% endif %}
 
@@ -106,8 +129,8 @@
                 {% for cat in f.rules_ui.categories if cat.name == r.get(f.rules_ui.category_column) %}{% set selected_category.value = cat %}{% endfor %}
                 <select data-col="{{ c.key }}" data-rules-role="item" aria-label="{{ c.label }}">
                   <option value="">请先选择空间类型</option>
-                  {% if selected_category.value %}{% for item in selected_category.value.items %}<option value="{{ item.name }}" {% if r.get(c.key) == item.name %}selected{% endif %}>{{ item.name }}{% if item.kind == 'fixed' %}（固定项）{% endif %}</option>{% endfor %}{% endif %}
-                  {% if r.get(c.key) and (not selected_category.value or r.get(c.key) not in selected_category.value.items|map(attribute='name')|list) %}<option value="{{ r.get(c.key) }}" selected>{{ r.get(c.key) }}（历史值）</option>{% endif %}
+                  {% if selected_category.value %}{% for item in selected_category.value['items'] %}<option value="{{ item.name }}" {% if r.get(c.key) == item.name %}selected{% endif %}>{{ item.name }}{% if item.kind == 'fixed' %}（固定项）{% endif %}</option>{% endfor %}{% endif %}
+                  {% if r.get(c.key) and (not selected_category.value or r.get(c.key) not in selected_category.value['items']|map(attribute='name')|list) %}<option value="{{ r.get(c.key) }}" selected>{{ r.get(c.key) }}（历史值）</option>{% endif %}
                 </select>
               {% elif c.get('type') == 'select' %}<select data-col="{{ c.key }}" aria-label="{{ c.label }}">
               {% for o in c.options %}<option value="{{ o.value }}" {% if r.get(c.key,c.get('default','')) == o.value %}selected{% endif %}>{{ o.value }}</option>{% endfor %}</select>

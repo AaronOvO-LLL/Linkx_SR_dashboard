@@ -1,0 +1,26 @@
+<div id="agent-chat" class="agent-chat" data-state-url="{{ url_for('agent_chat_state') }}"
+     data-send-url="{{ url_for('agent_chat_send') }}" data-new-url="{{ url_for('agent_chat_new') }}"
+     data-csrf="{{ chat_csrf }}" data-scope="{{ chat_sid }}">
+  <button type="button" class="chat-launcher" id="chat-launcher" aria-controls="chat-panel" aria-expanded="false" aria-label="打开姜子牙聊天">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6 4V6a2 2 0 0 1 2-2Z"/><path d="M8 9h8M8 13h5"/></svg>
+    <span>姜子牙</span><i class="chat-unread" hidden></i>
+  </button>
+  <section id="chat-panel" class="chat-panel" role="dialog" aria-modal="false" aria-labelledby="chat-title" hidden>
+    <header class="chat-header">
+      <span class="chat-avatar" aria-hidden="true">姜</span>
+      <div class="chat-heading"><h2 id="chat-title">姜子牙</h2><p>灵石解决方案智能体</p></div>
+      <button type="button" id="chat-new" class="chat-action">新对话</button>
+      <button type="button" id="chat-close" class="chat-action chat-close" aria-label="收起聊天" title="收起聊天">−</button>
+    </header>
+    <div id="chat-messages" class="chat-messages" role="log" aria-label="对话记录" aria-live="polite" aria-relevant="additions text"></div>
+    <div id="chat-notice" class="chat-notice" role="status" hidden></div>
+    <div id="chat-error" class="chat-error" role="alert" hidden></div>
+    <button type="button" id="chat-reload" class="chat-reload" hidden>重新连接</button>
+    <form id="chat-form" class="chat-composer">
+      <label for="chat-input" class="chat-sr-only">发送给姜子牙的消息</label>
+      <textarea id="chat-input" rows="2" maxlength="4000" placeholder="问问灵石产品、场景或解决方案…"></textarea>
+      <div class="chat-compose-bottom"><span>Enter 发送 · Shift+Enter 换行</span><button type="submit" id="chat-send">发送</button></div>
+    </form>
+    <p class="chat-footnote">回答供参考 · 当前对话临时保存</p>
+  </section>
+</div>

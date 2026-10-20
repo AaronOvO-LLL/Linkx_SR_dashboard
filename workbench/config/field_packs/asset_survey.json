@@ -1,0 +1,155 @@
+{
+  "pack": "asset_survey",
+  "name": "资产管家客户调研",
+  "scope": "product",
+  "desc": "来自SpaceUp客户信息收集表单，覆盖经营性资产租赁管理需求。",
+  "groups": [
+    {"key": "asset_customer", "name": "客户基本信息", "order": 1},
+    {"key": "asset_scale", "name": "资产与租赁规模", "order": 3},
+    {"key": "asset_needs", "name": "数字化现状与需求", "order": 4},
+    {"key": "asset_purchase", "name": "采购计划与资料", "order": 5}
+  ],
+  "fields": [
+    {
+      "key": "submitter_contact", "label": "您的姓名及联系方式", "group": "asset_customer", "type": "textarea", "required": true,
+      "source": "飞书表单 / 问题1",
+      "help": "填写本次信息提交人的姓名及联系方式，方便沟通后续事宜。",
+      "ai_hint": "提取本次提交人的姓名及联系方式，保留原文；不得把客户名称或其他联系人的信息当作提交人。",
+      "extract": {"mode": "sentence", "keywords": ["提交人", "填报人", "您的姓名及联系方式"], "negation_guard": false, "max_sentences": 5}
+    },
+    {
+      "key": "asset_customer_name", "label": "客户名称", "group": "asset_customer", "type": "text", "required": true,
+      "source": "飞书表单 / 问题2",
+      "help": "客户的公司或机构名称，尽可能填写全称。",
+      "ai_hint": "提取客户公司/机构全称，不得用园区或项目名称代替。",
+      "extract": {"mode": "entity", "keywords": ["客户名称", "客户全称", "客户公司", "客户机构"]}
+    },
+    {
+      "key": "asset_customer_city", "label": "客户所在城市", "group": "asset_customer", "type": "text", "required": true,
+      "source": "飞书表单 / 问题3",
+      "ai_hint": "提取客户所在城市，不得推测未提及的城市。",
+      "extract": {"mode": "entity", "keywords": ["客户所在城市", "所在城市", "客户城市"]}
+    },
+    {
+      "key": "operating_project_count", "label": "客户当前在运营的项目数", "group": "asset_scale", "type": "number", "required": false, "unit": "个",
+      "source": "飞书表单 / 问题5",
+      "help": "只统计租赁经营型项目数量。不清楚具体数量时可手动填0；0不代表客户没有项目。",
+      "validate": {"min": 0, "integer": true, "message": "运营项目数需要填写大于或等于0的整数。"},
+      "ai_hint": "仅提取租赁经营型项目数量，使用非负整数；明确填报0时保留0，数量未知时留空，不得自动填0。",
+      "extract": {"mode": "number", "keywords": ["运营项目数", "在运营项目", "运营项目", "经营项目数"], "allow_zero": true}
+    },
+    {
+      "key": "asset_types", "label": "客户的经营性资产业态", "group": "asset_scale", "type": "multiselect", "required": true, "allow_custom": true,
+      "source": "飞书表单 / 问题6",
+      "help": "选择用于长期对外租赁的资产，可多选。客户可以是业主方或二房东；其他业态可补充说明。",
+      "options": [
+        {"value": "写字楼", "synonyms": ["办公楼"]},
+        {"value": "产业园区", "synonyms": ["产业园", "工业园区"]},
+        {"value": "社区商业", "synonyms": []},
+        {"value": "购物中心", "synonyms": ["商场"]},
+        {"value": "公寓/公租房", "synonyms": ["公寓", "公租房"]},
+        {"value": "专业市场", "synonyms": []},
+        {"value": "其他", "synonyms": ["其他业态"]}
+      ],
+      "ai_hint": "仅选择客户用于长期对外租赁的经营性资产业态，可多选；新增或不在候选项中的业态保留原文说明。",
+      "extract": {"mode": "list", "context_keywords": ["经营性资产", "资产业态", "长期对外租赁", "租赁业态"], "fallback_text": true, "preserve_details": true}
+    },
+    {
+      "key": "tenant_scale", "label": "客户当前在租客户数量", "group": "asset_scale", "type": "select", "required": true, "allow_custom": true,
+      "source": "飞书表单 / 问题7",
+      "help": "多个项目或园区的当前租客数求和。原表单50-200、200-500、500-1000区间边界重叠；恰好200、500或1000户时请补充实际数量，由人工确认分档。未开业的项目可填写满租预估。",
+      "options": [
+        {"value": "50户以下", "synonyms": ["少于50户", "不足50户"]},
+        {"value": "50-200户", "synonyms": ["50至200户"]},
+        {"value": "200-500户", "synonyms": ["200至500户"]},
+        {"value": "500-1000户", "synonyms": ["500至1000户"]},
+        {"value": "1000户以上", "synonyms": ["超过1000户"]}
+      ],
+      "remark": "原表单分档提示：50户以下规模小；50-200户推荐纯标品；200-500户效率提升；500-1000户可能涉及定制/增购；1000户以上通常纳入S标杆客户池。提示为背景，不作为自动准入或商机分级规则。",
+      "ai_hint": "保留多个项目在租客户总数。明确说出区间才选择对应候选项；只有精确数量或未开业满租预估时保留原文，待人工确认分档。恰好200、500、1000户不得擅自分档。",
+      "extract": {"mode": "enum", "context_keywords": ["在租客户", "租客数", "租户规模", "租赁客户", "在租户数"], "prefer_longest_match": true, "fallback_text": true}
+    },
+    {
+      "key": "digitalization_status", "label": "客户当前的数字化建设现状", "group": "asset_needs", "type": "textarea", "required": false,
+      "source": "飞书表单 / 问题8",
+      "help": "是否已有资管/租赁管理系统？供应商、上线年份、建设预算和实际使用情况如何？",
+      "ai_hint": "保留已有资产管理或租赁系统、供应商、上线年份、历史预算与使用情况，未提及的内容留空。",
+      "extract": {"mode": "sentence", "keywords": ["数字化现状", "数字化建设", "已有资管系统", "现有租赁系统", "原资管系统", "系统供应商"], "negation_guard": false, "preserve_lines": true, "max_sentences": 10}
+    },
+    {
+      "key": "asset_pain_points", "label": "客户当前的痛点或强烈需求", "group": "asset_needs", "type": "multiselect", "required": true, "allow_custom": true,
+      "source": "飞书表单 / 问题9",
+      "help": "可多选并补充具体业务场景。资管系统/不动产库对应资产盘点；资管/招商系统对应招商闭环；资管/分析系统对应经营数据与决策；企服系统对应客户服务。",
+      "options": [
+        {"value": "资产盘点不清", "synonyms": ["产证物业土地对不上", "资产不清晰"]},
+        {"value": "招商管理未闭环", "synonyms": ["招商未闭环", "招商管理不闭环"]},
+        {"value": "经营数据不准、不及时", "synonyms": ["经营数据不准", "经营数据不及时"]},
+        {"value": "业财一体建设需求", "synonyms": ["业财一体", "业财一体化"]},
+        {"value": "客户服务能力不足", "synonyms": ["客户服务不足"]},
+        {"value": "运营重复性劳动多", "synonyms": ["手工做账单", "手动催款", "运营重复劳动"]},
+        {"value": "多系统数据孤岛", "synonyms": ["系统各自为政", "数据孤岛"]},
+        {"value": "经营决策缺乏数据支持", "synonyms": ["决策缺乏数据", "经营决策缺数据"]},
+        {"value": "其他", "synonyms": ["其他痛点"]}
+      ],
+      "ai_hint": "按候选项提取客户明确表达的痛点，可多选并保留原文细节。不得把讨论到的功能直接当作已经存在的痛点。",
+      "extract": {"mode": "list", "context_keywords": ["痛点", "强烈需求", "急需", "迫切需要"], "preserve_lines": true, "clause_scoped_negation": true, "fallback_text": true, "preserve_details": true}
+    },
+    {
+      "key": "asset_deployment", "label": "客户倾向于哪种部署方式", "group": "asset_needs", "type": "select", "required": true, "allow_custom": true,
+      "source": "飞书表单 / 问题10",
+      "help": "SaaS：云端或云边、按年付费、标准化功能；私有化：一次性买断，可讨论定制与深度对接。其他方式请填写详细说明。",
+      "options": [
+        {"value": "SaaS", "synonyms": ["saas", "SAAS", "按年付费", "SaaS服务"]},
+        {"value": "私有化", "synonyms": ["私有部署", "一次性买断"]}
+      ],
+      "remark": "原表单主推SaaS，标注单项目年费2.6万元起及私有化客单价通常100万元以上；仅为源表背景，尚无可执行报价规则，不自动报价。",
+      "ai_hint": "提取客户明确倾向的部署方式；双方仍在比较、未决定或其他模式时保留原文，不默认推荐SaaS。",
+      "extract": {"mode": "enum", "context_keywords": ["部署", "按年付费", "一次性买断"], "uncertainty_keywords": ["尚未确定", "未确定", "尚未决定", "未决定", "仍在讨论", "仍在比较", "待确认"], "prefer_longest_match": true, "fallback_text": true}
+    },
+    {
+      "key": "asset_value_services", "label": "客户可能会采购哪些增值服务", "group": "asset_purchase", "type": "multiselect", "required": false, "allow_custom": true,
+      "source": "飞书表单 / 问题11",
+      "help": "首次沟通未采集到时可留空，后续补充。可多选，并注明需对接的软硬件品牌、型号或定制需求。",
+      "options": [
+        {"value": "业务咨询顾问", "synonyms": ["数字化转型规划", "业务咨询"]},
+        {"value": "自动开票", "synonyms": ["全电发票", "自动填开发票"]},
+        {"value": "电子签章", "synonyms": []},
+        {"value": "硬件对接", "synonyms": ["门禁对接", "停车对接", "道闸对接", "梯控对接", "水电表对接"]},
+        {"value": "软件对接", "synonyms": ["OA对接", "财务系统对接", "资金系统对接", "飞书对接", "钉钉对接", "企微对接"]},
+        {"value": "功能开发", "synonyms": ["报表大屏定制", "功能定制"]}
+      ],
+      "ai_hint": "只提取客户明确可能采购的增值服务，不把已有功能或明确不需要的服务选入；软硬件品牌型号、接口及定制需求以原文追加。",
+      "extract": {"mode": "list", "context_keywords": ["增值服务", "拟采购", "可能采购", "需要对接"], "fallback_text": true, "preserve_details": true}
+    },
+    {
+      "key": "asset_launch_time", "label": "客户期望系统落地时间", "group": "asset_purchase", "type": "select", "required": false, "allow_custom": true,
+      "source": "飞书表单 / 问题12",
+      "help": "选择客户期望的上线时间；具体日期或其他安排可填写详细说明。",
+      "options": [
+        {"value": "越快越好", "synonyms": ["尽快上线"]},
+        {"value": "3个月内", "synonyms": ["三个月内"]},
+        {"value": "半年内", "synonyms": ["六个月内", "6个月内"]},
+        {"value": "1年内", "synonyms": ["一年内"]},
+        {"value": "没有明确要求/未立项", "synonyms": ["没有明确要求", "未立项"]}
+      ],
+      "ai_hint": "提取客户期望的资产管理系统上线时间。若为具体日期则保留原文，未说明时留空。",
+      "extract": {"mode": "enum", "context_keywords": ["落地", "上线", "未立项"], "negation_guard": false, "fallback_text": true}
+    },
+    {
+      "key": "asset_requirement_documents", "label": "功能需求清单/招采文件/立项PPT等资料", "group": "asset_purchase", "type": "textarea", "required": false,
+      "source": "飞书表单 / 问题13",
+      "help": "记录是否已有资料、文件名及共享链接。本阶段不上传原文件；附件上传能力后续扩展。",
+      "placeholder": "例如：已有需求清单，文件名为资产管理需求.xlsx，共享链接……",
+      "ai_hint": "提取需求清单、招采文件、立项PPT是否已有、文件名称和原文链接，不编造文件及链接，也不推断文件已经上传。",
+      "extract": {"mode": "sentence", "keywords": ["需求清单", "招采文件", "立项PPT", "立项ppt", "资料链接"], "negation_guard": false, "max_sentences": 10}
+    },
+    {
+      "key": "submitted_at", "label": "信息提交时间", "group": "asset_purchase", "type": "text", "required": true,
+      "source": "飞书表单 / 问题14",
+      "help": "新增本产品记录时自动填写北京时间，表示首次录入时间；可按实际情况人工调整，后续重解析不会覆盖。",
+      "initial_value": {"source": "current_datetime", "utc_offset_minutes": 480},
+      "ai_hint": "系统已记录首次录入时间，此项以系统初值或人工调整为准，不得从客户期望上线日期推断提交时间。",
+      "extract": {"mode": "entity", "keywords": ["信息提交时间"]}
+    }
+  ]
+}

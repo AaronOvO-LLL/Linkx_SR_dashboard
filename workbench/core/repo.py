@@ -2,7 +2,7 @@ import json
 import os
 import shutil
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 from . import db, paths
 from .config import app_config, artifact_map, field_map, product_config, field_config
@@ -156,6 +156,8 @@ def purge_project(pid):
         shutil.rmtree(upload_dir, ignore_errors=True)
     db.execute('DELETE FROM audio_transcription_jobs WHERE project_id=?', (pid,))
     db.execute('DELETE FROM project_transcripts WHERE project_id=?', (pid,))
+    for table in ('project_field_values', 'project_field_conflicts', 'project_field_history', 'project_field_revisions'):
+        db.execute('DELETE FROM %s WHERE project_id=?' % table, (pid,))
     db.execute('DELETE FROM projects WHERE id=?', (pid,))
 
 
@@ -179,9 +181,25 @@ def copy_project(pid):
         if src_row:
             save_source(npp['id'], src_row['content'])
         for fv in field_values(pp['id']).values():
+            if 'project_id' in fv:
+                continue
             upsert_field_value(npp['id'], fv['field_key'], fv['value_json'], fv['status'],
                                fv['confidence'], fv['source_quote'], fv['updated_by'],
                                fv['template_version'], fv['protected'], fv['note'])
+    # 完整复制公共资料，包括当前没有产品显示的字段与待确认冲突。副本之后独立修改。
+    for fv in db.query('SELECT * FROM project_field_values WHERE project_id=?', (pid,)):
+        columns = list(fv)
+        fv.update(id=new_id('pf'), project_id=new['id'], source_product_id='')
+        db.execute('INSERT INTO project_field_values (%s) VALUES (%s)' %
+                   (','.join(columns), ','.join('?' for _ in columns)), tuple(fv[k] for k in columns))
+    for conflict in db.query('SELECT * FROM project_field_conflicts WHERE project_id=?', (pid,)):
+        db.execute('''INSERT INTO project_field_conflicts
+            (project_id, field_key, candidates_json, resolved_at, resolved_value_json) VALUES (?,?,?,?,?)''',
+            (new['id'], conflict['field_key'], conflict['candidates_json'],
+             conflict['resolved_at'], conflict['resolved_value_json']))
+    revision = project_fields_revision(pid)
+    if revision:
+        db.execute('INSERT INTO project_field_revisions (project_id, revision) VALUES (?,?)', (new['id'], revision))
     return new
 
 
@@ -197,6 +215,16 @@ def add_product(project_id, product_type):
         (pid, project_id, product_type, cfg['version'],
          field_config(product_type)['template_version'], 'draft', ts, ts))
     touch_project(project_id)
+    # Only explicitly configured system values are initialized. Protect the first
+    # entry time from transcript parsing so a later deadline cannot replace it.
+    for field in field_config(product_type)['fields']:
+        initial = field.get('initial_value') or {}
+        if initial.get('source') == 'current_datetime':
+            zone = timezone(timedelta(minutes=initial.get('utc_offset_minutes', 0)))
+            value = datetime.now(zone).strftime('%Y-%m-%d %H:%M:%S')
+            upsert_field_value(pid, field['key'], json.dumps(value, ensure_ascii=False),
+                               'extracted', 'high', '新增产品记录时由系统自动填写',
+                               'system', field_config(product_type)['template_version'], 1)
     return db.query_one('SELECT * FROM project_products WHERE id=?', (pid,))
 
 
@@ -335,12 +363,93 @@ def all_project_transcripts(project_id):
 # ---------------------------------------------------------------- 字段值
 
 def field_values(pp_id):
+    """产品字段与项目公共答案合并；公共字段不回退到迁移前的旧副本。"""
+    pp = get_pp(pp_id)
+    if not pp:
+        return {}
+    fmap = field_map(pp['product_type'])
+    shared = {k for k, f in fmap.items() if f.get('value_scope') == 'project'}
     rows = db.query('SELECT * FROM survey_field_values WHERE project_product_id=?', (pp_id,))
-    return {r['field_key']: r for r in rows}
+    values = {r['field_key']: r for r in rows if r['field_key'] in fmap and r['field_key'] not in shared}
+    rows = db.query('SELECT * FROM project_field_values WHERE project_id=?', (pp['project_id'],))
+    values.update({r['field_key']: r for r in rows if r['field_key'] in shared})
+    return values
+
+
+def project_fields_revision(project_id):
+    row = db.query_one('SELECT revision FROM project_field_revisions WHERE project_id=?', (project_id,))
+    return row['revision'] if row else 0
+
+
+def shared_field_conflicts(pp_id):
+    pp = get_pp(pp_id)
+    fmap = field_map(pp['product_type'])
+    rows = db.query('''SELECT * FROM project_field_conflicts
+        WHERE project_id=? AND resolved_at IS NULL''', (pp['project_id'],))
+    return {r['field_key']: json.loads(r['candidates_json']) for r in rows
+            if r['field_key'] in fmap and fmap[r['field_key']].get('value_scope') == 'project'}
+
+
+def _upsert_project_field(pp, field_key, value_json, status, confidence, source_quote,
+                          updated_by, template_version, protected, note):
+    # BEGIN IMMEDIATE 把人工确认保护检查与 AI 写回放在同一事务，避免跨管家竞态。
+    conn = db.init_db()
+    try:
+        conn.execute('BEGIN IMMEDIATE')
+        pid, ts = pp['project_id'], now_iso()
+        row = conn.execute('SELECT * FROM project_field_values WHERE project_id=? AND field_key=?',
+                           (pid, field_key)).fetchone()
+        conflict = conn.execute('''SELECT 1 FROM project_field_conflicts
+            WHERE project_id=? AND field_key=? AND resolved_at IS NULL''', (pid, field_key)).fetchone()
+        if updated_by == 'ai' and ((row and (row['protected'] or not _value_is_empty(row['value_json']))) or conflict):
+            conn.rollback()
+            return False
+        # 冲突必须明确选择一个非空答案；清空输入不能让 AI 接管未解决的冲突。
+        if conflict and _value_is_empty(value_json):
+            conn.rollback()
+            return False
+        attrs = ('value_json', 'status', 'confidence', 'source_quote', 'updated_by',
+                 'template_version', 'protected', 'note')
+        args = (value_json, status, confidence, source_quote, updated_by, template_version, protected, note)
+        if row and not conflict and all(row[k] == v for k, v in zip(attrs, args)):
+            conn.rollback()
+            return False
+        conn.execute('''INSERT INTO project_field_values
+            (id, project_id, field_key, value_json, status, confidence, source_quote,
+             updated_by, template_version, protected, note, updated_at, source_product_id)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+            ON CONFLICT(project_id, field_key) DO UPDATE SET
+            value_json=excluded.value_json, status=excluded.status, confidence=excluded.confidence,
+            source_quote=excluded.source_quote, updated_by=excluded.updated_by,
+            template_version=excluded.template_version, protected=excluded.protected,
+            note=excluded.note, updated_at=excluded.updated_at, source_product_id=excluded.source_product_id''',
+            (new_id('pf'), pid, field_key, *args, ts, pp['id']))
+        record = dict(zip(attrs, args), source_product_id=pp['id'])
+        conn.execute('''INSERT INTO project_field_history
+            (id, project_id, field_key, record_json, created_at) VALUES (?,?,?,?,?)''',
+            (new_id('ph'), pid, field_key, json.dumps(record, ensure_ascii=False), ts))
+        if conflict and updated_by == 'human':
+            conn.execute('''UPDATE project_field_conflicts SET resolved_at=?, resolved_value_json=?
+                WHERE project_id=? AND field_key=?''', (ts, value_json, pid, field_key))
+        conn.execute('''INSERT INTO project_field_revisions (project_id, revision) VALUES (?,1)
+            ON CONFLICT(project_id) DO UPDATE SET revision=revision+1''', (pid,))
+        conn.execute('''DELETE FROM validation_results WHERE project_product_id IN
+            (SELECT id FROM project_products WHERE project_id=?)''', (pid,))
+        conn.execute('UPDATE project_products SET updated_at=? WHERE project_id=?', (ts, pid))
+        conn.commit()
+        return True
+    except Exception:
+        conn.rollback()
+        raise
 
 
 def upsert_field_value(pp_id, field_key, value_json, status, confidence, source_quote,
                        updated_by, template_version, protected=0, note=''):
+    pp = get_pp(pp_id)
+    field = field_map(pp['product_type']).get(field_key) if pp else None
+    if field and field.get('value_scope') == 'project':
+        return _upsert_project_field(pp, field_key, value_json, status, confidence,
+                                     source_quote, updated_by, template_version, protected, note)
     exist = db.query_one(
         'SELECT id FROM survey_field_values WHERE project_product_id=? AND field_key=?',
         (pp_id, field_key))
@@ -366,6 +475,7 @@ def bulk_upsert_field_values(pp_id, items):
 
 
 def delete_field_values(pp_id):
+    """清理产品专属答案；项目公共资料的生命周期属于项目。"""
     db.execute('DELETE FROM survey_field_values WHERE project_product_id=?', (pp_id,))
 
 
@@ -394,25 +504,30 @@ def latest_extraction_run(pp_id):
 
 # ---------------------------------------------------------------- 校验
 
-def save_validation(pp_id, ok, issues):
+def save_validation(pp_id, ok, issues, shared_revision=None):
+    revision = (project_fields_revision(get_pp(pp_id)['project_id'])
+                if shared_revision is None else shared_revision)
     db.execute('DELETE FROM validation_results WHERE project_product_id=?', (pp_id,))
     vid = new_id('vr')
     db.execute(
-        'INSERT INTO validation_results (id, project_product_id, ok, issues_json, ran_at) VALUES (?,?,?,?,?)',
-        (vid, pp_id, 1 if ok else 0, json.dumps(issues, ensure_ascii=False), now_iso()))
+        '''INSERT INTO validation_results (id, project_product_id, ok, issues_json, ran_at,
+           project_fields_revision) VALUES (?,?,?,?,?,?)''',
+        (vid, pp_id, 1 if ok else 0, json.dumps(issues, ensure_ascii=False), now_iso(), revision))
     return vid
 
 
 def latest_validation(pp_id):
-    return db.query_one(
-        'SELECT * FROM validation_results WHERE project_product_id=? ORDER BY ran_at DESC LIMIT 1',
+    row = db.query_one(
+        'SELECT * FROM validation_results WHERE project_product_id=? ORDER BY ran_at DESC, rowid DESC LIMIT 1',
         (pp_id,))
+    revision = project_fields_revision(get_pp(pp_id)['project_id'])
+    return row if row and row['project_fields_revision'] == revision else None
 
 
 # ---------------------------------------------------------------- 生成物
 
 def upsert_artifact_run(pp_id, artifact_key, status, files=None, template_version='',
-                        error='', started=True):
+                        error='', started=True, shared_revision=None):
     """新增或更新一次生成结果。
 
     记录只保存通用模板版本，不再携带具体业务模块的版本字段；这样删除某项
@@ -422,9 +537,11 @@ def upsert_artifact_run(pp_id, artifact_key, status, files=None, template_versio
         'SELECT id FROM artifact_runs WHERE project_product_id=? AND artifact_key=?',
         (pp_id, artifact_key))
     ts = now_iso()
+    revision = (project_fields_revision(get_pp(pp_id)['project_id'])
+                if shared_revision is None else shared_revision)
     if exist:
-        sql = 'UPDATE artifact_runs SET status=?, error=?, finished_at=?'
-        args = [status, error, ts]
+        sql = 'UPDATE artifact_runs SET status=?, error=?, finished_at=?, project_fields_revision=?'
+        args = [status, error, ts, revision]
         if files is not None:
             sql += ', files_json=?'
             args.append(json.dumps(files, ensure_ascii=False))
@@ -437,19 +554,23 @@ def upsert_artifact_run(pp_id, artifact_key, status, files=None, template_versio
     else:
         db.execute(
             """INSERT INTO artifact_runs (id, project_product_id, artifact_key, status, files_json,
-               template_version, error, started_at, finished_at)
-               VALUES (?,?,?,?,?,?,?,?,?)""",
+               template_version, error, started_at, finished_at, project_fields_revision)
+               VALUES (?,?,?,?,?,?,?,?,?,?)""",
             (new_id('ar'), pp_id, artifact_key, status,
-             json.dumps(files or [], ensure_ascii=False), template_version, error, ts, ts))
+             json.dumps(files or [], ensure_ascii=False), template_version, error, ts, ts, revision))
 
 
 def artifact_runs(pp_id):
-    return db.query('SELECT * FROM artifact_runs WHERE project_product_id=?', (pp_id,))
+    rows = db.query('SELECT * FROM artifact_runs WHERE project_product_id=?', (pp_id,))
+    revision = project_fields_revision(get_pp(pp_id)['project_id'])
+    for row in rows:
+        if row['status'] == 'success' and row['project_fields_revision'] != revision:
+            row['status'] = 'stale'
+    return rows
 
 
 def get_artifact_run(pp_id, key):
-    return db.query_one('SELECT * FROM artifact_runs WHERE project_product_id=? AND artifact_key=?',
-                        (pp_id, key))
+    return next((r for r in artifact_runs(pp_id) if r['artifact_key'] == key), None)
 
 
 def reset_artifact_run(pp_id, key):
@@ -472,7 +593,7 @@ def save_export_package(pp_id, file_name, file_path, manifest):
 
 def latest_export(pp_id):
     return db.query_one(
-        'SELECT * FROM export_packages WHERE project_product_id=? ORDER BY created_at DESC LIMIT 1',
+        'SELECT * FROM export_packages WHERE project_product_id=? ORDER BY created_at DESC, rowid DESC LIMIT 1',
         (pp_id,))
 
 
@@ -480,6 +601,8 @@ def latest_export(pp_id):
 
 def field_status(row, field):
     """Use current requiredness for empty historical answers without rewriting them."""
+    if row and row['status'] == 'pending_confirm' and row['protected']:
+        return 'pending_confirm'
     if not row or _value_is_empty(row['value_json']):
         return 'required_missing' if field.get('required') else 'optional_missing'
     return row['status']

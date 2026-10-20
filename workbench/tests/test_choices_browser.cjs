@@ -52,7 +52,7 @@ const { base, old, html } = JSON.parse(fixture.stdout);
     await page.goto('http://choices.test' + base + '/review');
     const field = key => page.locator('.choice-field[data-key="' + key + '"]');
     const source = field('project_source');
-    assert.equal(await source.locator('input[type=radio]').count(), 3);
+    assert.equal(await source.locator('input[type=radio]').count(), 4);
     assert.equal(await source.locator('input:checked').count(), 0);
     assert.equal(await field('business_type').locator('select').count(), 1);
     let response = saved('project_source');

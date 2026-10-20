@@ -32,7 +32,7 @@ class SafetyFieldRulesTests(unittest.TestCase):
             self.assertEqual({k for k, f in fields.items() if f['group'] == group and f['required']}, keys)
         self.assertEqual(sum(f['group'] == 'property' for f in fields.values()), 6)
         self.assertEqual([o['value'] for o in fields['project_source']['options']],
-                         ['内部项目', '外部项目', '渠道项目'])
+                         ['内部项目', '外部项目', '渠道项目', '重点项目'])
         self.assertEqual([o['value'] for o in fields['storage_protocol']['options']], ['是', '否', '其他'])
         self.assertFalse(fields['storage_model']['required'])
         for key, f in fields.items():

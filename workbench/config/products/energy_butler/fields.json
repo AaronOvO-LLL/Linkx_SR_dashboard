@@ -1,5 +1,5 @@
 {
-  "template_version": "0.1.0",
+  "template_version": "0.2.0",
   "product_type": "energy_butler",
   "packs": [
     "common_project",

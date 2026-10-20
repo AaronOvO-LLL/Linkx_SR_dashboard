@@ -18,7 +18,9 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--ink)}
 .topbar-inner{max-width:1180px;margin:0 auto;padding:0 20px;height:56px;display:flex;align-items:center;justify-content:space-between}
 .brand{color:#fff;font-weight:600;font-size:16px;display:flex;align-items:center;gap:8px;text-decoration:none}
 .brand:hover{text-decoration:none}
-.brand-mark{background:rgba(255,255,255,.18);padding:3px 9px;border-radius:7px;font-size:14px;letter-spacing:1px}
+.brand-logo{display:flex;align-items:center;flex-shrink:0;background:#fff;padding:3px 7px;border-radius:6px}
+.brand-logo img{display:block;width:auto;height:34px;object-fit:contain}
+.brand-text{white-space:nowrap}
 .topnav{display:flex;align-items:center;gap:18px;font-size:13px}
 .topnav a{color:#dbe6fb}
 .dept-chip{background:rgba(255,255,255,.16);padding:3px 10px;border-radius:20px;font-size:12px}
@@ -90,8 +92,8 @@ textarea{min-height:92px;resize:vertical;line-height:1.7}
 /* ---------- 登录 ---------- */
 .login-wrap{max-width:420px;margin:5vh auto}
 .login-brand{text-align:center;margin-bottom:22px}
-.login-brand .mark{display:inline-block;background:var(--brand);color:#fff;font-weight:600;
-                   padding:8px 18px;border-radius:10px;font-size:17px;letter-spacing:2px}
+.login-logo{display:block;width:159px;height:auto;margin:0 auto 12px;object-fit:contain}
+.login-brand h1{font-size:20px;font-weight:600;color:var(--ink);letter-spacing:1px}
 .login-brand p{color:var(--muted);font-size:13px;margin-top:10px}
 .dept-list{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
 .dept-opt{display:flex;align-items:center;gap:10px;padding:11px 14px;border:1px solid var(--line);

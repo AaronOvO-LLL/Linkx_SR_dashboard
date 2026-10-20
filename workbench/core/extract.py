@@ -214,7 +214,7 @@ NUM_TOKEN_RE = re.compile(r'(?<![\d.])([0-9]+(?:\.\d+)?|[一二三四五六七�
 CN_NOT_QUANTITY = set('共起定些直样般切旦块半')
 
 
-def _scan_numbers(s):
+def _scan_numbers(s, allow_zero=False):
     """扫描句子中的数量。单位只做向后窥视、不消耗字符，保证相邻数字都能被检出。"""
     out = []
     for m in NUM_TOKEN_RE.finditer(s):
@@ -229,7 +229,7 @@ def _scan_numbers(s):
             continue  # "一共是四栋" 中的"一"不是数量
         unit = s[rest:rest + 4]
         num = cn2num(raw)
-        if num is None or not (0 < num * mult < 1e9):
+        if num is None or not (0 <= num * mult < 1e9 if allow_zero else 0 < num * mult < 1e9):
             continue
         out.append((num * mult, unit, s[max(0, m.start() - 6): rest + 6], m.start()))
     return out
@@ -246,7 +246,7 @@ def extract_number(sentences, spec, text):
     cands = []
     for s in scoped:
         is_total = any(c in s for c in TOTAL_CUES)
-        for num, unit, near, pos in _scan_numbers(s):
+        for num, unit, near, pos in _scan_numbers(s, allow_zero=spec.get('allow_zero', False)):
             if kws and not any(k in unit or k in near for k in kws):
                 continue
             cands.append((int(num) if float(num).is_integer() else num, s, is_total))
@@ -333,7 +333,7 @@ def extract_money(sentences, spec, text):
     return None, '', 'low'
 
 
-def _polarity(sentence, syn):
+def _polarity(sentence, syn, clause_scoped=False):
     """统计某个同义词在本句中的肯定/否定极性。"""
     score, start = 0, 0
     while True:
@@ -342,13 +342,18 @@ def _polarity(sentence, syn):
             break
         pre = sentence[max(0, i - 6):i]
         post = sentence[i + len(syn): i + len(syn) + 6]
+        if clause_scoped:
+            # A negative pain point before a comma must not negate the next
+            # selected pain point. This is enabled explicitly per field.
+            pre = re.split(r'[，,；;。]', pre)[-1]
+            post = re.split(r'[，,；;。]', post)[0]
         is_neg = any(c in pre for c in NEG_PRE) or any(c in post for c in NEG_POST)
         score += -1 if is_neg else 1
         start = i + len(syn)
     return score
 
 
-def _score_options(sentences, field, guard=True):
+def _score_options(sentences, field, guard=True, clause_scoped=False):
     scored = []
     for opt in field.get('options', []):
         total = 0
@@ -359,7 +364,7 @@ def _score_options(sentences, field, guard=True):
             for s in sentences:
                 if syn not in s:
                     continue
-                p = _polarity(s, syn) if guard else s.count(syn)
+                p = _polarity(s, syn, clause_scoped=clause_scoped) if guard else s.count(syn)
                 total += p * weight
         if total > 0:
             scored.append((total, opt['value']))
@@ -384,6 +389,10 @@ def extract_enum(sentences, spec, field, text):
         return value, clean_quote(text), 'medium'
     if spec.get('context_keywords'):
         sentences = [s for s in sentences if any(k in s for k in spec['context_keywords'])]
+    # Product-configured uncertainty terms keep discussions of possible options
+    # from being mistaken for a confirmed preference; fallback retains the quote.
+    if any(word in s for s in sentences for word in spec.get('uncertainty_keywords', [])):
+        return None, '', 'low'
     if spec.get('prefer_longest_match'):
         winners = set()
         for sentence in sentences:
@@ -419,10 +428,12 @@ def extract_enum(sentences, spec, field, text):
 
 
 def extract_list(sentences, spec, field, text):
+    if spec.get('preserve_lines'):
+        sentences = [s.strip() for s in text.splitlines() if s.strip()]
     if spec.get('context_keywords'):
         sentences = [s for s in sentences if any(k in s for k in spec['context_keywords'])]
     guard = spec.get('negation_guard', True)
-    scored = _score_options(sentences, field, guard)
+    scored = _score_options(sentences, field, guard, clause_scoped=spec.get('clause_scoped_negation', False))
     if not scored:
         return None, '', 'low'
     values = [v for s_, v in scored if s_ > 0]

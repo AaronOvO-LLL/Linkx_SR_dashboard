@@ -27,6 +27,7 @@ def package_zip(pp_id, product_type, keys=None):
     project = repo.get_project(pp['project_id'])
     prod = product_config(product_type)
     adefs = artifact_map(product_type)
+    revision = repo.project_fields_revision(project['id'])
     runs = {r['artifact_key']: r for r in artifact_runs(pp_id)}
     if keys is None:
         keys = [k for k in adefs if runs.get(k) and runs[k]['status'] == 'success']
@@ -34,6 +35,10 @@ def package_zip(pp_id, product_type, keys=None):
         # 请求参数可能来自旧页面或历史表单；只接受当前产品仍声明的生成物，
         # 防止已下线模块的历史 key 重新进入新导出包。
         keys = [key for key in keys if key in adefs]
+    if any(runs.get(key, {}).get('status') == 'stale' for key in keys):
+        raise ValueError('项目公共资料已更新，请重新生成过期材料后打包。')
+    if not any(runs.get(key, {}).get('status') == 'success' for key in keys):
+        raise ValueError('暂无可打包的成功产物，请先生成。')
 
     folders = cfg['folders']
     ts = datetime.now()
@@ -47,6 +52,7 @@ def package_zip(pp_id, product_type, keys=None):
 
     manifest = {
         'schema': 'lingshi-export-manifest/1.0',
+        'project_fields_revision': revision,
         'generated_at': ts.strftime('%Y-%m-%d %H:%M:%S'),
         'project': {
             'id': project['id'],
@@ -112,6 +118,8 @@ def package_zip(pp_id, product_type, keys=None):
                    json.dumps(manifest, ensure_ascii=False, indent=2))
         z.writestr(cfg.get('readme_file', 'README.txt'), _readme(manifest))
 
+    if repo.project_fields_revision(project['id']) != revision:
+        raise ValueError('打包期间项目公共资料已更新，请重新生成材料后再打包。')
     repo.save_export_package(pp_id, file_name, zip_path, manifest)
     return zip_path, file_name, manifest
 

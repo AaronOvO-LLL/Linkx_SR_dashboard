@@ -74,7 +74,7 @@
     <div style="flex:1">
       <div class="nm">{{ a.name }}
         {% if a.run %}<span class="tag {{ 'green' if a.run.status=='success' else 'red' }}">
-          {{ '已生成' if a.run.status=='success' else '生成失败' }}</span>{% endif %}
+          {{ '已生成' if a.run.status=='success' else ('公共资料已更新，需重新生成' if a.run.status=='stale' else '生成失败') }}</span>{% endif %}
       </div>
       <div class="pp">{{ a.purpose }}</div>
       <div class="inc">包含：{{ a.includes|join(' · ') }}</div>

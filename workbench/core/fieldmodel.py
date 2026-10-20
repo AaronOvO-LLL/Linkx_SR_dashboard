@@ -91,7 +91,10 @@ def _merge(manifest, product_type, problems=None):
     for k in (manifest.get('packs') or []):
         p = os.path.join(paths.FIELD_PACKS_DIR, k + '.json')
         if os.path.isfile(p):
-            packs.append(_load_json(p))
+            pack = _load_json(p)
+            if pack.get('value_scope', 'product') not in ('project', 'product'):
+                fail('字段包 %s 的 value_scope 必须为 project 或 product' % k)
+            packs.append(pack)
         else:
             packs.append({'pack': k, 'groups': [], 'fields': []})
             fail('字段包不存在：%s（应位于 config/field_packs/%s.json）' % (k, k))
@@ -105,6 +108,19 @@ def _merge(manifest, product_type, problems=None):
             seen_group.add(g.get('key'))
             groups.append(dict(g))
     gorder = manifest.get('group_order') or []
+    # Products may relabel a reused group without changing its field keys or
+    # rewriting the shared pack (e.g. after removing most of that group's fields).
+    for key, patch in (manifest.get('group_overrides') or {}).items():
+        if key not in seen_group or not isinstance(patch, dict):
+            fail('group_overrides 引用未知分组或非对象配置：%s' % key)
+            continue
+        if any(attr not in ('name', 'desc') for attr in patch):
+            fail('group_overrides 仅允许覆盖 name 和 desc：%s' % key)
+            continue
+        if any(not isinstance(value, str) for value in patch.values()) or patch.get('name') == '':
+            fail('group_overrides 的 name/desc 必须为文字，name 不可为空：%s' % key)
+            continue
+        next(group for group in groups if group['key'] == key).update(patch)
     gidx = {k: i for i, k in enumerate(gorder)}
     groups.sort(key=lambda g: (gidx.get(g['key'], len(gidx) + g.get('order', 99)),
                                g.get('order', 99)))
@@ -117,7 +133,7 @@ def _merge(manifest, product_type, problems=None):
                 fail('字段 key 重复（跨包冲突）：%s' % f.get('key'))
                 continue
             seen_field.add(f.get('key'))
-            raw_fields.append(f)
+            raw_fields.append(dict(f, value_scope=pk.get('value_scope', 'product')))
 
     removed = set(manifest.get('remove_fields') or [])
     overrides = manifest.get('overrides') or {}
@@ -133,7 +149,10 @@ def _merge(manifest, product_type, problems=None):
         if f['key'] in removed:
             continue
         seq[f['key']] = i
-        fields.append(_deep_merge(f, overrides[f['key']]) if f['key'] in overrides else dict(f))
+        merged_field = _deep_merge(f, overrides[f['key']]) if f['key'] in overrides else dict(f)
+        # 共享归属由公共包确定，产品可以调整必填和显示，不能另存一份答案。
+        merged_field['value_scope'] = f.get('value_scope', 'product')
+        fields.append(merged_field)
 
     # 4) 本产品独有字段
     for j, f in enumerate(manifest.get('extra_fields') or []):
@@ -288,6 +307,16 @@ def validate_field_model(product_type):
             issues.append(_issue('warn', w, '必填字段但没有 extract 配置，只能靠人工填写'))
 
         v = f.get('validate') or {}
+        if v.get('integer') is not None and (t != 'number' or not isinstance(v['integer'], bool)):
+            issues.append(_issue('error', w, 'validate.integer 仅支持 number 字段的布尔值'))
+        initial = f.get('initial_value')
+        if initial is not None:
+            valid = isinstance(initial, dict) and t == 'text'
+            valid = valid and initial.get('source') == 'current_datetime'
+            offset = initial.get('utc_offset_minutes', 0) if isinstance(initial, dict) else None
+            valid = valid and type(offset) is int and -1439 <= offset <= 1439
+            if not valid:
+                issues.append(_issue('error', w, 'initial_value 仅支持 text 字段的 current_datetime，时区偏移需为-1439至1439之间的整数分钟'))
         if v.get('pattern'):
             try:
                 re.compile(v['pattern'])

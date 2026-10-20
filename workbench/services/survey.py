@@ -94,6 +94,8 @@ def save_field_value(pp, project, data):
 
     value = data.get('value')
     field = fmap[key]
+    if key in repo.shared_field_conflicts(pp['id']) and value in (None, '', [], {}):
+        raise SurveyServiceError('请明确选择一个历史答案，或填写新的公共资料后保存。')
     if field['type'] in ('select', 'multiselect'):
         try:
             value = normalize_manual_choice(field, value)
@@ -113,7 +115,7 @@ def save_field_value(pp, project, data):
     is_empty = value in (None, '', [], {})
     if is_empty:
         status = 'required_missing' if field.get('required') else 'optional_missing'
-        protected, updated_by = 0, 'ai'
+        protected, updated_by = 0, 'human'
     else:
         status, protected, updated_by = 'confirmed', 1, 'human'
 
@@ -125,3 +127,22 @@ def save_field_value(pp, project, data):
     ok, _ = validate(pp['id'], pp['product_type'])
     stats = repo.field_stats(pp['id'], pp['product_type'])
     return status, ok, stats
+
+
+def resolve_shared_field(pp, project, key, candidate_index):
+    """选择服务端保留的历史快照，允许原有文字格式无损提升为共享答案。"""
+    candidates = repo.shared_field_conflicts(pp['id']).get(key, [])
+    if not 0 <= candidate_index < len(candidates):
+        raise SurveyServiceError('历史答案不存在或已被确认，请刷新页面。')
+    candidate = candidates[candidate_index]
+    if repo._value_is_empty(candidate['value_json']):
+        raise SurveyServiceError('历史答案为空，请重新填写。')
+    try:
+        repo.json.loads(candidate['value_json'])
+    except (TypeError, ValueError):
+        raise SurveyServiceError('历史答案格式损坏，请在输入框中重新填写。')
+    repo.upsert_field_value(pp['id'], key, candidate['value_json'], 'confirmed', None,
+                           candidate['source_quote'], 'human',
+                           field_config(pp['product_type'])['template_version'], 1,
+                           '人工选择历史公共答案')
+    repo.touch_project(project['id'])

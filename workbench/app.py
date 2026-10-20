@@ -7,6 +7,7 @@
 """
 import os
 import sys
+import secrets
 
 from flask import (Flask, abort, flash, jsonify, make_response, redirect,
                    render_template, request, send_file, session, url_for)
@@ -24,6 +25,7 @@ from core.choices import choice_state  # noqa: E402
 from services import artifacts as artifact_service  # noqa: E402
 from services import survey as survey_service  # noqa: E402
 from services import audio as audio_service  # noqa: E402
+from services import agent_chat  # noqa: E402
 
 CFG = app_config()
 
@@ -158,9 +160,14 @@ app.jinja_env.globals['tag_class'] = tag_class
 
 @app.context_processor
 def inject_globals():
+    dept = current_dept()
+    if dept:
+        ensure_chat_identity()
     return {
         'app_cfg': CFG,
-        'dept': current_dept(),
+        'dept': dept,
+        'chat_sid': session.get('chat_sid', ''),
+        'chat_csrf': session.get('chat_csrf', ''),
         'flash_data': pop_flash(),
         'step_of': step_of,
     }
@@ -181,6 +188,7 @@ def login():
     if request.method == 'POST':
         dept = departments.find(request.form.get('dept_key', ''))
         if dept and departments.verify(dept, request.form.get('password', '')):
+            clear_chat_identity()
             session['dept_key'] = dept['key']
             if not dept.get('changed'):
                 flash_msg('当前仍在使用初始口令，建议尽快在「修改密码」中更换。', 'warn')
@@ -194,8 +202,64 @@ def login():
 
 @app.route('/logout')
 def logout():
+    clear_chat_identity()
     session.pop('dept_key', None)
     return redirect(url_for('login'))
+
+
+# ---------------------------------------------------------------- 姜子牙聊天
+
+def ensure_chat_identity():
+    if not session.get('chat_sid'):
+        session['chat_sid'] = secrets.token_urlsafe(32)
+        session['chat_csrf'] = secrets.token_urlsafe(32)
+
+
+def clear_chat_identity():
+    agent_chat.store.discard(session.pop('chat_sid', None))
+    session.pop('chat_csrf', None)
+
+
+def chat_response(action):
+    try:
+        if not current_dept():
+            raise agent_chat.ChatError('登录已失效，请重新登录分部后再聊天。', 401)
+        ensure_chat_identity()
+        if request.method == 'POST':
+            supplied = request.headers.get('X-Chat-CSRF', '')
+            if not secrets.compare_digest(supplied, session['chat_csrf']):
+                raise agent_chat.ChatError('页面会话已更新，请刷新页面后重试。', 403)
+            if not request.is_json:
+                raise agent_chat.ChatError('请求格式不正确。')
+            if request.content_length is None or request.content_length > 30000:
+                raise agent_chat.ChatError('消息过长，请分段发送。', 413)
+        result = action(session['chat_sid'], session['dept_key'])
+        response = jsonify(result)
+    except agent_chat.ChatError as exc:
+        response = jsonify(error=str(exc))
+        response.status_code = exc.status
+    response.headers['Cache-Control'] = 'no-store'
+    return response
+
+
+@app.route('/api/agent-chat', methods=['GET'])
+def agent_chat_state():
+    return chat_response(agent_chat.store.state)
+
+
+@app.route('/api/agent-chat/messages', methods=['POST'])
+def agent_chat_send():
+    def send(sid, owner):
+        payload = request.get_json(silent=True)
+        if not isinstance(payload, dict):
+            raise agent_chat.ChatError('请求格式不正确。')
+        return agent_chat.store.send(sid, owner, payload.get('content'), payload.get('generation'))
+    return chat_response(send)
+
+
+@app.route('/api/agent-chat/new', methods=['POST'])
+def agent_chat_new():
+    return chat_response(agent_chat.store.new)
 
 
 @app.route('/password', methods=['GET', 'POST'])
@@ -225,10 +289,10 @@ def docs():
     r = require_dept()
     if r:
         return r
-    # 版本更新说明以项目根目录的 版本更新说明.md 为单一事实来源，
+    # 版本更新说明以项目 docs/版本更新说明.md 为单一事实来源，
     # 改该 md 文件即可同步页面，无需改模板。
     changelog_html = ''
-    md_path = os.path.normpath(os.path.join(ROOT, os.pardir, '版本更新说明.md'))
+    md_path = os.path.normpath(os.path.join(ROOT, os.pardir, 'docs', '版本更新说明.md'))
     if os.path.isfile(md_path):
         with open(md_path, encoding='utf-8') as f:
             changelog_html = generate.md_to_html_fragment(f.read())
@@ -602,6 +666,17 @@ def review(pp_id):
     pp, project = load_pp(pp_id)
     ptype = pp['product_type']
     values = repo.field_values(pp_id)
+    conflicts = repo.shared_field_conflicts(pp_id)
+    for candidates in conflicts.values():
+        for candidate in candidates:
+            source_pp = repo.get_pp(candidate['project_product_id'])
+            candidate['product_name'] = (product_config(source_pp['product_type'])['name']
+                                         if source_pp else '历史管家')
+            try:
+                value = repo.json.loads(candidate['value_json'])
+                candidate['display'] = '、'.join(map(str, value)) if isinstance(value, list) else str(value)
+            except (TypeError, ValueError):
+                candidate['display'] = candidate['value_json']
     stats = repo.field_stats(pp_id, ptype)
     ok, issues = validate(pp_id, ptype)
     issue_map = {}
@@ -631,7 +706,7 @@ def review(pp_id):
         })
 
     return render_template('review.html', pp=pp, project=project, groups=groups,
-                           stats=stats, ok=ok, issues=issues,
+                           stats=stats, ok=ok, issues=issues, conflicts=conflicts,
                            status_labels=repo.FIELD_STATUS_LABELS,
                            product=product_config(ptype),
                            run=repo.latest_extraction_run(pp_id),
@@ -657,6 +732,21 @@ def save_field(pp_id):
                     'required_total': stats['required_total'],
                     'pending_confirm': stats['pending_confirm'],
                     'required_missing': stats['required_missing']})
+
+
+@app.route('/p/<pp_id>/shared-field/resolve', methods=['POST'])
+def resolve_shared_field(pp_id):
+    r = require_dept()
+    if r:
+        return r
+    pp, project = load_pp(pp_id)
+    try:
+        index = int(request.form.get('candidate', '-1'))
+        survey_service.resolve_shared_field(pp, project, request.form.get('key', ''), index)
+        flash_msg('已确认公共资料，本项目其他管家刷新后即可使用。')
+    except (ValueError, survey_service.SurveyServiceError) as exc:
+        flash_msg(str(exc), 'warn')
+    return redirect(url_for('review', pp_id=pp_id))
 
 
 # ---------------------------------------------------------------- 6. 预览与生成
@@ -745,6 +835,7 @@ def artifact_file(pp_id, artifact_key, filename):
     pp, project = load_pp(pp_id)
     try:
         artifact_service.require_valid_artifacts(pp)
+        artifact_service.require_current_artifact(pp, artifact_key)
     except artifact_service.ArtifactServiceError as exc:
         flash_msg(str(exc), 'warn')
         return redirect(url_for('review', pp_id=pp_id))

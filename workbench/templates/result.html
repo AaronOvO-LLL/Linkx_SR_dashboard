@@ -21,6 +21,7 @@
     <span class="nm">{{ r.def.name if r.def else r.artifact_key }}</span>
     <span class="st">
       {% if r.status == 'success' %}<span class="tag green">成功</span>
+      {% elif r.status == 'stale' %}<span class="tag orange">公共资料已更新，需重新生成</span>
       {% elif r.status == 'failed' %}<span class="tag red">失败</span>
       {% else %}<span class="tag">{{ r.status }}</span>{% endif %}
       <span class="hint" style="margin-left:8px">{{ r.finished_at }}</span>
@@ -34,10 +35,10 @@
           <a class="btn gray sm" href="{{ url_for('artifact_file', pp_id=pp.id, artifact_key=r.artifact_key, filename=f.name) }}?mode=dl">下载 {{ f.format|upper }}</a>
         {% endfor %}
       {% else %}
-        <span class="hint" style="color:#c0392b">{{ r.error }}</span>
+        <span class="hint" style="color:#c0392b">{{ '其他管家或本管家修改了项目公共资料，请重新生成。' if r.status == 'stale' else r.error }}</span>
         <form method="post" action="{{ url_for('regenerate', pp_id=pp.id) }}">
           <input type="hidden" name="artifact" value="{{ r.artifact_key }}">
-          <button class="btn ghost sm" type="submit">重试</button>
+          <button class="btn ghost sm" type="submit">{{ '重新生成' if r.status == 'stale' else '重试' }}</button>
         </form>
       {% endif %}
     </span>

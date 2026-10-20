@@ -16,6 +16,7 @@ venv/
 
 # Runtime data and generated artifacts
 workbench/data/
+workbench/.verify-temp/
 workbench/*.log
 *.db
 *.db-shm

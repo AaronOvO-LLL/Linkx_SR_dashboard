@@ -2,6 +2,7 @@
   "pack": "common_property",
   "name": "物业信息",
   "scope": "common",
+  "value_scope": "project",
   "desc": "物业合同、物业公司、业主、服务类型与收费模式",
   "groups": [
     {

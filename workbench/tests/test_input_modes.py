@@ -34,7 +34,8 @@ class InputModeTests(unittest.TestCase):
     def test_blank_form_is_accessible_and_counts_missing_for_both_products(self):
         for product_type in ('safety_butler', 'fire_butler'):
             with self.subTest(product_type=product_type):
-                pp = repo.ensure_product(self.project['id'], product_type)
+                project = repo.create_project('dept1', {'name': '空白表单 ' + product_type})
+                pp = repo.ensure_product(project['id'], product_type)
                 response = self.client.get(f"/p/{pp['id']}/review")
                 self.assertEqual(response.status_code, 200)
                 self.assertIn('直接', self.client.get(f"/p/{pp['id']}/survey").get_data(as_text=True))
