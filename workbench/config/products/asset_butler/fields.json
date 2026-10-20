@@ -1,0 +1,45 @@
+{
+  "template_version": "0.2.0",
+  "product_type": "asset_butler",
+  "note": "来源：灵石资产管家（SpaceUp）客户信息收集飞书表单（2026-10-09读取）。保留14个问题及8个必填项；项目名称复用公共字段但为选填。提交时间在新增产品时自动记录北京时间，可人工调整。需求文件先记录文件名/共享链接；通用附件上传待另行扩展。产出物清单待确认，目前仅用客户调研结果验证闭环。原表单中的价格描述仅保留为背景提示，不构成报价规则。",
+  "packs": [
+    "common_project",
+    "asset_survey"
+  ],
+  "group_order": [
+    "asset_customer",
+    "basic",
+    "asset_scale",
+    "asset_needs",
+    "asset_purchase"
+  ],
+  "group_overrides": {
+    "basic": {
+      "name": "客户项目",
+      "desc": "项目名称在同一项目的各管家之间共享"
+    }
+  },
+  "overrides": {
+    "project_name": {
+      "required": false,
+      "help": "本项目的具体项目名称，与同一项目下其他管家共享；工作台记录标题仍独立管理。",
+      "extract": {
+        "keywords": [
+          "项目名称",
+          "园区名称"
+        ],
+        "entity_suffix": []
+      },
+      "ai_hint": "提取本项目明确提到的正式项目名称；未提到时留空。"
+    }
+  },
+  "extra_fields": [],
+  "remove_fields": [
+    "project_source",
+    "business_type",
+    "build_type",
+    "land_area",
+    "building_area",
+    "site_address"
+  ]
+}

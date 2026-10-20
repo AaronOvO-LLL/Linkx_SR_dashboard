@@ -2,6 +2,7 @@
   "pack": "common_project",
   "name": "项目基本情况",
   "scope": "common",
+  "value_scope": "project",
   "desc": "项目名称、来源、业态、规模、地址——全部「管家」类产品共用",
   "groups": [
     {
@@ -50,7 +51,7 @@
       "group": "basic",
       "type": "select",
       "required": true,
-      "help": "内部项目、外部项目或重点项目",
+      "help": "内部项目、外部项目、渠道项目或重点项目；重点与渠道保留各自含义",
       "options": [
         {
           "value": "内部项目",
@@ -67,6 +68,10 @@
           ]
         },
         {
+          "value": "渠道项目",
+          "synonyms": ["渠道", "渠道介绍"]
+        },
+        {
           "value": "重点项目",
           "synonyms": [
             "重点",
@@ -74,7 +79,7 @@
           ]
         }
       ],
-      "ai_hint": "判断项目是内部、外部还是重点项目",
+      "ai_hint": "判断项目是内部、外部、渠道还是重点项目；重点项目不可推断为渠道项目",
       "extract": {
         "mode": "enum"
       }

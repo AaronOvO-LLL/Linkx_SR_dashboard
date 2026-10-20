@@ -220,6 +220,8 @@
         if (!res.ok) throw new Error(res.error || '保存失败');
         if (JSON.stringify(readValue(el)) === JSON.stringify(value)) dirtyFields.delete(el);
         if (row) {
+          var conflict = row.querySelector('[data-shared-conflict]');
+          if (conflict && res.status === 'confirmed') conflict.remove();
           var tag = row.querySelector('[data-role=status]');
           if (tag) {
             tag.textContent = res.status_label;

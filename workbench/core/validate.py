@@ -10,7 +10,7 @@ import re
 from datetime import datetime
 
 from .config import field_map, product_config
-from .repo import field_values
+from .repo import field_values, shared_field_conflicts
 from .choices import other_detail_error
 
 
@@ -45,10 +45,15 @@ def validate_fields(pp_id, product_type):
     """对已保存的字段值做必填、格式与业务规则校验。"""
     fmap = field_map(product_type)
     values = field_values(pp_id)
+    conflicts = shared_field_conflicts(pp_id)
     issues = []
     get = lambda k: parse_value(values[k]['value_json']) if k in values else None
 
     for key, f in fmap.items():
+        if key in conflicts:
+            issues.append({'level': 'error', 'field': key, 'kind': 'shared_conflict',
+                           'message': '【%s】在不同管家中有不同的历史答案，请选择或重新填写后共享。' % f['label']})
+            continue
         v = get(key)
         empty = is_empty(v)
         label = f['label']
@@ -76,6 +81,11 @@ def validate_fields(pp_id, product_type):
                                'message': '【%s】需要填写数字，当前值无法识别。' % label})
             else:
                 rules = f.get('validate') or {}
+                if rules.get('integer') and (isinstance(v, bool) or not math.isfinite(n)
+                        or not n.is_integer() or (isinstance(v, str) and
+                        not re.fullmatch(r'-?\d+(?:\.0+)?', v.strip()))):
+                    issues.append({'level': 'error', 'field': key,
+                                   'message': rules.get('message') or '【%s】需要填写整数。' % label})
                 if rules.get('min') is not None and n < rules['min']:
                     issues.append({'level': 'error', 'field': key, 'message': rules.get('message')})
                 if rules.get('max') is not None and n > rules['max']:

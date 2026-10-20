@@ -1,0 +1,17 @@
+{
+  "template_version": "0.1.0",
+  "note": "最终产出物暂未定。当前仅提供事实型调研结果作为流程验证基线，后续按确认的清单与模板调整。",
+  "artifacts": [
+    {
+      "key": "survey_result",
+      "name": "客户调研结果",
+      "purpose": "汇总已核对的客户信息与资产管理需求，作为后续方案编制的事实基础。",
+      "includes": ["客户基本信息", "资产与租赁规模", "数字化现状与痛点", "部署与增值服务", "上线计划与资料"],
+      "template": "survey_result.md.j2",
+      "formats": ["md", "html"],
+      "folder_key": "survey_result",
+      "required_groups": ["asset_customer", "asset_scale", "asset_needs", "asset_purchase"],
+      "order": 1
+    }
+  ]
+}

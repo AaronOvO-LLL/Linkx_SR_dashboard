@@ -287,9 +287,12 @@ def generate_selected(pp_id, product_type, keys):
     results = []
     for key in keys:
         try:
+            # 渲染期间公共资料若被另一管家修改，本次产物仍归旧版本，不能误报为最新。
+            revision = repo.project_fields_revision(get_pp(pp_id)['project_id'])
             files = render_artifact(pp_id, product_type, key)
             repo.upsert_artifact_run(pp_id, key, 'success', files=files,
-                                     template_version=artifacts_config(product_type)['template_version'])
+                                     template_version=artifacts_config(product_type)['template_version'],
+                                     shared_revision=revision)
             results.append({'key': key, 'status': 'success', 'files': files, 'error': ''})
         except Exception as e:
             msg = '%s: %s' % (type(e).__name__, e)

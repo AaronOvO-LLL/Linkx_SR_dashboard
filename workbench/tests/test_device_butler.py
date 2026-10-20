@@ -405,7 +405,9 @@ class DeviceButlerFlowTests(unittest.TestCase):
         """规则引擎对没有规则库的产品完全静默，公共流程不受影响。"""
         self.extract(SAMPLE_TEXT)
         other = repo.add_product(self.project['id'], 'fire_butler')
-        self.assertEqual(repo.field_values(other['id']), {})
+        shared = repo.field_values(other['id'])
+        self.assertIn('project_name', shared)
+        self.assertTrue(all(field_map('fire_butler')[key].get('value_scope') == 'project' for key in shared))
         self.assertFalse(rules.has_rules('fire_butler'))
         self.assertEqual(rules_issues('fire_butler', {}), [])
         self.assertNotIn(TABLE, field_map('fire_butler'))

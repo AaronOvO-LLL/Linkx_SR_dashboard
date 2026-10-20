@@ -13,7 +13,7 @@ input[type=file]{width:100%}
 .project-search input[type=text]{min-width:0;flex:1}
 .project-search .btn{flex-shrink:0}
 .nav-toggle{display:none}
-.brand-mark{flex-shrink:0}
+.brand-logo{flex-shrink:0}
 .res{flex-wrap:wrap}
 .res .files{min-width:0}
 .summary-table{table-layout:fixed}
@@ -56,7 +56,8 @@ input[type=file]{width:100%}
   .page{padding:16px 12px 32px}
   .topbar-inner{padding:8px 12px}
   .brand{font-size:15px;gap:6px}
-  .brand-mark{padding:3px 7px}
+  .brand-logo{padding:3px 5px}
+  .brand-logo img{height:30px}
   .card{padding:16px 14px;margin-bottom:12px}
   .footer{padding:16px 12px;font-size:11px}
   .page-head{align-items:flex-start;gap:8px}

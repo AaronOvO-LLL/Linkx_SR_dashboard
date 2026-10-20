@@ -19,8 +19,9 @@ def build_preview(pp):
     页面显示“可生成”但状态统计仍停留在上一步。
     """
     require_capability(pp['product_type'], 'artifact_generation')
+    revision = repo.project_fields_revision(pp['project_id'])
     ok, issues = validate(pp['id'], pp['product_type'])
-    repo.save_validation(pp['id'], ok, issues)
+    repo.save_validation(pp['id'], ok, issues, shared_revision=revision)
     ctx = generate.build_context(pp['id'], pp['product_type'])
     definitions = [dict(item) for item in artifacts_config(pp['product_type'])['artifacts']]
     runs = {row['artifact_key']: row for row in repo.artifact_runs(pp['id'])}
@@ -74,7 +75,17 @@ def latest_current_export(pp):
     except (KeyError, TypeError, ValueError):
         return None
     current_keys = set(artifact_map(pp['product_type']))
-    return export if exported_keys <= current_keys else None
+    revision = repo.project_fields_revision(pp['project_id'])
+    return export if (exported_keys <= current_keys and
+                      manifest.get('project_fields_revision', 0) == revision) else None
+
+
+def require_current_artifact(pp, key):
+    run = repo.get_artifact_run(pp['id'], key)
+    if run and run['status'] == 'stale':
+        raise ArtifactServiceError('项目公共资料已更新，请重新生成该材料后查看或下载。')
+    if not run or run['status'] != 'success':
+        raise ArtifactServiceError('该材料尚未成功生成，请先生成。')
 
 
 def require_valid_artifacts(pp):

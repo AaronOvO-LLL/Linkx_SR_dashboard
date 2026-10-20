@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.3.0",
+  "schema_version": "1.4.0",
   "note": "字段模型的元定义（契约）。它不描述业务，只描述『字段模型可以怎么写』。新增产品、新增字段前先读这份文件；写完用 `python check_config.py` 校验。",
   "layers": [
     {
@@ -24,7 +24,8 @@
     "scope": "common（跨产品复用）| product（某产品专有）",
     "desc": "一句话说明这个包收了什么",
     "groups": "分组定义数组，元素见 group_attributes",
-    "fields": "字段定义数组，元素见 field_attributes"
+    "fields": "字段定义数组，元素见 field_attributes",
+    "value_scope": "project：同项目所有引用该包的管家共享答案；缺省 product：各管家独立保存。与 scope 的定义复用含义不同。"
   },
   "manifest_file_format": {
     "template_version": "本产品字段模型版本号，改字段就升版本（数据留痕）",
@@ -32,6 +33,7 @@
     "note": "给维护者看的口径说明（唯一权威来源写在这里）",
     "packs": "引用的字段包标识数组",
     "group_order": "分组显示顺序（数组）。决定最终顺序，与 packs 的引用顺序无关",
+    "group_overrides": "{分组key: {name, desc}} 覆盖共用分组的显示名称和说明，保留稳定key和排序。",
     "overrides": "{字段key: {要改的属性}} 字段级改写；dict 递归合并，其余类型整体覆盖",
     "extra_fields": "本产品独有的字段，直接内联，格式同字段包里的 fields 元素",
     "remove_fields": "要从所引用字段包中剔除的字段 key 数组"
@@ -328,7 +330,37 @@
       "type": "object",
       "required": false,
       "consumed_by": "core/validate.py",
-      "desc": "取值约束：{min, max, pattern, message}。min/max 限数值，pattern 是正则，message 是失败提示。"
+      "desc": "取值约束：{min, max, integer, pattern, message}。min/max 限数值；integer=true 要求有效整数；pattern 是正则，message 是失败提示。"
+    },
+    {
+      "key": "initial_value",
+      "type": "object",
+      "required": false,
+      "consumed_by": "core/repo.py::add_product",
+      "desc": "仅text字段。{source:current_datetime, utc_offset_minutes:480}在新增产品时生成系统时间初值并保护，重解析不覆盖。时区偏移为-1439至1439的整数分钟；不声明则不产生初值。"
+    },
+    {
+      "key": "extract.allow_zero",
+      "type": "boolean",
+      "required": false,
+      "default": false,
+      "consumed_by": "core/extract.py::extract_number",
+      "desc": "number模式允许提取原文明示的0。原文未知或未提到时仍留空，不用0兜底。"
+    },
+    {
+      "key": "extract.clause_scoped_negation",
+      "type": "boolean",
+      "required": false,
+      "default": false,
+      "consumed_by": "core/extract.py::extract_list",
+      "desc": "list模式的否定语境限制在逗号/分号/句号分隔的小句内，避免前一个负面痛点误否定后一个痛点。"
+    },
+    {
+      "key": "extract.uncertainty_keywords",
+      "type": "array",
+      "required": false,
+      "consumed_by": "core/extract.py::extract_enum",
+      "desc": "enum模式命中相关句中的未决词时不自动选择候选项；配合fallback_text将原文保留为待确认。"
     },
     {
       "key": "ai_hint",

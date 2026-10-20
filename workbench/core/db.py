@@ -1,11 +1,13 @@
 import os
 import sqlite3
 import threading
+from contextlib import closing
 from . import paths
 from .config import app_config
 from .migrations import apply_migrations
 
 _local = threading.local()
+_init_lock = threading.RLock()
 
 SCHEMA = """
 PRAGMA journal_mode=WAL;
@@ -183,11 +185,32 @@ def init_db():
     基础 schema 负责“今天新建数据库”的形态，迁移器负责已有数据库。两者
     必须同时执行，否则开发环境正常而用户历史库会在升级时失败。
     """
-    conn = connect()
-    conn.executescript(SCHEMA)
-    conn.commit()
-    apply_migrations(conn)
-    return conn
+    with _init_lock:
+        conn = connect()
+        _backup_before_project_fields(conn)
+        conn.executescript(SCHEMA)
+        conn.commit()
+        apply_migrations(conn)
+        return conn
+
+
+def _backup_before_project_fields(conn):
+    """升级含历史答案的数据库前，使用 SQLite backup 保留一致快照（包括 WAL）。"""
+    tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+    if 'survey_field_values' not in tables:
+        return
+    if 'schema_migrations' in tables and conn.execute(
+            'SELECT 1 FROM schema_migrations WHERE version=4').fetchone():
+        return
+    if not conn.execute('SELECT 1 FROM survey_field_values LIMIT 1').fetchone():
+        return
+    # 首次升级会创建固定备份；如果上次迁移中断，重试也不覆盖升级前的原始快照。
+    backup_path = db_path() + '.pre-shared-v4.bak'
+    if not os.path.exists(backup_path):
+        staging = backup_path + '.tmp'
+        with closing(sqlite3.connect(staging)) as backup:
+            conn.backup(backup)
+        os.replace(staging, backup_path)
 
 
 def query(sql, args=()):

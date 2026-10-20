@@ -1,0 +1,41 @@
+# {{ project.name }} · {{ product.name }} 客户调研结果
+
+> 本文件汇总手动录入或文字稿提取后的调研信息。字段状态和来源依据随结果保留，供后续核对与方案编制使用。
+
+| 记录信息 | 内容 |
+|---|---|
+| 工作台项目 | {{ project.name | replace('|', '/') }} |
+| 产品 | {{ product.name }}（{{ meta.product_version }}） |
+| 信息提交时间 | {{ display.submitted_at or '（未填写）' }} |
+| 生成时间 | {{ meta.generated_at }} |
+| 提取方式 | {{ meta.extraction_provider }} |
+| 字段版本 | {{ meta.field_template_version }} |
+
+{% for g in groups %}
+## {{ loop.index }}. {{ g.name }}
+
+{% if g.desc %}> {{ g.desc }}
+
+{% endif %}
+| 调研项 | 内容 | 状态 |
+|---|---|---|
+{% for f in g.fields %}
+| {{ f.label }} | {{ (f.text | replace('\n', '；') | replace('|', '/')) or '（未填写）' }}{% if f.text and f.unit %} {{ f.unit }}{% endif %} | {{ f.status_label }} |
+{% endfor %}
+
+{% endfor %}
+## 来源依据
+
+{% for g in groups %}{% for f in g.fields if f.quote %}
+- {{ f.label }}：{{ f.quote | replace('\n', ' ') }}
+{% endfor %}{% endfor %}
+
+## 后续沟通
+
+- 本结果记录客户现状与需求，供后续确认方案范围、接口清单和实施计划。
+- 需求文件栏记录文件名称及共享链接；原始文件需按约定渠道另行收集。
+- 客户最终采购范围、价格和交付承诺需在后续方案及商务沟通中确认。
+- 本版本材料清单为流程验证基线，最终产出物待确认。
+
+---
+*生成时间：{{ meta.generated_at }}　|　模板版本：{{ meta.template_version }}　|　产品版本：{{ meta.product_version }}*
