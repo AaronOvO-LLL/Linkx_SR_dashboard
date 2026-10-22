@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}选择分部 · {{ app_cfg.app_name }}{% endblock %}
+{% block title %}账号登录 · {{ app_cfg.app_name }}{% endblock %}
 {% block content %}
 <div class="login-wrap">
   <div class="login-brand">
@@ -9,12 +9,25 @@
   </div>
 
   <div class="card">
+    <h2>个人账号登录</h2>
+    <p class="sub">可使用手机号或管理员分配的用户名登录。新用户请先注册。</p>
+    {% if error %}<div class="flash warn">{{ error }}</div>{% endif %}
+    <form method="post" id="personalLoginForm">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <label class="fld"><span>手机号 / 用户名</span><input type="text" name="username" required maxlength="64" autocomplete="username" autofocus></label>
+      <label class="fld"><span>密码</span><input type="password" name="password" required maxlength="128" autocomplete="current-password"></label>
+      <button class="btn" type="submit" style="width:100%;justify-content:center">登录个人账号</button>
+    </form>
+    <a class="btn ghost" href="{{ url_for('register') }}" style="width:100%;justify-content:center;margin-top:12px">注册</a>
+  </div>
+
+  <details class="card">
+    <summary>原分部入口（兼容历史项目）</summary>
     <h2>选择分部并输入密码</h2>
     <p class="sub">不同分部的项目库相互隔离，验证通过后仅进入所选分部。</p>
 
-    {% if error %}<div class="flash warn">{{ error }}</div>{% endif %}
-
     <form method="post" id="loginForm">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <div class="dept-list">
         {% for d in depts %}
         <label class="dept-opt" data-dept="{{ d.key }}">
@@ -27,12 +40,12 @@
 
       <label class="fld">
         <span>分部密码</span>
-        <input type="password" name="password" id="pwd" placeholder="请输入该分部的访问密码" autofocus>
+        <input type="password" name="password" id="pwd" placeholder="请输入该分部的访问密码" autocomplete="current-password">
       </label>
 
       <button class="btn" type="submit" style="width:100%;justify-content:center">进入分部项目库</button>
     </form>
-  </div>
+  </details>
 </div>
 {% endblock %}
 {% block scripts %}
@@ -44,6 +57,7 @@ document.querySelectorAll('.dept-opt').forEach(function(el){
     el.querySelector('input').checked = true;
   });
 });
-document.querySelector('.dept-opt').classList.add('on');
+var firstDept = document.querySelector('.dept-opt');
+if (firstDept) firstDept.classList.add('on');
 </script>
 {% endblock %}

@@ -63,6 +63,7 @@
 
 <!-- ============ 生成物选择 ============ -->
 <form method="post" action="{{ url_for('do_generate', pp_id=pp.id) }}" id="genForm">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 <div class="card">
   <h2>选择要生成的材料</h2>
   <p class="sub">可多选，至少选择一项。生成物定义来自配置，新增模板不需要改动页面。</p>

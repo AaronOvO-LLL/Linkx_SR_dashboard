@@ -61,16 +61,23 @@ def stamp_compact():
 
 # ---------------------------------------------------------------- 项目
 
-def create_project(dept_key, data):
+def create_project(dept_key, data, creator=None, visibility=None):
+    visibility = visibility if visibility is not None else ('private' if creator else 'department')
+    if visibility not in ('private', 'department'):
+        raise ValueError('请选择有效的项目可见范围。')
+    if visibility == 'private' and not creator:
+        raise ValueError('请使用个人账号创建私密项目。')
     pid = new_id('prj')
     ts = now_iso()
     db.execute(
         """INSERT INTO projects (id, dept_key, category, name, customer_name, location,
-           owner, contact, status, created_at, updated_at)
-           VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
+           owner, contact, status, created_at, updated_at, creator_user_id, creator_name, visibility)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
         (pid, dept_key, data.get('category', '外部项目'), data.get('name', '未命名项目'),
          data.get('customer_name', ''), data.get('location', ''), data.get('owner', ''),
-         data.get('contact', ''), 'draft', ts, ts))
+         data.get('contact', ''), 'draft', ts, ts,
+         creator['id'] if creator else None, creator['display_name'] if creator else '',
+         visibility))
     return get_project(pid)
 
 
@@ -97,9 +104,16 @@ def get_project(pid):
     return db.query_one('SELECT * FROM projects WHERE id=?', (pid,))
 
 
-def list_projects(dept_key, keyword='', archived=None, include_deleted=False):
-    sql = 'SELECT * FROM projects WHERE dept_key=?'
-    args = [dept_key]
+def list_projects(dept_key, keyword='', archived=None, include_deleted=False, user=None):
+    sql = 'SELECT * FROM projects WHERE 1=1'
+    args = []
+    if not (user and user['active'] and user['role'] == 'admin'):
+        sql += " AND ((visibility='department' AND dept_key=?)"
+        args.append(dept_key)
+        if user and user['active']:
+            sql += " OR (visibility='private' AND creator_user_id=?)"
+            args.append(user['id'])
+        sql += ')'
     if not include_deleted:
         sql += ' AND deleted=0'
     if archived is None:
@@ -128,9 +142,11 @@ def restore_project(pid):
     db.execute('UPDATE projects SET deleted=0, updated_at=? WHERE id=?', (now_iso(), pid))
 
 
-def list_deleted(dept_key):
-    return db.query('SELECT * FROM projects WHERE dept_key=? AND deleted=1 ORDER BY updated_at DESC',
-                    (dept_key,))
+def list_deleted(dept_key, user=None):
+    # 同样复用列表权限；回收站不能暴露他人私密项目。
+    rows = list_projects(dept_key, include_deleted=True, user=user)
+    rows += list_projects(dept_key, archived=True, include_deleted=True, user=user)
+    return sorted((p for p in rows if p['deleted']), key=lambda p: p['updated_at'], reverse=True)
 
 
 def purge_project(pid):
@@ -161,19 +177,21 @@ def purge_project(pid):
     db.execute('DELETE FROM projects WHERE id=?', (pid,))
 
 
-def copy_project(pid):
+def copy_project(pid, creator=None):
     """复制项目：基础信息 + 已选产品 + 结构化内容。原文字稿与生成结果按待确认策略默认复制原文、不复制产物。"""
     src = get_project(pid)
     if not src:
         return None
-    new = create_project(src['dept_key'], {
+    if src['visibility'] == 'private' and creator is None:
+        raise ValueError('复制私密项目必须提供当前创建者。')
+    new = create_project(creator['dept_key'] if creator else src['dept_key'], {
         'category': src['category'],
         'name': src['name'] + '（副本）',
         'customer_name': src['customer_name'],
         'location': src['location'],
         'owner': src['owner'],
         'contact': src['contact'],
-    })
+    }, creator=creator)
     db.execute('UPDATE projects SET copied_from=? WHERE id=?', (pid, new['id']))
     for pp in list_products(pid):
         npp = add_product(new['id'], pp['product_type'])

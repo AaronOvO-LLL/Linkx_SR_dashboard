@@ -11,7 +11,9 @@
     <a class="btn gray sm" style="margin-left:auto" href="{{ url_for('projects') }}">返回项目库</a>
   </div>
 
+  <p class="sub">创建者：{{ creator_label(project) }} · {{ department_name(project.dept_key) }} · {{ '私密：仅创建者及管理员可访问' if project.visibility == 'private' else '分部共享：维持原分部权限' }}</p>
   <form method="post" action="{{ url_for('project_update', pid=project.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <div class="grid2">
       <label class="fld"><span>项目名称<span class="req">*</span></span>
         <input type="text" name="name" value="{{ project.name }}" required></label>
@@ -57,6 +59,7 @@
   </div>
   <form method="post" action="{{ url_for('audio_upload', pid=project.id) }}"
         enctype="multipart/form-data" id="audioForm">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <label class="dropzone" for="audioInput">
       <input id="audioInput" name="audio" type="file"
              accept=".wav,.mp3,.m4a,.flv,.mp4,.wma,.3gp,.amr,.aac,.ogg,.flac" required>
@@ -146,6 +149,7 @@
         <button class="btn gray sm" disabled>暂未开放</button>
         {% else %}
         <form method="post" action="{{ url_for('product_add', pid=project.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
           <input type="hidden" name="product_type" value="{{ c.product_type }}">
           <button class="btn sm" type="submit">添加到本项目</button>
         </form>

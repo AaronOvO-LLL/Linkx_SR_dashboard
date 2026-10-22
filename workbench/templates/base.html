@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="csrf-token" content="{{ csrf_token }}">
 <title>{% block title %}{{ app_cfg.app_name }}{% endblock %}</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='responsive.css') }}">
@@ -21,8 +22,10 @@
       <a href="{{ url_for('projects') }}">项目中心</a>
       <a href="{{ url_for('docs') }}">使用说明</a>
       <a href="{{ url_for('change_password') }}">修改密码</a>
-      <span class="dept-chip">{{ dept.name }}</span>
-      <a class="logout" href="{{ url_for('logout') }}">退出分部</a>
+      {% if user and user.role == 'admin' %}<a href="{{ url_for('admin_users') }}">账号管理</a>{% endif %}
+      <span class="dept-chip">{{ dept.name }} · {{ user.display_name if user else '分部兼容入口' }}</span>
+      <form method="post" action="{{ url_for('logout') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn ghost sm" type="submit">退出登录</button></form>
     </nav>
   </div>
 </header>

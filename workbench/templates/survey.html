@@ -20,6 +20,7 @@
     <div><h2 style="font-size:15px">项目转写稿已就绪</h2>
       <p class="sub">{{ transcript.char_count }} 字 · 确认于 {{ transcript.created_at }}。导入后仍可在下方修改，不影响其他产品。</p></div>
     <form method="post" action="{{ url_for('import_transcript', pp_id=pp.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <button class="btn" type="submit"
               onclick="return confirm('导入会用项目转写稿覆盖当前产品的文字稿。已人工确认的字段不受影响。')">导入项目转写稿</button>
     </form>
@@ -32,6 +33,7 @@
   {% endif %}
 
   <form method="post" id="transcriptForm" data-draft-key="survey-draft:{{ pp.id }}" data-source-id="{{ source.id if source else '' }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <label class="fld"><span>从文字文件导入（可选，TXT / Markdown）</span>
       <input type="file" id="transcriptFile" accept=".txt,.md,text/plain,text/markdown">
     </label>
@@ -56,6 +58,7 @@
     <span class="config-line"><span class="dot {{ 'ok' if llm_status.configured else 'bad' }}"></span>
       {{ llm_status.label }} · {{ llm_status.model }} · {{ '已配置' if llm_status.configured else '未配置' }}</span>
     <form method="post" action="{{ url_for('run_extract', pp_id=pp.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <button class="btn" type="submit" {% if not llm_status.configured %}disabled{% endif %}
               onclick="return confirm('开始大模型结构化梳理？已有人工确认字段不会被覆盖。')">开始大模型结构化梳理</button>
     </form>

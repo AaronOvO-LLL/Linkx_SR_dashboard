@@ -1,8 +1,8 @@
 {
   "app_name": "灵石解决方案工作台",
   "app_subtitle": "踏勘录入 · AI 提取 · 方案生成",
-  "version": "0.2.0",
-  "release_date": "2026-10-20",
+  "version": "0.3.1",
+  "release_date": "2026-10-21",
   "brand_color": "#2F5597",
   "server": {
     "host": "127.0.0.1",

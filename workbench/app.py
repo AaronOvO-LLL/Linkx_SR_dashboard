@@ -9,13 +9,13 @@ import os
 import sys
 import secrets
 
-from flask import (Flask, abort, flash, jsonify, make_response, redirect,
+from flask import (Flask, abort, flash, g, jsonify, make_response, redirect,
                    render_template, request, send_file, session, url_for)
 from werkzeug.utils import safe_join
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from core import db, departments, extract, generate, repo, runtime  # noqa: E402
+from core import accounts, db, departments, extract, generate, repo, runtime  # noqa: E402
 from core.config import (app_config, artifact_map, fields_by_group, field_config,  # noqa: E402
                          list_products, product_config)
 from core.capabilities import has_capability  # noqa: E402
@@ -48,8 +48,53 @@ runtime.warn_insecure_departments(departments.unchanged_names())
 
 # ---------------------------------------------------------------- 基础工具
 
+def current_user():
+    if 'current_user' not in g:
+        user = accounts.get_user(session['user_id']) if session.get('user_id') else None
+        g.current_user = user if (user and user['active'] and
+                                  user['auth_version'] == session.get('auth_version')) else None
+    return g.current_user
+
+
+def csrf_token():
+    if not session.get('csrf_token'):
+        session['csrf_token'] = secrets.token_urlsafe(32)
+    return session['csrf_token']
+
+
+@app.before_request
+def protect_personal_session():
+    if request.endpoint == 'static':
+        return None
+    if session.get('user_id') and not current_user():
+        clear_chat_identity()
+        session.clear()
+        if request.endpoint != 'login':
+            return redirect(url_for('login'))
+    # 兼容分部入口维持旧写接口；个人登录及个人账号的所有写操作都校验 token。
+    if request.method == 'POST' and (current_user() or
+            request.endpoint == 'register' or
+            (request.endpoint == 'login' and 'username' in request.form)):
+        supplied = request.headers.get('X-CSRF-Token') or request.form.get('csrf_token', '')
+        expected = session.get('csrf_token', '')
+        if not expected or not secrets.compare_digest(supplied.encode('utf-8'), expected.encode('utf-8')):
+            abort(403)
+
+
+@app.after_request
+def prevent_private_caching(response):
+    if request.endpoint != 'static':
+        response.headers['Cache-Control'] = 'no-store'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+    return response
+
+
 def current_dept():
-    key = session.get('dept_key')
+    user = current_user()
+    if session.get('user_id') and not user:
+        return None
+    key = user['dept_key'] if user else session.get('dept_key')
     if not key:
         return None
     return departments.find(key)
@@ -70,36 +115,27 @@ def pop_flash():
 
 
 def load_pp(pp_id):
-    """加载产品实例，并校验其所属分部与当前会话一致。"""
+    """产品和文件继承项目权限，不能仅凭产品 ID 访问。"""
     pp = repo.get_pp(pp_id)
     if not pp:
         abort(404)
-    project = repo.get_project(pp['project_id'])
-    if not project or project['dept_key'] != session.get('dept_key'):
-        abort(403)
+    project = load_project(pp['project_id'])
     return pp, project
 
 
 def load_project(pid):
-    """加载当前分部可访问的项目。
-
-    所有项目写操作都必须经过同一个租户边界检查；只在列表页过滤分部并不能
-    防止用户手工构造其它分部项目的 URL。
-    """
+    """统一检查私密项目归属与历史项目分部，读写、录音和文件均复用此入口。"""
     project = repo.get_project(pid)
     if not project:
         abort(404)
-    if project['dept_key'] != session.get('dept_key'):
+    dept = current_dept()
+    if not dept or not accounts.can_access(project, current_user(), dept['key']):
         abort(403)
     return project
 
 
 def load_audio_job(pid, job_id):
-    """转写任务访问受项目与分部边界约束。
-
-    任务归属项目而不是产品，因此这里不再经过 load_pp；分部检查由 load_project
-    完成，足以阻止跨分部读取他人项目的录音与转写结果。
-    """
+    """先检查项目访问权，再校验录音确实属于该项目。"""
     project = load_project(pid)
     job = repo.get_audio_job(job_id)
     if not job or job['project_id'] != pid:
@@ -111,6 +147,8 @@ app.jinja_env.globals['product_name'] = lambda t: product_config(t)['name']
 app.jinja_env.globals['has_capability'] = has_capability
 app.jinja_env.globals['audio_status_label'] = lambda s: repo.AUDIO_JOB_STATUS_LABELS.get(s, s)
 app.jinja_env.globals['audio_status_tag'] = repo.audio_status_tag
+app.jinja_env.globals['creator_label'] = accounts.creator_label
+app.jinja_env.globals['department_name'] = lambda key: (departments.find(key) or {}).get('name', key)
 
 
 @app.template_filter('hit_count')
@@ -166,6 +204,8 @@ def inject_globals():
     return {
         'app_cfg': CFG,
         'dept': dept,
+        'user': current_user(),
+        'csrf_token': csrf_token(),
         'chat_sid': session.get('chat_sid', ''),
         'chat_csrf': session.get('chat_csrf', ''),
         'flash_data': pop_flash(),
@@ -173,7 +213,7 @@ def inject_globals():
     }
 
 
-STEP_NAMES = ['分部入口', '项目中心', '项目与转写', '调研输入', '信息核对', '预览与生成', '结果中心']
+STEP_NAMES = ['账号入口', '项目中心', '项目与转写', '调研输入', '信息核对', '预览与生成', '结果中心']
 
 
 def step_of(n):
@@ -186,9 +226,20 @@ def step_of(n):
 def login():
     depts = departments.config()['departments']
     if request.method == 'POST':
+        if 'username' in request.form:
+            try:
+                user = accounts.authenticate(request.form.get('username', ''), request.form.get('password', ''))
+            except ValueError as exc:
+                return render_template('login.html', depts=depts, error=str(exc)), 400
+            clear_chat_identity()
+            session.clear()
+            session.update(user_id=user['id'], auth_version=user['auth_version'], dept_key=user['dept_key'])
+            csrf_token()
+            return redirect(url_for('projects'))
         dept = departments.find(request.form.get('dept_key', ''))
         if dept and departments.verify(dept, request.form.get('password', '')):
             clear_chat_identity()
+            session.clear()
             session['dept_key'] = dept['key']
             if not dept.get('changed'):
                 flash_msg('当前仍在使用初始口令，建议尽快在「修改密码」中更换。', 'warn')
@@ -200,10 +251,33 @@ def login():
     return render_template('login.html', depts=depts, error=None)
 
 
-@app.route('/logout')
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if current_dept():
+        return redirect(url_for('projects'))
+    error = None
+    if request.method == 'POST':
+        try:
+            user = accounts.register_user(request.form.get('display_name', ''),
+                                          request.form.get('phone', ''),
+                                          request.form.get('dept_key', ''))
+            flash_msg('注册成功！请使用手机号 %s 登录，初始密码为 %s。进入系统后可在“修改密码”中自行修改。' %
+                      (user['username'], accounts.REGISTER_DEFAULT_PASSWORD))
+            return redirect(url_for('login'))
+        except ValueError as exc:
+            error = str(exc)
+    return render_template('register.html', depts=departments.config()['departments'],
+                           default_password=accounts.REGISTER_DEFAULT_PASSWORD,
+                           error=error), 400 if error else 200
+
+
+@app.route('/logout', methods=['GET', 'POST'])
 def logout():
+    # 原分部链接继续兼容；个人账号退出必须使用带 token 的 POST。
+    if request.method == 'GET' and current_user():
+        abort(405)
     clear_chat_identity()
-    session.pop('dept_key', None)
+    session.clear()
     return redirect(url_for('login'))
 
 
@@ -233,7 +307,7 @@ def chat_response(action):
                 raise agent_chat.ChatError('请求格式不正确。')
             if request.content_length is None or request.content_length > 30000:
                 raise agent_chat.ChatError('消息过长，请分段发送。', 413)
-        result = action(session['chat_sid'], session['dept_key'])
+        result = action(session['chat_sid'], session.get('user_id') or session['dept_key'])
         response = jsonify(result)
     except agent_chat.ChatError as exc:
         response = jsonify(error=str(exc))
@@ -268,20 +342,85 @@ def change_password():
     if r:
         return r
     dept = current_dept()
+    user = current_user()
     if request.method == 'POST':
         old = request.form.get('old_password', '')
         new = request.form.get('new_password', '')
         confirm = request.form.get('confirm_password', '')
-        if not departments.verify(dept, old):
+        if not (accounts.verify_password(user['id'], old) if user else departments.verify(dept, old)):
             return render_template('password.html', error='原密码不正确。')
-        if len(new) < 6:
-            return render_template('password.html', error='新密码至少 6 位。')
+        if len(new) < (8 if user else 6) or len(new) > 128 or not new.strip():
+            return render_template('password.html', error='新密码需为 %s–128 位，且不能全为空格。' % (8 if user else 6))
         if new != confirm:
             return render_template('password.html', error='两次输入的新密码不一致。')
-        departments.set_password(dept['key'], new)
-        flash_msg('分部密码已更新，下次进入需使用新密码。')
+        if user:
+            updated = accounts.reset_password(user['id'], new, user['id'])
+            clear_chat_identity()
+            session.clear()
+            session.update(user_id=user['id'], auth_version=updated['auth_version'], dept_key=updated['dept_key'])
+            csrf_token()
+        else:
+            departments.set_password(dept['key'], new)
+        flash_msg('密码已更新，请在下次登录时使用新密码。')
         return redirect(url_for('projects'))
     return render_template('password.html', error=None)
+
+
+def require_admin():
+    r = require_dept()
+    if r:
+        return r
+    user = current_user()
+    if not user or user['role'] != 'admin':
+        abort(403)
+    return None
+
+
+@app.route('/admin/users', methods=['GET', 'POST'])
+def admin_users():
+    r = require_admin()
+    if r:
+        return r
+    error = None
+    if request.method == 'POST':
+        try:
+            accounts.create_user(request.form.get('username', ''), request.form.get('display_name', ''),
+                                 request.form.get('dept_key', ''), request.form.get('password', ''),
+                                 request.form.get('role', 'user'), current_user()['id'])
+            flash_msg('个人账号已创建。')
+            return redirect(url_for('admin_users'))
+        except ValueError as exc:
+            error = str(exc)
+    return render_template('users.html', users=accounts.list_users(),
+                           depts=departments.config()['departments'], error=error), 400 if error else 200
+
+
+@app.route('/admin/users/<uid>/update', methods=['POST'])
+def admin_user_update(uid):
+    r = require_admin()
+    if r:
+        return r
+    try:
+        accounts.update_user(uid, request.form.get('display_name', ''), request.form.get('dept_key', ''),
+                             request.form.get('role', 'user'), request.form.get('active') == '1',
+                             current_user()['id'])
+        flash_msg('账号已更新，原有登录会话已失效。')
+    except ValueError as exc:
+        flash_msg(str(exc), 'warn')
+    return redirect(url_for('admin_users'))
+
+
+@app.route('/admin/users/<uid>/password', methods=['POST'])
+def admin_user_password(uid):
+    r = require_admin()
+    if r:
+        return r
+    try:
+        accounts.reset_password(uid, request.form.get('password', ''), current_user()['id'])
+        flash_msg('密码已重置，原有登录会话已失效。')
+    except ValueError as exc:
+        flash_msg(str(exc), 'warn')
+    return redirect(url_for('admin_users'))
 
 
 @app.route('/docs')
@@ -315,11 +454,13 @@ def projects():
     kw = request.args.get('q', '').strip()
     view = request.args.get('view', 'active')
     if view == 'archived':
-        rows = repo.list_projects(dept['key'], kw, archived=True)
+        rows = repo.list_projects(dept['key'], kw, archived=True, user=current_user())
     elif view == 'deleted':
-        rows = repo.list_deleted(dept['key'])
+        rows = repo.list_deleted(dept['key'], user=current_user())
+        if kw:
+            rows = [p for p in rows if kw in p['name'] or kw in p['customer_name']]
     else:
-        rows = repo.list_projects(dept['key'], kw, archived=False)
+        rows = repo.list_projects(dept['key'], kw, archived=False, user=current_user())
     rows = [repo.decorate_project(x) for x in rows]
     catalog = [p for p in list_products() if p.get('status') == 'active']
     return render_template('projects.html', rows=rows, kw=kw, view=view,
@@ -336,6 +477,9 @@ def project_create():
     if not name:
         flash_msg('请填写项目名称。', 'warn')
         return redirect(url_for('projects'))
+    visibility = request.form.get('visibility', 'private' if current_user() else 'department')
+    if visibility not in ('private', 'department') or (visibility == 'private' and not current_user()):
+        abort(400, description='请选择有效的项目可见范围；创建私密项目需登录个人账号。')
     p = repo.create_project(dept['key'], {
         'category': request.form.get('category', '外部项目'),
         'name': name,
@@ -343,7 +487,7 @@ def project_create():
         'location': request.form.get('location', '').strip(),
         'owner': request.form.get('owner', '').strip(),
         'contact': request.form.get('contact', '').strip(),
-    })
+    }, creator=current_user(), visibility=visibility)
     ptype = request.form.get('product_type', '').strip()
     if ptype:
         try:
@@ -417,7 +561,7 @@ def project_copy(pid):
     if r:
         return r
     load_project(pid)
-    new = repo.copy_project(pid)
+    new = repo.copy_project(pid, creator=current_user())
     flash_msg('已复制为「%s」，请修改名称。' % new['name'] if new else '复制失败。')
     return redirect(url_for('project_detail', pid=new['id']) if new else url_for('projects'))
 
@@ -833,14 +977,15 @@ def artifact_file(pp_id, artifact_key, filename):
     if r:
         return r
     pp, project = load_pp(pp_id)
+    # 先完成项目授权，再拒绝已下线类型，避免旧链接被材料状态检查误导向核对页。
+    if artifact_key not in artifact_map(pp['product_type']):
+        abort(404)
     try:
         artifact_service.require_valid_artifacts(pp)
         artifact_service.require_current_artifact(pp, artifact_key)
     except artifact_service.ArtifactServiceError as exc:
         flash_msg(str(exc), 'warn')
         return redirect(url_for('review', pp_id=pp_id))
-    if artifact_key not in artifact_map(pp['product_type']):
-        abort(404)
     d = generate.artifact_output_dir(pp_id, artifact_key)
     # safe_join 阻止通过 ../ 越过当前生成物目录读取服务器上的其它文件。
     path = safe_join(d, filename)

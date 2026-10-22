@@ -84,6 +84,7 @@
           <div style="white-space:pre-wrap;margin:6px 0">{{ candidate.display }}</div>
           {% if candidate.source_quote %}<div class="hint">原文依据：{{ candidate.source_quote }}</div>{% endif %}
           <form method="post" action="{{ url_for('resolve_shared_field', pp_id=pp.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <input type="hidden" name="key" value="{{ f.key }}">
             <input type="hidden" name="candidate" value="{{ loop.index0 }}">
             <button class="btn gray sm" type="submit">采用这份答案并共享</button>

@@ -200,11 +200,35 @@ def _valid_json(value):
         return False
 
 
+def _add_personal_accounts(conn):
+    """v5：只为历史项目补充共享范围，不猜测个人创建者。"""
+    conn.execute('''CREATE TABLE users (
+        id TEXT PRIMARY KEY, username TEXT NOT NULL UNIQUE COLLATE NOCASE,
+        display_name TEXT NOT NULL, dept_key TEXT NOT NULL,
+        role TEXT NOT NULL CHECK(role IN ('user', 'admin')),
+        active INTEGER NOT NULL DEFAULT 1, password_hash TEXT NOT NULL,
+        auth_version INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL, updated_at TEXT NOT NULL)''')
+    conn.execute('''CREATE TABLE account_events (
+        id TEXT PRIMARY KEY, actor_id TEXT NOT NULL, user_id TEXT NOT NULL,
+        action TEXT NOT NULL, created_at TEXT NOT NULL)''')
+    conn.execute('''CREATE TABLE login_attempts (
+        username TEXT PRIMARY KEY, failures INTEGER NOT NULL, window_start REAL NOT NULL)''')
+    # 部分迁移单测只有产品表，生产库则始终具有 projects。
+    if not _column_names(conn, 'projects'):
+        return
+    conn.execute("ALTER TABLE projects ADD COLUMN creator_user_id TEXT REFERENCES users(id)")
+    conn.execute("ALTER TABLE projects ADD COLUMN creator_name TEXT NOT NULL DEFAULT ''")
+    conn.execute("ALTER TABLE projects ADD COLUMN visibility TEXT NOT NULL DEFAULT 'department' CHECK(visibility IN ('private', 'department'))")
+    conn.execute('CREATE INDEX idx_projects_creator ON projects(creator_user_id, visibility)')
+
+
 MIGRATIONS = [
     (1, 'remove_pricing_settings', _remove_pricing_settings),
     (2, 'add_audio_transcription_jobs', _add_audio_transcription_jobs),
     (3, 'add_project_level_audio', _add_project_level_audio),
     (4, 'add_project_fields', _add_project_fields),
+    (5, 'add_personal_accounts', _add_personal_accounts),
 ]
 
 
