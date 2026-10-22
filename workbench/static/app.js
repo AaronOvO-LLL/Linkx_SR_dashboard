@@ -212,7 +212,7 @@
 
     return fetch(SAVE_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content },
       body: JSON.stringify({ key: key, value: value })
     })
       .then(function (r) { if (!r.ok) throw new Error('保存失败'); return r.json(); })

@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block title %}个人账号管理{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>创建个人账号</h2>
+  <p class="sub">用户名唯一且创建后不可修改。账号停用、修改或重置密码后，原有登录会话会失效；历史项目归属继续保留。</p>
+  {% if error %}<div class="flash warn">{{ error }}</div>{% endif %}
+  <form method="post" class="grid2" id="createUserForm">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label class="fld"><span>用户名</span><input type="text" name="username" required minlength="3" maxlength="64" autocomplete="off" placeholder="例如：zhang.san"></label>
+    <label class="fld"><span>姓名</span><input type="text" name="display_name" required maxlength="80"></label>
+    <label class="fld"><span>所属分部</span><select name="dept_key">{% for d in depts %}<option value="{{ d.key }}">{{ d.name }}</option>{% endfor %}</select></label>
+    <label class="fld"><span>角色</span><select name="role"><option value="user">普通用户</option><option value="admin">系统管理员</option></select></label>
+    <label class="fld"><span>初始密码（8–128 位）</span><input type="password" name="password" required minlength="8" maxlength="128" autocomplete="new-password"></label>
+    <div class="btn-row" style="align-items:center;margin-top:0"><button class="btn" type="submit">创建账号</button></div>
+  </form>
+</div>
+{% for account in users %}
+<div class="card" data-user="{{ account.username }}">
+  <h2>{{ account.display_name }}（{{ account.username }}） <span class="tag {{ 'green' if account.active else 'red' }}">{{ '启用' if account.active else '停用' }}</span></h2>
+  <form method="post" action="{{ url_for('admin_user_update', uid=account.id) }}" class="grid2">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label class="fld"><span>姓名</span><input type="text" name="display_name" value="{{ account.display_name }}" required maxlength="80"></label>
+    <label class="fld"><span>所属分部</span><select name="dept_key">{% for d in depts %}<option value="{{ d.key }}" {% if d.key == account.dept_key %}selected{% endif %}>{{ d.name }}</option>{% endfor %}</select></label>
+    <label class="fld"><span>角色</span><select name="role"><option value="user" {% if account.role == 'user' %}selected{% endif %}>普通用户</option><option value="admin" {% if account.role == 'admin' %}selected{% endif %}>系统管理员</option></select></label>
+    <label class="fld"><span>账号状态</span><select name="active"><option value="1" {% if account.active %}selected{% endif %}>启用</option><option value="0" {% if not account.active %}selected{% endif %}>停用</option></select></label>
+    <div class="btn-row"><button class="btn gray" type="submit">保存账号</button></div>
+  </form>
+  <form method="post" action="{{ url_for('admin_user_password', uid=account.id) }}" class="row" onsubmit="return confirm('重置密码会使该账号原有登录会话失效，确定继续？')">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label class="fld" style="flex:1"><span>重置密码（8–128 位）</span><input type="password" name="password" required minlength="8" maxlength="128" autocomplete="new-password"></label>
+    <button class="btn ghost" style="align-self:end;margin-bottom:12px" type="submit">重置密码</button>
+  </form>
+</div>
+{% endfor %}
+{% endblock %}

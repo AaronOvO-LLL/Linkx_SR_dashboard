@@ -27,7 +27,8 @@
   <div class="processing"><i></i><span>后台处理中，可关闭本页。重新进入后会自动恢复查询。</span></div>
   {% elif job.status == 'failed' %}
   <div class="flash warn">{{ job.error or '转写失败，请检查云端配置后重试。' }}</div>
-  <form method="post" action="{{ url_for('audio_retry', pid=project.id, job_id=job.id) }}"><button class="btn" type="submit">重新转写</button></form>
+  <form method="post" action="{{ url_for('audio_retry', pid=project.id, job_id=job.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn" type="submit">重新转写</button></form>
   {% endif %}
 </div>
 {% if job.status in ('awaiting_preview','approved') %}
@@ -41,6 +42,7 @@
   </div>
   <div class="card"><h2>确认转写文字</h2><p class="sub">系统已应用 {{ corrections|length }} 条术语纠错命中。可直接修改明显错字，无需逐字校对。</p>
     <form method="post" action="{{ url_for('audio_approve', pid=project.id, job_id=job.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <textarea name="transcript" rows="22" required>{{ job.corrected_transcript }}</textarea>
       <div class="model-ready">确认后将作为项目共享转写稿，供本项目下所有产品导入使用。</div>
       <div class="btn-row"><button class="btn" type="submit">确认转写稿（项目共享）</button></div>

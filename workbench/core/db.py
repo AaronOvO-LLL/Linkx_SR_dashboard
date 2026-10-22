@@ -188,6 +188,7 @@ def init_db():
     with _init_lock:
         conn = connect()
         _backup_before_project_fields(conn)
+        _backup_before_accounts(conn)
         conn.executescript(SCHEMA)
         conn.commit()
         apply_migrations(conn)
@@ -206,6 +207,21 @@ def _backup_before_project_fields(conn):
         return
     # 首次升级会创建固定备份；如果上次迁移中断，重试也不覆盖升级前的原始快照。
     backup_path = db_path() + '.pre-shared-v4.bak'
+    if not os.path.exists(backup_path):
+        staging = backup_path + '.tmp'
+        with closing(sqlite3.connect(staging)) as backup:
+            conn.backup(backup)
+        os.replace(staging, backup_path)
+
+
+def _backup_before_accounts(conn):
+    tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+    if 'projects' not in tables:
+        return
+    if 'schema_migrations' in tables and conn.execute(
+            'SELECT 1 FROM schema_migrations WHERE version=5').fetchone():
+        return
+    backup_path = db_path() + '.pre-users-v5.bak'
     if not os.path.exists(backup_path):
         staging = backup_path + '.tmp'
         with closing(sqlite3.connect(staging)) as backup:

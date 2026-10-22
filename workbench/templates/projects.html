@@ -4,10 +4,13 @@
 {% set step = step_of(2) %}
 
 <div class="card">
-  <h2>{{ dept.name }} · 项目库</h2>
+  <h2>{{ '全部分部' if user and user.role == 'admin' else dept.name }} · 项目库</h2>
   <p class="sub">创建或选择一个项目开始，随后可在项目概览中上传录音转写，再进入各产品录入。项目数据保存在本机，除非主动删除，否则长期保留。</p>
+  {% if user %}<p class="sub">新建项目可选择私密或分部共享，默认私密。分部共享项目维持原分部权限。</p>
+  {% else %}<div class="flash warn">当前为分部兼容入口，新建和复制的项目仍在分部共享。创建个人私密项目请退出并使用个人账号登录。</div>{% endif %}
 
   <form class="row project-create" method="post" action="{{ url_for('project_create') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <label class="fld" style="flex:2 1 240px;margin-bottom:0">
       <span>项目名称<span class="req">*</span></span>
       <input type="text" name="name" placeholder="例如：新宇精密安全管家项目" required>
@@ -28,10 +31,19 @@
         {% for c in catalog %}<option value="{{ c.product_type }}">{{ c.name }}</option>{% endfor %}
       </select>
     </label>
-    <label class="fld" style="flex:0 0 auto;margin-bottom:0">
+    {% if user %}
+    <label class="fld" style="flex:1 1 310px;margin-bottom:0">
+      <span id="projectVisibilityLabel">项目可见范围</span>
+      <select name="visibility" aria-labelledby="projectVisibilityLabel">
+        <option value="private">私密：仅创建者和管理员可以访问</option>
+        <option value="department">分部共享：维持原分部权限</option>
+      </select>
+    </label>
+    {% endif %}
+    <div class="fld" style="flex:0 0 auto;margin-bottom:0">
       <span>&nbsp;</span>
       <button class="btn" type="submit">新建项目</button>
-    </label>
+    </div>
   </form>
 </div>
 
@@ -67,6 +79,8 @@
     <div class="proj-meta">
       {% if p.customer_name %}<span>客户：{{ p.customer_name }}</span>{% endif %}
       <span>更新：{{ p.updated_at }}</span>
+      <span>创建者：{{ creator_label(p) }}</span>
+      <span>{{ department_name(p.dept_key) }} · {{ '私密（创建者及管理员）' if p.visibility == 'private' else '分部共享' }}</span>
       {% if p.products %}
       <span>产品：{% for pp in p.products %}{{ product_name(pp.product_type) }}{% if not loop.last %}、{% endif %}{% endfor %}</span>
       {% else %}
@@ -84,21 +98,26 @@
       <a class="btn sm" href="{{ url_for('project_detail', pid=p.id) }}">进入</a>
       {% if p.deleted %}
       <form method="post" action="{{ url_for('project_restore', pid=p.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <button class="btn gray sm" type="submit">恢复</button>
       </form>
       <form method="post" action="{{ url_for('project_delete', pid=p.id) }}" onsubmit="return confirm('彻底删除后不可恢复，确定继续？')">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <input type="hidden" name="mode" value="purge">
         <button class="btn danger sm" type="submit">彻底删除</button>
       </form>
       {% else %}
       <form method="post" action="{{ url_for('project_copy', pid=p.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <button class="btn gray sm" type="submit">复制</button>
       </form>
       <form method="post" action="{{ url_for('project_archive', pid=p.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <input type="hidden" name="undo" value="{{ '1' if p.archived else '0' }}">
         <button class="btn gray sm" type="submit">{{ '恢复' if p.archived else '归档' }}</button>
       </form>
       <form method="post" action="{{ url_for('project_delete', pid=p.id) }}" onsubmit="return confirm('删除「{{ p.name }}」？删除后可在「已删除」中恢复。')">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <button class="btn danger sm" type="submit">删除</button>
       </form>
       {% endif %}

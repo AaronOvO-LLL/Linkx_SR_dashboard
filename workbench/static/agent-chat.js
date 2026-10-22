@@ -40,7 +40,8 @@
       var options = {credentials: 'same-origin', cache: 'no-store', signal: controller.signal};
       if (body !== undefined) {
         options.method = 'POST';
-        options.headers = {'Content-Type': 'application/json', 'X-Chat-CSRF': root.dataset.csrf};
+        options.headers = {'Content-Type': 'application/json', 'X-Chat-CSRF': root.dataset.csrf,
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content};
         options.body = JSON.stringify(body);
       }
       var response = await fetch(url, options);
