@@ -318,6 +318,10 @@ def extract_money(sentences, spec, text):
     for s in sentences:
         if not any(k in s for k in kws):
             continue
+        if spec.get('anchor_money'):
+            # 从本供应商关键词后取金额，并在逗号/分号处截断，避免同段多家报价串写。
+            start = min(s.index(k) for k in kws if k in s)
+            s = re.split(r'[，,；;]', s[start:])[0]
         match = MONEY_PATTERN.search(s)
         if match:
             if spec.get('numeric_value'):
@@ -327,6 +331,11 @@ def extract_money(sentences, spec, text):
                 return value, clean_quote(s), 'medium'
             return norm_space(s), clean_quote(s), 'medium'
         if spec.get('numeric_value'):
+            if spec.get('anchor_money'):
+                numbers = re.findall(r'(?<!\d)-?\d+(?:\.\d+)?', s)
+                if len(numbers) == 1:
+                    return float(numbers[0]), clean_quote(s), 'medium'
+                return None, clean_quote(s), 'low'
             value, quote, confidence = extract_number([s], spec, s)
             if value is not None:
                 return value, quote, confidence
@@ -539,7 +548,9 @@ def _run_rule_engine(text, product_type, protected_keys):
         spec['excluded_equipment'] = f.get('validate', {}).get('excluded_equipment', [])
         mode = spec.get('mode', 'sentence')
 
-        if mode == 'phone':
+        if mode == 'manual' or f['type'] == 'attachment':
+            value, quote, conf = None, '', None
+        elif mode == 'phone':
             value, quote, conf = extract_phone(text)
         elif mode == 'date':
             value, quote, conf = extract_date(sentences, spec, text)
@@ -643,6 +654,8 @@ def _run_llm_engine(text, product_type, protected_keys):
     fields = field_config(product_type)['fields']
     schema = []
     for f in fields:
+        if f['type'] == 'attachment' or f.get('extract', {}).get('mode') == 'manual':
+            continue
         item = {'key': f['key'], 'label': f['label'], 'type': f['type'],
                 'required': bool(f.get('required')), 'hint': f.get('ai_hint', '')}
         if f.get('options'):
@@ -702,6 +715,8 @@ def _run_llm_engine(text, product_type, protected_keys):
     out, hit_fields = {}, 0
     for f in fields:
         got = (data.get('fields') or {}).get(f['key']) or {}
+        if f['type'] == 'attachment' or f.get('extract', {}).get('mode') == 'manual':
+            got = {}
         value = _normalize_llm_value(f, got.get('value'))
         conf = got.get('confidence') if got.get('confidence') in ('high', 'medium', 'low') else 'medium'
         if isinstance(value, list) and rules_output_for(product_type, f):

@@ -186,6 +186,33 @@ class RulesEngineTests(unittest.TestCase):
         second = bom(rules.extract_rows(output(), SAMPLE_TEXT)[0])
         self.assertEqual(first, second)
 
+    def test_room_declarations_expand_without_becoming_devices(self):
+        for cat in rules.categories(output()):
+            for device in ('', cat['name'], cat['synonyms'][-1], '测试房间'):
+                with self.subTest(category=cat['name'], device=device):
+                    rows = [{'room_name': '测试房间', 'space_type': cat['name'],
+                             'device': device, 'qty': 1}]
+                    expanded = rules.materialize(output(), rows)
+                    self.assertEqual([r['device'] for r in expanded],
+                                     [e['item'] for e in cat['fixed']])
+                    self.assertEqual(rules.materialize(output(), expanded), expanded)
+                    self.assertEqual(rules.build_dataset(PT, output(), rows)['issues'], [])
+
+    def test_placeholder_with_existing_items_keeps_adjustments_and_unknowns(self):
+        rows = [{'room_name': '1#电梯机房', 'space_type': '电梯机房', 'device': '', 'qty': ''},
+                {'room_name': '1#电梯机房', 'space_type': '电梯机房', 'device': '水浸', 'qty': 0},
+                {'room_name': '1#电梯机房', 'space_type': '电梯机房', 'device': '未知设备', 'qty': 2}]
+        expanded = rules.materialize(output(), rows)
+        self.assertEqual(room(expanded, '1#电梯机房', '设备房水浸')['qty'], 0)
+        self.assertIsNotNone(room(expanded, '1#电梯机房', '未知设备'))
+        self.assertEqual(len(rules.build_dataset(PT, output(), rows)['issues']), 1)
+
+    def test_incomplete_or_unknown_room_is_still_reported(self):
+        for name, category in (('', '电梯机房'), ('测试房间', '发电机房')):
+            rows = [{'room_name': name, 'space_type': category, 'device': '', 'qty': ''}]
+            self.assertTrue(any(not r['device'] for r in rules.materialize(output(), rows)))
+            self.assertTrue(rules.build_dataset(PT, output(), rows)['issues'])
+
     def test_rules_library_passes_self_check(self):
         self.assertEqual(rules.validate_rules(PT), [])
         self.assertFalse(rules.has_rules('safety_butler'))
@@ -370,6 +397,39 @@ class DeviceButlerFlowTests(unittest.TestCase):
         pumps = [r[1] for r in bom(self.table()) if r[0] == '1#独立生活水泵房']
         self.assertNotIn('设备房摄像头', pumps)
         self.assertIn('设备房水浸', pumps)
+
+    def test_room_only_manual_save_returns_expanded_rows_and_exports(self):
+        self.extract(self.sample('full.md'))
+        response = self.client.post('/p/%s/field' % self.pp['id'], json={
+            'key': TABLE, 'value': [{'room_name': '新配电房', 'space_type': '配电房',
+                                    'device': '', 'qty': ''}]})
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertTrue(payload['validation_ok'], payload['issues'])
+        self.assertEqual(payload['table_rows'], self.table())
+        self.assertEqual(len(self.table()), 4)
+        self.assertTrue(all(r['device'] != '新配电房' for r in self.table()))
+        self.assertEqual(artifacts.generate_artifacts(self.pp, ['sensor_bom'])[0]['status'], 'success')
+
+    def test_legacy_room_placeholder_previews_and_exports_without_resaving(self):
+        self.extract(self.sample('full.md'))
+        repo.upsert_field_value(self.pp['id'], TABLE, json.dumps([
+            {'room_name': '旧电梯机房', 'space_type': '电梯机房',
+             'device': '旧电梯机房', 'qty': 1}]), 'confirmed', None, '', 'human', '1.0.0', 1)
+        ok, issues = validate(self.pp['id'], PT)
+        self.assertTrue(ok, issues)
+        review = self.client.get('/p/%s/review' % self.pp['id']).get_data(as_text=True)
+        self.assertIn('设备房水浸', review)
+        self.assertNotIn('旧电梯机房（历史值）', review)
+        preview = artifacts.build_preview(self.pp)
+        self.assertTrue(preview[0], preview[1])
+        result = artifacts.generate_artifacts(self.pp, ['sensor_bom'])[0]
+        self.assertEqual(result['status'], 'success')
+        from openpyxl import load_workbook
+        grid = list(load_workbook(result['files'][0]['path']).active.values)
+        body = [r for r in grid if r[0] == '旧电梯机房']
+        self.assertEqual(len(body), 4)
+        self.assertTrue(all(r[1] != '旧电梯机房' for r in body))
 
     def test_reextraction_protects_human_edits(self):
         """场景 G 前置：人工确认过的表格不被重新提取覆盖。"""

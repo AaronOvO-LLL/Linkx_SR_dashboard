@@ -1,11 +1,11 @@
 {% extends 'base.html' %}
-{% block title %}预览与生成 · {{ project.name }}{% endblock %}
+{% block title %}{{ '审阅与生成' if pp.product_type == 'device_butler' else '预览与生成' }} · {{ project.name }}{% endblock %}
 {% block content %}
 {% set step = step_of(6) %}
 
 <div class="page-head">
-  <a class="btn gray sm" href="{{ url_for('review', pp_id=pp.id) }}">← 返回信息核对</a>
-  <h2 style="margin:0;font-size:17px">{{ project.name }} · {{ product.name }} · 预览与生成</h2>
+  <a class="btn gray sm" href="{{ url_for('review', pp_id=pp.id) }}">{{ '← 返回填写' if pp.product_type == 'device_butler' else '← 返回信息核对' }}</a>
+  <h2 style="margin:0;font-size:17px">{{ project.name }} · {{ product.name }} · {{ '审阅与生成' if pp.product_type == 'device_butler' else '预览与生成' }}</h2>
 </div>
 
 {% if not ok %}

@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.4.0",
+  "schema_version": "1.5.0",
   "note": "字段模型的元定义（契约）。它不描述业务，只描述『字段模型可以怎么写』。新增产品、新增字段前先读这份文件；写完用 `python check_config.py` 校验。",
   "layers": [
     {
@@ -116,6 +116,10 @@
         "columns"
       ],
       "note": "用于设备清单类结构化的多行数据。列属性见 table_column_attributes。"
+    },
+    "attachment": {
+      "enabled": true,
+      "desc": "人工上传附件；值为服务端生成的附件元数据列表，普通字段API及AI不得写入。"
     }
   },
   "table_column_attributes": [
@@ -243,6 +247,10 @@
         "keywords"
       ],
       "note": "表格的行语义与词表来自产品规则库（config/products/<t>/rules.json），由 core/rules.py::extract_rows 执行：识别分组实体（如设备房）、同类多个分别成行、按同义词归一到规则库标准名、数量说不清就留空。keywords 仍用于关联度检查。提取后统一走 core/rules.py::postprocess 归一并补全固定项。"
+    },
+    "manual": {
+      "enabled": true,
+      "desc": "人工输入/上传，不参与文本自动提取。"
     }
   },
   "field_attributes": [
@@ -466,6 +474,24 @@
       "required": false,
       "default": false,
       "desc": "允许自定义的多选品牌题选择其他时，必须包含非候选项的具体品牌名称；页面、保存接口及生成校验共用此约束。"
+    },
+    {
+      "key": "upload",
+      "type": "object",
+      "required": false,
+      "desc": "附件扩展名、max_bytes、max_files、record_kinds限制。"
+    },
+    {
+      "key": "required_if",
+      "type": "object",
+      "required": false,
+      "desc": "条件必填：field引用；operator为equals或age_at_least；value比较值。age_at_least按主机编号逐台核查两类记录。"
+    },
+    {
+      "key": "reconfirm_before_template",
+      "type": "string",
+      "required": false,
+      "desc": "语义变化时，早于此模板版本的已有答案须重新人工确认。"
     }
   ],
   "rules": [

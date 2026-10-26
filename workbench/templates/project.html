@@ -125,7 +125,7 @@
         {% if pp.progress >= 50 %}
         <a class="btn ghost sm" href="{{ url_for('preview', pp_id=pp.id) }}">预览生成</a>
         {% endif %}
-        {% if pp.progress >= 80 %}
+        {% if has_capability(pp.product_type, 'artifact_generation') %}
         <a class="btn ghost sm" href="{{ url_for('result', pp_id=pp.id) }}">结果中心</a>
         {% endif %}
       </div>

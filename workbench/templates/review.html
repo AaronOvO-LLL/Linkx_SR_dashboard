@@ -60,12 +60,12 @@
     {% set row = it.row %}
     {% set st = row.status if row else ('required_missing' if f.required else 'optional_missing') %}
     {% set val = row.value_json if row else '""' %}
-    <div class="fld-row {{ 'miss' if st=='required_missing' else ('confirm' if st=='pending_confirm' else '') }}"
+    <div {% if f.key == 'sdk_device_compatible' %}data-sdk-condition style="display:none"{% endif %} class="fld-row {{ 'miss' if st=='required_missing' else ('confirm' if st=='pending_confirm' else '') }}"
          data-status="{{ st }}" data-filled="{{ '1' if row and row.value_json not in ('""','[]','{}','null') else '0' }}">
       <div class="fld-head">
         <span class="lb">{{ f.label }}</span>
         {% if f.value_scope == 'project' %}<span class="tag blue">项目共享</span>{% endif %}
-        {% if f.required %}<span class="tag red">必填</span>{% endif %}
+        {% if f.get('required_if') %}<span class="tag orange">条件必填</span>{% elif f.required %}<span class="tag red">必填</span>{% endif %}
         <span class="tag {{ tag_class(st) }}" data-role="status">{{ status_labels[st] }}</span>
         {% if row and row.updated_by == 'human' %}<span class="tag green">人工</span>
         {% elif row and row.updated_by == 'ai' %}<span class="tag">AI</span>{% endif %}
@@ -95,8 +95,32 @@
       {% endif %}
 
       {% if f.help %}<div class="hint" style="margin-bottom:5px">{{ f.help }}</div>{% endif %}
+      {% if f.get('required_if', {}).get('operator') == 'equals' %}<span hidden data-required-condition='{{ f.required_if|tojson }}'></span>{% endif %}
+      {% if f.key == 'sdk_device_compatible' %}
+      <a class="btn ghost sm" href="{{ url_for('static', filename='sdk-device-list.html') }}" target="_blank" rel="noopener" style="margin-bottom:10px">查看 SDK 可对接设备清单（示例） ↗</a>
+      {% endif %}
 
-      {% if f.type == 'text' %}
+      {% if f.type == 'attachment' %}
+        <form method="post" enctype="multipart/form-data" action="{{ url_for('upload_field_attachment', pp_id=pp.id, key=f.key) }}" class="attachment-upload">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <label>消控室 / 主机编号 <input name="host" required maxlength="120" placeholder="与出厂年限中的主机编号一致"></label>
+          <label>记录类型 <select name="kind">{% for kind in f.upload.record_kinds %}<option>{{ kind }}</option>{% endfor %}</select></label>
+          <label>照片 / 记录说明 <input name="description" required maxlength="1000"></label>
+          <label>文件 <input type="file" name="file" required accept="{% for ext in f.upload.extensions %}.{{ ext }}{% if not loop.last %},{% endif %}{% endfor %}"></label>
+          <button type="submit" class="btn gray sm">上传并保存</button>
+          <span class="hint">每次上传一个文件，可继续添加多张照片或记录。</span>
+        </form>
+        {% for attachment in (row.value_json|fromjson or []) if row %}
+        <div style="margin-top:10px">
+          <a href="{{ url_for('download_field_attachment', pp_id=pp.id, key=f.key, token=attachment.id) }}" download>{{ attachment.name }}</a>
+          <span>{{ attachment.host }} · {{ attachment.kind }} · {{ attachment.description }}</span>
+          <form method="post" action="{{ url_for('remove_field_attachment', pp_id=pp.id, key=f.key, token=attachment.id) }}" style="display:inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button class="btn danger sm" type="submit">删除附件</button>
+          </form>
+        </div>
+        {% endfor %}
+      {% elif f.type == 'text' %}
         <input type="text" class="fi" data-key="{{ f.key }}" data-type="text"
                value="{{ row.value_json|jval if row else '' }}" placeholder="{{ f.get('placeholder','') }}">
       {% elif f.type == 'number' %}
@@ -111,6 +135,19 @@
                   placeholder="{{ f.get('placeholder','') }}">{{ row.value_json|jval if row else '' }}</textarea>
       {% elif f.type in ('select', 'multiselect') %}
         {% include '_choice_field.html' %}
+      {% elif f.type == 'table' and f.key == 'device_room_survey' and f.rules_ui %}
+        <div class="room-editor" data-key="{{ f.key }}" data-type="rooms"
+             data-rules='{{ f.rules_ui|tojson }}'
+             data-rows="{{ row.value_json if row else '[]' }}">
+          <div class="room-toolbar">
+            <span class="hint" data-room-count aria-live="polite"></span>
+            <button class="btn" type="button" data-add-room>+ 新增设备房</button>
+          </div>
+          <p class="room-empty hint">还没有设备房。点击「新增设备房」，填写名称、选择类型，再填写对应的子设备数量。</p>
+          <div class="room-list"></div>
+          <p class="room-error" role="alert" hidden></p>
+          <noscript>请启用 JavaScript 后填写设备房。</noscript>
+        </div>
       {% elif f.type == 'table' %}
         <div class="table-scroll" role="region" aria-label="{{ f.label }}，可横向滚动" tabindex="0">
         <table class="tbl" data-key="{{ f.key }}" data-type="table" data-columns='{{ f.columns|tojson }}'
@@ -164,10 +201,10 @@
 
 <div class="card">
   <h2>下一步</h2>
-  <p class="sub">确认无误后进入预览，勾选需要生成的材料。</p>
+  <p class="sub">{% if pp.product_type == 'device_butler' %}填写完成后进入审阅，查看按设备房汇总的表格及传感器配置清单。{% else %}确认无误后进入预览，勾选需要生成的材料。{% endif %}</p>
   <div class="btn-row">
     <a class="btn {% if not ok %}gray{% endif %}" id="nextBtn"
-       href="{{ url_for('preview', pp_id=pp.id) }}">进入预览与生成 →</a>
+       href="{{ url_for('preview', pp_id=pp.id) }}">{{ '审阅设备清单 →' if pp.product_type == 'device_butler' else '进入预览与生成 →' }}</a>
     <a class="btn ghost" href="{{ url_for('survey', pp_id=pp.id) }}">返回查看原文</a>
     <span class="hint" id="nextHint" style="align-self:center"></span>
   </div>
@@ -175,6 +212,7 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='room-editor.js') }}"></script>
 <script>
 var SAVE_URL = "{{ url_for('save_field', pp_id=pp.id) }}";
 </script>

@@ -74,11 +74,14 @@ def build_context(pp_id, product_type):
         row = values.get(key)
         v = parse_value(row['value_json']) if row else None
         data[key] = v
-        display[key] = _value_to_text(v)
+        text = ('；'.join('%s / %s / %s：%s' % (x.get('host', ''), x.get('kind', ''),
+                x.get('name', ''), x.get('description', '')) for x in (v or []))
+                if f['type'] == 'attachment' and isinstance(v, list) else _value_to_text(v))
+        display[key] = text
         detail[key] = {
             'label': f['label'],
             'value': v,
-            'text': _value_to_text(v),
+            'text': text,
             'status': repo.field_status(row, f),
             'status_label': FIELD_STATUS_LABELS.get(repo.field_status(row, f), ''),
             'confidence': row['confidence'] if row else None,

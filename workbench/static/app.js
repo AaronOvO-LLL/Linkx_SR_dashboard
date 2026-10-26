@@ -1,5 +1,5 @@
 /* 灵石解决方案工作台 · 原生 JS 交互增强
-   只做三件事：字段自动保存、核对页筛选、表格行增删。
+   字段自动保存、核对页筛选，以及表格和设备房录入。
    页面结构与状态一律由服务端 Jinja2 渲染，前端不持有业务规则。 */
 
 (function () {
@@ -77,6 +77,7 @@
         group.querySelectorAll('textarea,select').forEach(function (el) { el.value = ''; });
         refresh();
         scheduleSave(group, 0);
+        applyFilter();
       });
       refresh();
     });
@@ -88,6 +89,19 @@
         scheduleSave(tbl, 0);
       });
       initRuleTable(tbl);
+    });
+    if (window.RoomEditor) window.RoomEditor.init(scheduleSave);
+
+    document.querySelectorAll('form.attachment-upload, form[action$="/remove"]').forEach(function (form) {
+      form.addEventListener('submit', async function (event) {
+        event.preventDefault();
+        saveTimers.forEach(function (timer) { clearTimeout(timer); });
+        saveTimers.clear();
+        Array.from(dirtyFields).forEach(function (el) { saveField(el); });
+        await saveQueue;
+        if (dirtyFields.size) { alert('仍有字段未保存，请保存后再上传或删除附件。'); return; }
+        form.submit();
+      });
     });
 
     // 切换方式前立即保存，包括尚未到达自动保存延时的最后一次输入。
@@ -103,6 +117,15 @@
       Array.from(dirtyFields).forEach(function (el) { saveField(el); });
       await saveQueue;
       if (dirtyFields.size) {
+        var invalidRooms = Array.from(dirtyFields).find(function (el) {
+          return el.getAttribute('data-type') === 'rooms' && !window.RoomEditor.validate(el);
+        });
+        if (invalidRooms) {
+          alert(invalidRooms.querySelector('.room-error').textContent);
+          var invalidInput = invalidRooms.querySelector('input:invalid, select:invalid');
+          if (invalidInput) invalidInput.focus();
+          return;
+        }
         alert('仍有内容未保存，请检查网络后再次点击切换。当前填写内容已保留在页面中。');
         return;
       }
@@ -154,6 +177,7 @@
 
   function readValue(el) {
     var type = el.getAttribute('data-type');
+    if (type === 'rooms') return window.RoomEditor.read(el);
     if (type === 'choice-single') {
       var selected = el.querySelector('input[type=radio]:checked, select option:checked');
       if (!selected) return '';
@@ -200,6 +224,12 @@
   function persistField(el, value) {
     var key = el.getAttribute('data-key');
     var row = el.closest('.fld-row');
+    if (el.getAttribute('data-type') === 'rooms' && !window.RoomEditor.validate(el)) {
+      dirtyFields.add(el);
+      var roomHint = row.querySelector('[data-role=saved]');
+      if (roomHint) { roomHint.textContent = '请检查设备房填写内容'; roomHint.classList.add('on'); }
+      return Promise.resolve();
+    }
     if (el.hasAttribute('data-require-other-detail') && value.includes('其他')) {
       var allowed = Array.from(el.querySelectorAll('input[type=checkbox]')).map(function (input) { return input.value; });
       if (!value.some(function (v) { return v.trim() && !allowed.includes(v.trim()); })) {
@@ -218,7 +248,31 @@
       .then(function (r) { if (!r.ok) throw new Error('保存失败'); return r.json(); })
       .then(function (res) {
         if (!res.ok) throw new Error(res.error || '保存失败');
-        if (JSON.stringify(readValue(el)) === JSON.stringify(value)) dirtyFields.delete(el);
+        if (JSON.stringify(readValue(el)) === JSON.stringify(value)) {
+          dirtyFields.delete(el);
+          if (el.getAttribute('data-type') === 'table' && Array.isArray(res.table_rows) && JSON.stringify(res.table_rows) !== JSON.stringify(value)) {
+            var active = document.activeElement;
+            var activeRow = active && el.contains(active) && active.closest('tr');
+            var activeCol = active && active.getAttribute('data-col');
+            var ruleUI = JSON.parse(el.getAttribute('data-rules'));
+            var roomInput = activeRow && activeRow.querySelector('[data-col="' + ruleUI.group_column + '"]');
+            var activeRoom = roomInput && roomInput.value;
+            var itemInput = activeRow && activeRow.querySelector('[data-col="' + ruleUI.item_column + '"]');
+            var activeItem = itemInput && itemInput.value;
+            el.tBodies[0].replaceChildren();
+            res.table_rows.forEach(function (r) { appendTableRow(el, r); });
+            if (activeRow) {
+              var roomRows = Array.from(el.tBodies[0].rows).filter(function (tr) {
+                return tr.querySelector('[data-col="' + ruleUI.group_column + '"]').value === activeRoom;
+              });
+              var targetRow = roomRows.find(function (tr) {
+                return tr.querySelector('[data-col="' + ruleUI.item_column + '"]').value === activeItem;
+              }) || roomRows[0];
+              var target = targetRow && targetRow.querySelector('[data-col="' + activeCol + '"]');
+              if (target) target.focus();
+            }
+          }
+        }
         if (row) {
           var conflict = row.querySelector('[data-shared-conflict]');
           if (conflict && res.status === 'confirmed') conflict.remove();
@@ -289,6 +343,10 @@
   var currentFilter = 'all';
 
   function initFilters() {
+    document.querySelectorAll('[data-key="storage_protocol"]').forEach(function (el) {
+      el.addEventListener('change', applyFilter);
+    });
+    applyFilter();
     document.querySelectorAll('.filt').forEach(function (b) {
       b.addEventListener('click', function () {
         document.querySelectorAll('.filt').forEach(function (x) { x.classList.remove('on'); });
@@ -308,7 +366,17 @@
       if (f === 'pending_confirm') show = (st === 'pending_confirm');
       else if (f === 'required_missing') show = (st === 'required_missing');
       else if (f === 'filled') show = filled;
+      if (row.hasAttribute('data-sdk-condition')) {
+        var protocol = document.querySelector('[data-key="storage_protocol"] input:checked, [data-key="storage_protocol"] select option:checked');
+        show = show && !!protocol && protocol.value === '否';
+      }
       row.style.display = show ? '' : 'none';
+      var conditional = row.querySelector('[data-required-condition]');
+      if (conditional) {
+        var condition = JSON.parse(conditional.getAttribute('data-required-condition'));
+        var control = document.querySelector('[data-key="' + condition.field + '"]');
+        row.style.display = show && control && readValue(control) === condition.value ? '' : 'none';
+      }
     });
     document.querySelectorAll('.grp').forEach(function (g) {
       var any = Array.prototype.slice.call(g.querySelectorAll('.fld-row'))
@@ -343,6 +411,12 @@
     if (tbl && tbl.classList.contains('table-scroll')) tbl = tbl.querySelector('table');
     while (tbl && tbl.tagName !== 'TABLE') tbl = tbl.previousElementSibling;
     if (!tbl) return;
+    var tr = appendTableRow(tbl, {});
+    tr.querySelector('input').focus();
+    scheduleSave(tbl, 0);
+  };
+
+  function appendTableRow(tbl, values) {
     var tr = document.createElement('tr');
     var number = document.createElement('td');
     number.setAttribute('data-row-number', ''); number.textContent = tbl.tBodies[0].rows.length + 1; tr.appendChild(number);
@@ -370,6 +444,14 @@
         } else { inp.type = c.type === 'number' ? 'number' : 'text'; inp.step = 'any'; }
         inp.value = c.default || '';
       }
+      if (Object.prototype.hasOwnProperty.call(values, c.key)) {
+        var cellValue = values[c.key] == null ? '' : String(values[c.key]);
+        if (inp.tagName === 'SELECT' && cellValue && !Array.from(inp.options).some(function (o) { return o.value === cellValue; })) {
+          var legacy = document.createElement('option'); legacy.value = cellValue; legacy.textContent = cellValue;
+          inp.appendChild(legacy);
+        }
+        inp.value = cellValue;
+      }
       inp.setAttribute('data-col', c.key); inp.setAttribute('aria-label', c.label);
       td.appendChild(inp); tr.appendChild(td);
     });
@@ -382,10 +464,9 @@
     td.appendChild(b);
     tr.appendChild(td);
     tbl.querySelector('tbody').appendChild(tr);
-    if (tableRules) updateRuleDeviceOptions(tbl, tr);
-    tr.querySelector('input').focus();
-    scheduleSave(tbl, 0);
-  };
+    if (tableRules) updateRuleDeviceOptions(tbl, tr, true);
+    return tr;
+  }
 
   window.delRow = function (btn) {
     var tr = btn.closest('tr');
