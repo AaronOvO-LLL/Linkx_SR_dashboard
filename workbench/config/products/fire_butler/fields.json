@@ -1,7 +1,7 @@
 {
-  "template_version": "0.3.0",
+  "template_version": "0.4.0",
   "product_type": "fire_butler",
-  "note": "来源：踏勘要求的项目具体内容.xlsx。共用行4-20；消防行63-76。行66、68为重复填报示例，分别合并为逐消控室多行字段。按键单选补充有损坏状态用于记录异常。 2026-09-21：按用户授权将适合的文本字段改为选择题，字段 key 与必填范围保留，历史文字兼容显示。",
+  "note": "2026-10-27按用户确认的消防管家-踏勘字段-20261023.xlsx更新。套餐单选；满12年及以上须提供对应主机维保维修记录；恒益与卫士报价独立记录；旧主机字段保留原编码并要求重新确认。",
   "packs": [
     "common_project",
     "common_docs",
@@ -16,7 +16,17 @@
     "fire_maintenance",
     "fire_cost"
   ],
-  "overrides": {},
+  "overrides": {
+    "build_type": {
+      "required": false
+    },
+    "land_area": {
+      "required": false
+    },
+    "building_area": {
+      "required": false
+    }
+  },
   "extra_fields": [],
   "remove_fields": []
 }

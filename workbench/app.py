@@ -16,7 +16,7 @@ from werkzeug.utils import safe_join
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from core import accounts, db, departments, extract, generate, repo, runtime  # noqa: E402
-from core.config import (app_config, artifact_map, fields_by_group, field_config,  # noqa: E402
+from core.config import (app_config, artifact_map, fields_by_group, field_config, field_map,  # noqa: E402
                          list_products, product_config)
 from core.capabilities import has_capability  # noqa: E402
 from core.paths import ROOT, STATIC_DIR  # noqa: E402
@@ -24,6 +24,10 @@ from core.validate import validate  # noqa: E402
 from core.choices import choice_state  # noqa: E402
 from services import artifacts as artifact_service  # noqa: E402
 from services import survey as survey_service  # noqa: E402
+from services import survey_export  # noqa: E402
+from services import field_attachments  # noqa: E402
+from core.field_conditions import required_now  # noqa: E402
+from core.capabilities import CapabilityError  # noqa: E402
 from services import audio as audio_service  # noqa: E402
 from services import agent_chat  # noqa: E402
 
@@ -64,6 +68,8 @@ def csrf_token():
 
 @app.before_request
 def protect_personal_session():
+    if request.endpoint == 'upload_field_attachment':
+        request.max_content_length = 12 * 1024 * 1024
     if request.endpoint == 'static':
         return None
     if session.get('user_id') and not current_user():
@@ -831,7 +837,7 @@ def review(pp_id):
     for g, fs in fields_by_group(ptype):
         items = []
         for original_field in fs:
-            f = original_field
+            f = dict(original_field, required=required_now(original_field, values))
             output_def = extract.rules_output_for(ptype, f)
             if output_def:
                 from core import rules
@@ -839,6 +845,9 @@ def review(pp_id):
             row = values.get(f['key'])
             if row:
                 row = dict(row, status=repo.field_status(row, f))
+                if output_def:
+                    row['value_json'] = repo.json.dumps(rules.materialize(
+                        output_def, repo.json.loads(row['value_json'])), ensure_ascii=False)
             items.append({'def': f, 'row': row, 'issues': issue_map.get(f['key'], [])})
         groups.append({
             'def': g,
@@ -857,6 +866,48 @@ def review(pp_id):
                            field_template_version=field_config(ptype)['template_version'])
 
 
+@app.route('/p/<pp_id>/attachments/<key>', methods=['POST'])
+def upload_field_attachment(pp_id, key):
+    r = require_dept()
+    if r:
+        return r
+    pp, project = load_pp(pp_id)
+    try:
+        field_attachments.upload(pp, project, key, request.files.get('file'),
+            request.form.get('host', ''), request.form.get('description', ''), request.form.get('kind', ''))
+        flash_msg('附件已保存。')
+    except (field_attachments.AttachmentError, CapabilityError) as exc:
+        flash_msg(str(exc), 'warn')
+    return redirect(url_for('review', pp_id=pp_id))
+
+
+@app.route('/p/<pp_id>/attachments/<key>/<token>')
+def download_field_attachment(pp_id, key, token):
+    r = require_dept()
+    if r:
+        return r
+    pp, _ = load_pp(pp_id)
+    try:
+        path, name = field_attachments.download(pp, key, token)
+    except (field_attachments.AttachmentError, CapabilityError):
+        abort(404)
+    return send_file(path, as_attachment=True, download_name=name, mimetype='application/octet-stream')
+
+
+@app.route('/p/<pp_id>/attachments/<key>/<token>/remove', methods=['POST'])
+def remove_field_attachment(pp_id, key, token):
+    r = require_dept()
+    if r:
+        return r
+    pp, project = load_pp(pp_id)
+    try:
+        field_attachments.remove(pp, project, key, token)
+        flash_msg('附件已删除。')
+    except (field_attachments.AttachmentError, CapabilityError) as exc:
+        flash_msg(str(exc), 'warn')
+    return redirect(url_for('review', pp_id=pp_id))
+
+
 @app.route('/p/<pp_id>/field', methods=['POST'])
 def save_field(pp_id):
     r = require_dept()
@@ -868,7 +919,11 @@ def save_field(pp_id):
         status, ok, stats = survey_service.save_field_value(pp, project, data)
     except survey_service.SurveyServiceError as exc:
         return jsonify({'ok': False, 'error': str(exc)}), 400
+    saved_rows = None
+    if extract.rules_output_for(pp['product_type'], field_map(pp['product_type'])[data['key']]):
+        saved_rows = repo.json.loads(repo.field_values(pp_id)[data['key']]['value_json'])
     return jsonify({'ok': True, 'status': status,
+                    'table_rows': saved_rows,
                     'status_label': repo.FIELD_STATUS_LABELS[status],
                     'validation_ok': ok,
                     'issues': validate(pp_id, pp['product_type'])[1],
@@ -969,6 +1024,17 @@ def result(pp_id):
     export = artifact_service.latest_current_export(pp)
     return render_template('result.html', pp=pp, project=project, runs=runs,
                            export=export, product=product_config(pp['product_type']))
+
+
+@app.route('/p/<pp_id>/survey.xlsx')
+def survey_excel(pp_id):
+    r = require_dept()
+    if r:
+        return r
+    pp, project = load_pp(pp_id)
+    stream, filename = survey_export.export_survey(pp)
+    return send_file(stream, mimetype=survey_export.MIME_TYPE,
+                     as_attachment=True, download_name=filename)
 
 
 @app.route('/p/<pp_id>/file/<artifact_key>/<path:filename>')

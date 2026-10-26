@@ -207,6 +207,15 @@ def _fixed_rows(output_def, room, category):
     return rows
 
 
+def _room_placeholder(output_def, row):
+    """已识别房间的声明行只用于补固定项，本身不是物业设备。"""
+    room = str(row.get(output_def['group_column']) or '').strip()
+    cat = category_of(output_def, row.get(output_def['category_column']))
+    item = str(row.get(output_def['item_column']) or '').strip()
+    return bool(room and cat and cat.get('fixed') and (
+        not item or item == room or category_of(output_def, item) == cat))
+
+
 def materialize(output_def, rows):
     """按空间类型把缺失的固定项补全为可编辑行（需求文档 6.4 / 决策 B3）。
 
@@ -251,11 +260,10 @@ def materialize(output_def, rows):
         if extra:
             inserts[index_of[room][-1]] = extra
 
-    if not inserts:
-        return rows
     out = []
     for i, row in enumerate(rows):
-        out.append(row)
+        if not _room_placeholder(output_def, row):
+            out.append(row)
         out.extend(inserts.get(i, []))
     return out
 
@@ -368,7 +376,7 @@ def compute_rows(output_def, rows, default_unit=''):
 def build_dataset(product_type, output_def, rows):
     """计算一个规则输出，返回可直接交给页面与 xlsx renderer 的数据集。"""
     default_unit = _default_unit(load(product_type))
-    rows = normalize_rows(output_def, rows)
+    rows = materialize(output_def, rows)
     results = compute_rows(output_def, rows, default_unit)
 
     group_col = output_def.get('group_column')

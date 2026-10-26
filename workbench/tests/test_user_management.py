@@ -98,7 +98,8 @@ class UserManagementTests(unittest.TestCase):
         audio = self.audio()
         file_url = self.fill_and_generate()
         reads = [self.purl, audio, audio + '/status', audio + '/file', file_url,
-                 file_url + '?mode=download', self.ppurl + '/package/download']
+                 file_url + '?mode=download', self.ppurl + '/package/download',
+                 self.ppurl + '/survey.xlsx']
         reads += [self.ppurl + '/' + route for route in ('survey', 'review', 'preview', 'result')]
         writes = [self.purl + '/' + route for route in
                   ('update', 'archive', 'delete', 'restore', 'copy', 'products/add', 'audio')]
@@ -124,7 +125,8 @@ class UserManagementTests(unittest.TestCase):
         admin = self.login('admin', 'admin-secret')
         for client in (self.client, admin):
             for url in (self.purl, self.ppurl + '/review', audio, audio + '/status',
-                        audio + '/file', file_url, self.ppurl + '/package/download'):
+                        audio + '/file', file_url, self.ppurl + '/package/download',
+                        self.ppurl + '/survey.xlsx'):
                 with self.subTest(url=url), client.get(url) as response:
                     self.assertEqual(response.status_code, 200)
                     self.assertEqual(response.headers['Cache-Control'], 'no-store')
@@ -138,7 +140,7 @@ class UserManagementTests(unittest.TestCase):
         self.post(self.client, '/logout')
         for client in (self.client, web.app.test_client()):
             for url in (self.purl, self.ppurl + '/review', audio + '/file', file_url,
-                        self.ppurl + '/package/download'):
+                        self.ppurl + '/package/download', self.ppurl + '/survey.xlsx'):
                 response = client.get(url)
                 self.assertEqual(response.status_code, 302)
                 self.assertTrue(response.location.endswith('/login'))

@@ -106,7 +106,7 @@
     },
     {
       "key": "fire_host_relationships",
-      "label": "消防主机数量及主从关系",
+      "label": "消防主机品牌型号及数量",
       "group": "fire_control",
       "type": "textarea",
       "required": true,
@@ -114,20 +114,21 @@
       "extract": {
         "mode": "sentence",
         "keywords": [
-          "消防主机数量",
-          "主从",
-          "主机",
-          "主消控室"
+          "消防主机品牌",
+          "主机型号",
+          "主机数量",
+          "消控室编号"
         ],
         "negation_guard": false,
         "max_sentences": 1000
       },
-      "help": "有几个消控室就填写几行，每行注明消控室编号及对应主机信息。",
-      "ai_hint": "逐个消控室保留编号、主机信息及主从关系，每个消控室一行，不得合并遗漏。"
+      "help": "按消控室逐行填写编号、消防主机品牌、型号及数量；不同品牌或型号分别列明。",
+      "ai_hint": "逐个消控室提取品牌、型号和数量，保留对应关系；缺项留空，不推测；主从关系填写到独立字段。",
+      "reconfirm_before_template": "0.4.0"
     },
     {
       "key": "fire_host_brands",
-      "label": "消防主机品牌及主从关系",
+      "label": "消防主机主从关系",
       "group": "fire_control",
       "type": "textarea",
       "required": true,
@@ -135,20 +136,21 @@
       "extract": {
         "mode": "sentence",
         "keywords": [
-          "消防主机品牌",
-          "主机品牌",
-          "品牌",
-          "赋安"
+          "主从关系",
+          "主机",
+          "从机",
+          "主消控室"
         ],
         "negation_guard": false,
         "max_sentences": 1000
       },
-      "help": "有几个消控室就填写几行，每行注明消控室编号及对应主机信息。",
-      "ai_hint": "逐个消控室保留编号、主机信息及主从关系，每个消控室一行，不得合并遗漏。"
+      "help": "按消控室及主机编号说明主机、从机的对应关系；无主从关系时明确注明。",
+      "ai_hint": "提取各消控室消防主机的主从关系，保留主机与从机编号及对应关系；不得仅凭品牌推断主从关系。",
+      "reconfirm_before_template": "0.4.0"
     },
     {
       "key": "fire_host_age",
-      "label": "消防主机出厂年限或投入使用年限",
+      "label": "消防主机出厂年限",
       "group": "fire_control",
       "type": "textarea",
       "required": true,
@@ -156,17 +158,24 @@
       "extract": {
         "mode": "sentence",
         "keywords": [
+          "出厂日期",
           "出厂年限",
-          "使用年限",
-          "已使用",
-          "投入使用"
+          "消防主机出厂"
         ],
-        "negation_guard": false
+        "negation_guard": false,
+        "max_sentences": 1000
+      },
+      "help": "逐台或按同批次主机注明出厂日期及出厂年限，以12年为限；12年及以上须提供主机维保和维修记录。投入使用年限不能替代出厂年限。",
+      "ai_hint": "逐台提取消防主机出厂日期或出厂年限；仅有投入使用年限时标记待补充，不当作出厂年限。满12年及以上须提示补充维保和维修记录。",
+      "reconfirm_before_template": "0.4.0",
+      "placeholder": "例如：1号主机：13年；2号主机：5年（逐台注明主机编号及出厂年限）",
+      "validate": {
+        "age_entries": true
       }
     },
     {
       "key": "fire_host_buttons",
-      "label": "消防主机按键",
+      "label": "消防主机功能判断是否正常",
       "group": "fire_control",
       "type": "select",
       "required": true,
@@ -174,30 +183,38 @@
       "extract": {
         "mode": "enum",
         "keywords": [
-          "消防主机按键",
-          "主机按键",
-          "按键"
+          "消防主机功能",
+          "主机功能",
+          "功能正常",
+          "功能异常"
         ],
         "negation_guard": false,
         "context_keywords": [
-          "按键"
-        ]
+          "消防主机功能",
+          "主机功能"
+        ],
+        "prefer_longest_match": true
       },
       "options": [
         {
-          "value": "按键无损坏",
+          "value": "正常",
           "synonyms": [
-            "按键完好"
+            "主机功能正常"
           ]
         },
         {
-          "value": "按键有损坏",
+          "value": "不正常",
           "synonyms": [
-            "按键损坏"
+            "主机功能异常",
+            "功能不正常",
+            "不正常"
           ]
         }
       ],
-      "help": "检查消防主机按键是否损坏。"
+      "help": "综合现场功能核查选择正常或不正常，不能仅凭按键完好判定功能正常；异常情况可在详细说明中填写。",
+      "ai_hint": "按明确的现场功能判断提取正常或不正常；仅提到按键完好不足以判断整体功能正常。未说明时留空。",
+      "reconfirm_before_template": "0.4.0",
+      "allow_custom": true
     },
     {
       "key": "fire_point_code_table",
@@ -306,11 +323,11 @@
         "mode": "money",
         "keywords": [
           "恒益报价",
-          "一次性改造费用",
-          "改造费用"
+          "恒益改造费用"
         ],
         "negation_guard": false,
-        "numeric_value": true
+        "numeric_value": true,
+        "anchor_money": true
       },
       "unit": "元",
       "remark": "必填！会出现在消防管家报价中",
@@ -319,6 +336,184 @@
         "message": "一次性改造费用不能为负数"
       },
       "ai_hint": "提取恒益报价一次性改造费用，金额统一换算为元；未提供不能推测。"
+    },
+    {
+      "key": "fire_package_type",
+      "label": "套餐类型",
+      "group": "fire_control",
+      "type": "select",
+      "required": true,
+      "help": "选择智管或智控套餐（单选），未确定时留空。",
+      "ai_hint": "仅提取明确选择的智管或智控套餐，未明确则留空，不推测。",
+      "source": "消防管家-踏勘字段-20261023.xlsx；用户2026-10-27确认",
+      "extract": {
+        "mode": "enum",
+        "keywords": [
+          "套餐",
+          "智管",
+          "智控"
+        ],
+        "context_keywords": [
+          "套餐",
+          "智管",
+          "智控"
+        ],
+        "prefer_longest_match": true,
+        "negation_guard": false
+      },
+      "options": [
+        {
+          "value": "智管"
+        },
+        {
+          "value": "智控"
+        }
+      ],
+      "allow_custom": false
+    },
+    {
+      "key": "fire_survey_photos",
+      "label": "踏勘照片上传通道",
+      "group": "fire_control",
+      "type": "attachment",
+      "required": false,
+      "help": "按消控室/主机编号逐项上传，并填写说明。支持JPEG、PNG、WebP；每个文件不超过10MB，每项最多50个。",
+      "ai_hint": "照片由人工上传；不从文字稿生成附件或虚构上传状态。",
+      "source": "消防管家-踏勘字段-20261023.xlsx；用户2026-10-27确认",
+      "extract": {
+        "mode": "manual",
+        "keywords": []
+      },
+      "upload": {
+        "extensions": [
+          "jpg",
+          "jpeg",
+          "png",
+          "webp"
+        ],
+        "max_bytes": 10485760,
+        "max_files": 50,
+        "record_kinds": [
+          "现场照片"
+        ]
+      }
+    },
+    {
+      "key": "fire_weishi_renovation_cost",
+      "label": "卫士报价一次性改造费用",
+      "group": "fire_cost",
+      "type": "number",
+      "required": false,
+      "help": "卫士报价独立录入，金额以元填写；与恒益报价分别展示，不自动相加或替代。",
+      "ai_hint": "仅提取明确属于卫士的一次性改造费用并换算为元；不得将恒益报价或未标来源金额填入。",
+      "source": "消防管家-踏勘字段-20261023.xlsx；用户2026-10-27确认",
+      "unit": "元",
+      "extract": {
+        "mode": "money",
+        "keywords": [
+          "卫士报价",
+          "卫士改造费用"
+        ],
+        "numeric_value": true,
+        "negation_guard": false,
+        "anchor_money": true
+      },
+      "validate": {
+        "min": 0,
+        "message": "卫士报价一次性改造费用不能为负数"
+      }
+    },
+    {
+      "key": "fire_host_maintenance_records",
+      "label": "消防主机维保和维修记录",
+      "group": "fire_control",
+      "type": "attachment",
+      "required": false,
+      "help": "按消控室/主机编号逐项上传，并填写说明。支持JPEG、PNG、WebP、PDF；每个文件不超过10MB，每项最多50个。满12年的每台主机须分别提供维保及维修记录；无维修历史时上传注明无维修的说明文件。",
+      "ai_hint": "附件由人工上传；仅从文字稿提取记录提供情况，不视为附件已上传。",
+      "source": "消防管家-踏勘字段-20261023.xlsx；用户2026-10-27确认",
+      "extract": {
+        "mode": "manual",
+        "keywords": []
+      },
+      "upload": {
+        "extensions": [
+          "jpg",
+          "jpeg",
+          "png",
+          "webp",
+          "pdf"
+        ],
+        "max_bytes": 10485760,
+        "max_files": 50,
+        "record_kinds": [
+          "维保记录",
+          "维修记录"
+        ]
+      },
+      "required_if": {
+        "field": "fire_host_age",
+        "operator": "age_at_least",
+        "value": 12
+      }
+    },
+    {
+      "key": "fire_implementation_ready",
+      "label": "本项目是否具备实施条件",
+      "group": "fire_control",
+      "type": "select",
+      "required": true,
+      "help": "按现场结论选择是或否；选择否时须说明原因，材料保留该结论，不因此禁止生成踏勘记录。",
+      "ai_hint": "提取明确的项目实施条件判断；未给出结论时留空，不推断。",
+      "source": "消防管家-踏勘字段-20261023.xlsx；用户2026-10-27确认",
+      "extract": {
+        "mode": "enum",
+        "keywords": [
+          "具备实施条件",
+          "实施条件",
+          "不具备实施条件"
+        ],
+        "context_keywords": [
+          "具备实施条件",
+          "实施条件",
+          "不具备实施条件"
+        ],
+        "prefer_longest_match": true,
+        "negation_guard": false
+      },
+      "options": [
+        {
+          "value": "是"
+        },
+        {
+          "value": "否"
+        }
+      ],
+      "allow_custom": false
+    },
+    {
+      "key": "fire_implementation_reason",
+      "label": "不具备实施条件原因",
+      "group": "fire_control",
+      "type": "textarea",
+      "required": false,
+      "help": "“本项目是否具备实施条件”选择否时必填，说明具体障碍及原因；选择是时无需填写。",
+      "ai_hint": "仅提取明确说明的不具备实施条件的原因，不编造整改措施。",
+      "source": "消防管家-踏勘字段-20261023.xlsx；用户2026-10-27确认",
+      "extract": {
+        "mode": "sentence",
+        "keywords": [
+          "不具备实施条件",
+          "无法实施",
+          "实施障碍",
+          "原因"
+        ]
+      },
+      "required_if": {
+        "field": "fire_implementation_ready",
+        "operator": "equals",
+        "value": "否"
+      }
     }
   ]
 }

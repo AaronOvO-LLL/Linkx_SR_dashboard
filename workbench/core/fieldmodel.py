@@ -307,6 +307,19 @@ def validate_field_model(product_type):
             issues.append(_issue('warn', w, '必填字段但没有 extract 配置，只能靠人工填写'))
 
         v = f.get('validate') or {}
+        condition = f.get('required_if')
+        if condition and (not isinstance(condition, dict) or condition.get('field') not in field_keys or
+                condition.get('operator') not in ('equals', 'age_at_least') or 'value' not in condition):
+            issues.append(_issue('error', w, 'required_if 必须引用已知字段及支持的操作符和值'))
+        if isinstance(condition, dict) and condition.get('operator') == 'age_at_least' and (
+                not isinstance(condition.get('value'), (int, float)) or condition['value'] < 0 or t != 'attachment'):
+            issues.append(_issue('error', w, 'age_at_least 仅用于附件，阈值必须非负'))
+        if t == 'attachment':
+            upload = f.get('upload') or {}
+            if (not upload.get('extensions') or not upload.get('record_kinds') or
+                    not isinstance(upload.get('max_bytes'), int) or upload.get('max_bytes', 0) <= 0 or
+                    not isinstance(upload.get('max_files'), int) or upload.get('max_files', 0) <= 0):
+                issues.append(_issue('error', w, '附件需配置扩展名、记录类型、正整数大小与数量上限'))
         if v.get('integer') is not None and (t != 'number' or not isinstance(v['integer'], bool)):
             issues.append(_issue('error', w, 'validate.integer 仅支持 number 字段的布尔值'))
         initial = f.get('initial_value')

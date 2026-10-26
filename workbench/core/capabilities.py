@@ -8,6 +8,7 @@ from .config import product_config
 
 
 KNOWN_CAPABILITIES = {
+    'field_attachments': '上传和下载产品字段附件',
     'text_input': '粘贴或编辑调研文字稿',
     'field_extraction': '从文字稿提取结构化字段',
     'artifact_generation': '预览、生成和打包材料',
@@ -46,6 +47,8 @@ def validate_capabilities(product_type):
     from .config import field_map, artifacts_config
     from .renderers import RENDERERS
     fields = field_map(product_type)
+    if any(f['type'] == 'attachment' for f in fields.values()) and 'field_attachments' not in declared:
+        issues.append('附件字段必须声明 field_attachments 能力')
     for rule in product_config(product_type).get('eligibility_rules', []):
         if rule.get('field') not in fields or rule.get('operator') not in ('contains_any', 'not_equals'):
             issues.append('准入规则引用未知字段或操作符')

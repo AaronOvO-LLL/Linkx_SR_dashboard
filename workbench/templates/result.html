@@ -8,6 +8,15 @@
   <h2 style="margin:0;font-size:17px">{{ project.name }} · {{ product.name }} · 结果中心</h2>
 </div>
 
+<div class="card">
+  <h2>调研结果 Excel 导出</h2>
+  <p class="sub">下载本产品当前已保存的完整调研结果，包含全部字段、核对状态、明细表格和计算清单。未填项与待处理问题会在文件中标明；无需先生成材料。</p>
+  <div class="btn-row download-actions">
+    <a class="btn" href="{{ url_for('survey_excel', pp_id=pp.id) }}">下载完整调研 Excel</a>
+    <span class="hint" style="align-self:center">Excel 工作簿（.xlsx）· 请先保存网页中的修改</span>
+  </div>
+</div>
+
 {% if not runs %}
 <div class="card"><div class="empty"><b>还没有生成任何材料</b>回到预览页勾选生成物后开始生成。</div></div>
 {% else %}

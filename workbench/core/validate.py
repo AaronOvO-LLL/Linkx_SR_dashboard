@@ -12,6 +12,7 @@ from datetime import datetime
 from .config import field_map, product_config
 from .repo import field_values, shared_field_conflicts
 from .choices import other_detail_error
+from .field_conditions import age_entries, required_now, needs_reconfirmation
 
 
 def parse_value(value_json):
@@ -50,6 +51,9 @@ def validate_fields(pp_id, product_type):
     get = lambda k: parse_value(values[k]['value_json']) if k in values else None
 
     for key, f in fmap.items():
+        if needs_reconfirmation(values.get(key), f):
+            issues.append({'level': 'error', 'field': key,
+                           'message': '【%s】要求已更新，历史答案已保留，请按新要求重新保存确认。' % f['label']})
         if key in conflicts:
             issues.append({'level': 'error', 'field': key, 'kind': 'shared_conflict',
                            'message': '【%s】在不同管家中有不同的历史答案，请选择或重新填写后共享。' % f['label']})
@@ -58,12 +62,35 @@ def validate_fields(pp_id, product_type):
         empty = is_empty(v)
         label = f['label']
 
-        if f.get('required') and empty:
+        if required_now(f, values) and empty:
             issues.append({'level': 'error', 'field': key,
                            'message': '【%s】为必填项，文字稿中未找到依据，请人工补填。' % label})
             continue
         if empty:
             continue
+
+        if f.get('validate', {}).get('age_entries') and age_entries(v) is None:
+            issues.append({'level': 'error', 'field': key,
+                           'message': '【%s】请每行填写“主机编号：13年”或“主机编号：2013-10-27”，用分号或换行分隔；未知年限须核实后填写。' % label})
+
+        if f['type'] == 'attachment':
+            from . import paths
+            from pathlib import Path
+            valid = isinstance(v, list) and all(isinstance(x, dict) and
+                re.fullmatch(r'[0-9a-f]{32}', str(x.get('id', ''))) and
+                (Path(paths.UPLOAD_DIR) / 'field_attachments' / pp_id / key / x['id']).is_file()
+                for x in v)
+            if not valid:
+                issues.append({'level': 'error', 'field': key, 'message': '【%s】附件缺失，请重新上传。' % label})
+            condition = f.get('required_if', {})
+            if valid and condition.get('operator') == 'age_at_least':
+                for host, age in (age_entries(get(condition['field'])) or {}).items():
+                    if age < condition['value']:
+                        continue
+                    for kind in f['upload']['record_kinds']:
+                        if not any(x.get('host') == host and x.get('kind') == kind for x in v):
+                            issues.append({'level': 'error', 'field': key,
+                                           'message': '【%s】请上传%s的%s，主机编号须与出厂年限中一致。' % (label, host, kind)})
 
         error = other_detail_error(f, v)
         if error:
@@ -71,6 +98,10 @@ def validate_fields(pp_id, product_type):
                            'message': '【%s】%s' % (label, error)})
 
         if f['type'] == 'table':
+            from . import rules as rule_engine
+            output_def = rule_engine.field_output(product_type, key)
+            if output_def and isinstance(v, list) and all(isinstance(r, dict) for r in v):
+                v = rule_engine.materialize(output_def, v)
             issues.extend(table_issues(f, v))
 
         # 类型与格式

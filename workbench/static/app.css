@@ -5,6 +5,24 @@
   --err:#c0392b; --err-bg:#fdeeee; --err-line:#f5c6c2;
   --radius:12px;
 }
+.room-toolbar,.room-card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.room-toolbar{margin:14px 0}
+.room-empty{padding:28px 16px;text-align:center;background:var(--bg);border:1px dashed var(--line);border-radius:10px}
+.room-card{margin:14px 0;padding:18px;border:1px solid var(--line);border-radius:12px;background:#fff}
+.room-card-head{margin-bottom:14px}
+.room-number{color:var(--brand)}
+.room-identity,.room-quantity-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 20px}
+.room-field{display:flex;flex-direction:column;gap:6px;min-width:0;font-size:13px}
+.room-field>input,.room-field>select{width:100%;min-width:0;padding:9px 11px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}
+.room-field>input:focus,.room-field>select:focus{outline:2px solid var(--brand-soft);border-color:var(--brand)}
+.room-items{border-top:1px solid var(--line);margin-top:18px;padding-top:14px}
+.room-items h4{font-size:14px;margin-bottom:4px}
+.room-quantity-grid{margin-top:12px}
+.room-fixed{margin-top:16px;padding:12px;background:var(--bg);border-radius:8px}
+.room-fixed summary{cursor:pointer;color:var(--brand);font-size:13px}
+.room-error{color:var(--err);margin-top:10px}
+.room-invalid{border-color:var(--err-line)}
+@media(max-width:640px){.room-identity,.room-quantity-grid{grid-template-columns:1fr}.room-card{padding:14px}}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
      background:var(--bg);color:var(--ink);font-size:14px;line-height:1.65}

@@ -73,6 +73,8 @@ def extract_latest_source(pp, project, provider=None):
     current_values = repo.field_values(pp['id'])
     protected = [k for k, v in current_values.items() if v['protected']]
     for key, item in result.items():
+        if field_map(pp['product_type'])[key]['type'] == 'attachment':
+            continue
         if item['protected'] or key in protected:
             continue
         repo.upsert_field_value(
@@ -94,6 +96,8 @@ def save_field_value(pp, project, data):
 
     value = data.get('value')
     field = fmap[key]
+    if field['type'] == 'attachment':
+        raise SurveyServiceError('附件只能通过上传入口保存，不能以文字代替。')
     if key in repo.shared_field_conflicts(pp['id']) and value in (None, '', [], {}):
         raise SurveyServiceError('请明确选择一个历史答案，或填写新的公共资料后保存。')
     if field['type'] in ('select', 'multiselect'):
@@ -114,7 +118,8 @@ def save_field_value(pp, project, data):
             value = rules.materialize(output_def, value)
     is_empty = value in (None, '', [], {})
     if is_empty:
-        status = 'required_missing' if field.get('required') else 'optional_missing'
+        from core.field_conditions import required_now
+        status = 'required_missing' if required_now(field, repo.field_values(pp['id'])) else 'optional_missing'
         protected, updated_by = 0, 'human'
     else:
         status, protected, updated_by = 'confirmed', 1, 'human'

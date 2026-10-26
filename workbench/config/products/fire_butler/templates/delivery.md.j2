@@ -19,4 +19,8 @@
 
 ## 费用与验收说明
 
-恒益报价一次性改造费用：{{ display.fire_renovation_cost or '0' }} 元。后续消防管家报价应引用该费用，完整服务价格、实施范围与验收标准另行确认。
+恒益报价一次性改造费用：{{ display.fire_renovation_cost or '待提供' }} 元。
+
+卫士报价一次性改造费用：{{ display.fire_weishi_renovation_cost or '待提供' }}{% if display.fire_weishi_renovation_cost %} 元{% endif %}。
+
+两家报价分别记录，不自动合计或互相替代。最终选用报价、完整服务价格、实施范围与验收标准另行确认。

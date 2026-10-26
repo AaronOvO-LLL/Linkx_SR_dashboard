@@ -201,6 +201,24 @@ def copy_project(pid, creator=None):
         for fv in field_values(pp['id']).values():
             if 'project_id' in fv:
                 continue
+            if field_map(pp['product_type'])[fv['field_key']]['type'] == 'attachment':
+                # 副本使用独立私有目录，删除原项目附件不影响副本。
+                from pathlib import Path
+                import shutil
+                import re
+                from . import paths
+                copied = []
+                for item in json.loads(fv['value_json']) or []:
+                    if not re.fullmatch(r'[0-9a-f]{32}', str(item.get('id', ''))):
+                        continue
+                    base = Path(paths.UPLOAD_DIR) / 'field_attachments'
+                    source = base / pp['id'] / fv['field_key'] / item['id']
+                    if source.is_file():
+                        target = base / npp['id'] / fv['field_key'] / item['id']
+                        target.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.copy2(source, target)
+                        copied.append(item)
+                fv = dict(fv, value_json=json.dumps(copied, ensure_ascii=False))
             upsert_field_value(npp['id'], fv['field_key'], fv['value_json'], fv['status'],
                                fv['confidence'], fv['source_quote'], fv['updated_by'],
                                fv['template_version'], fv['protected'], fv['note'])
@@ -619,6 +637,9 @@ def latest_export(pp_id):
 
 def field_status(row, field):
     """Use current requiredness for empty historical answers without rewriting them."""
+    from .field_conditions import needs_reconfirmation
+    if needs_reconfirmation(row, field):
+        return 'pending_confirm'
     if row and row['status'] == 'pending_confirm' and row['protected']:
         return 'pending_confirm'
     if not row or _value_is_empty(row['value_json']):
@@ -633,13 +654,15 @@ def field_stats(pp_id, product_type):
     stats = {'total': len(fmap), 'required_total': 0, 'required_done': 0,
              'pending_confirm': 0, 'required_missing': 0, 'filled': 0}
     for key, f in fmap.items():
+        from .field_conditions import required_now, needs_reconfirmation
+        f = dict(f, required=required_now(f, values))
         row = values.get(key)
         filled = bool(row and _value_is_empty(row['value_json']) is False)
         if filled:
             stats['filled'] += 1
         if f.get('required'):
             stats['required_total'] += 1
-            if filled:
+            if filled and not needs_reconfirmation(row, f):
                 stats['required_done'] += 1
         st = field_status(row, f)
         if st == 'pending_confirm':
