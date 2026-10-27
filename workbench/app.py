@@ -377,7 +377,7 @@ def require_admin():
     if r:
         return r
     user = current_user()
-    if not user or user['role'] != 'admin':
+    if not user or user['role'] not in ('admin', 'dept_admin'):
         abort(403)
     return None
 
@@ -389,6 +389,7 @@ def admin_users():
         return r
     error = None
     if request.method == 'POST':
+        check_account_management(request.form.get('dept_key', ''), request.form.get('role', 'user'))
         try:
             accounts.create_user(request.form.get('username', ''), request.form.get('display_name', ''),
                                  request.form.get('dept_key', ''), request.form.get('password', ''),
@@ -397,8 +398,23 @@ def admin_users():
             return redirect(url_for('admin_users'))
         except ValueError as exc:
             error = str(exc)
-    return render_template('users.html', users=accounts.list_users(),
-                           depts=departments.config()['departments'], error=error), 400 if error else 200
+    actor = current_user()
+    depts = departments.config()['departments']
+    if actor['role'] != 'admin':
+        depts = [d for d in depts if d['key'] == actor['dept_key']]
+    return render_template('users.html', users=accounts.managed_users(actor),
+                           can_manage=accounts.can_manage, depts=depts, error=error), 400 if error else 200
+
+
+def check_account_management(dept_key, role, uid=None):
+    actor = current_user()
+    target = accounts.get_user(uid) if uid else {'dept_key': dept_key, 'role': role}
+    if not target:
+        abort(404)
+    if not accounts.can_manage(actor, target):
+        abort(403)
+    if actor['role'] != 'admin' and (dept_key != actor['dept_key'] or role != 'user'):
+        abort(403)
 
 
 @app.route('/admin/users/<uid>/update', methods=['POST'])
@@ -406,6 +422,7 @@ def admin_user_update(uid):
     r = require_admin()
     if r:
         return r
+    check_account_management(request.form.get('dept_key', ''), request.form.get('role', 'user'), uid)
     try:
         accounts.update_user(uid, request.form.get('display_name', ''), request.form.get('dept_key', ''),
                              request.form.get('role', 'user'), request.form.get('active') == '1',
@@ -421,6 +438,10 @@ def admin_user_password(uid):
     r = require_admin()
     if r:
         return r
+    target = accounts.get_user(uid)
+    if not target:
+        abort(404)
+    check_account_management(target['dept_key'], target['role'], uid)
     try:
         accounts.reset_password(uid, request.form.get('password', ''), current_user()['id'])
         flash_msg('密码已重置，原有登录会话已失效。')

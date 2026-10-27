@@ -108,7 +108,11 @@ def list_projects(dept_key, keyword='', archived=None, include_deleted=False, us
     sql = 'SELECT * FROM projects WHERE 1=1'
     args = []
     if not (user and user['active'] and user['role'] == 'admin'):
-        sql += " AND ((visibility='department' AND dept_key=?)"
+        if user and user['active'] and user['role'] == 'dept_admin':
+            sql += " AND ((dept_key=?)"
+            dept_key = user['dept_key']
+        else:
+            sql += " AND ((visibility='department' AND dept_key=?)"
         args.append(dept_key)
         if user and user['active']:
             sql += " OR (visibility='private' AND creator_user_id=?)"

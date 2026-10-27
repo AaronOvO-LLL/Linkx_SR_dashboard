@@ -97,7 +97,7 @@
       {% if f.help %}<div class="hint" style="margin-bottom:5px">{{ f.help }}</div>{% endif %}
       {% if f.get('required_if', {}).get('operator') == 'equals' %}<span hidden data-required-condition='{{ f.required_if|tojson }}'></span>{% endif %}
       {% if f.key == 'sdk_device_compatible' %}
-      <a class="btn ghost sm" href="{{ url_for('static', filename='sdk-device-list.html') }}" target="_blank" rel="noopener" style="margin-bottom:10px">查看 SDK 可对接设备清单（示例） ↗</a>
+      <a class="btn ghost sm" href="{{ url_for('static', filename='sdk-device-list.html') }}" target="_blank" rel="noopener" style="margin-bottom:10px">查看 SDK 可对接设备清单 ↗</a>
       {% endif %}
 
       {% if f.type == 'attachment' %}

@@ -22,7 +22,7 @@
       <a href="{{ url_for('projects') }}">项目中心</a>
       <a href="{{ url_for('docs') }}">使用说明</a>
       <a href="{{ url_for('change_password') }}">修改密码</a>
-      {% if user and user.role == 'admin' %}<a href="{{ url_for('admin_users') }}">账号管理</a>{% endif %}
+      {% if user and user.role in ('admin', 'dept_admin') %}<a href="{{ url_for('admin_users') }}">用户管理</a>{% endif %}
       <span class="dept-chip">{{ dept.name }} · {{ user.display_name if user else '分部兼容入口' }}</span>
       <form method="post" action="{{ url_for('logout') }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn ghost sm" type="submit">退出登录</button></form>

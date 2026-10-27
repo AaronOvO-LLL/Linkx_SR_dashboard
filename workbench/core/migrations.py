@@ -223,12 +223,28 @@ def _add_personal_accounts(conn):
     conn.execute('CREATE INDEX idx_projects_creator ON projects(creator_user_id, visibility)')
 
 
+def _add_department_admin(conn):
+    conn.execute('''CREATE TABLE users_v6 (
+        id TEXT PRIMARY KEY, username TEXT NOT NULL UNIQUE COLLATE NOCASE,
+        display_name TEXT NOT NULL, dept_key TEXT NOT NULL,
+        role TEXT NOT NULL CHECK(role IN ('user', 'dept_admin', 'admin')),
+        active INTEGER NOT NULL DEFAULT 1, password_hash TEXT NOT NULL,
+        auth_version INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL, updated_at TEXT NOT NULL)''')
+    conn.execute('INSERT INTO users_v6 SELECT * FROM users')
+    conn.execute('DROP TABLE users')
+    conn.execute('ALTER TABLE users_v6 RENAME TO users')
+    if conn.execute('PRAGMA foreign_key_check').fetchone():
+        raise ValueError('用户角色升级失败：存在无效的项目归属。')
+
+
 MIGRATIONS = [
     (1, 'remove_pricing_settings', _remove_pricing_settings),
     (2, 'add_audio_transcription_jobs', _add_audio_transcription_jobs),
     (3, 'add_project_level_audio', _add_project_level_audio),
     (4, 'add_project_fields', _add_project_fields),
     (5, 'add_personal_accounts', _add_personal_accounts),
+    (6, 'add_department_admin', _add_department_admin),
 ]
 
 
@@ -251,6 +267,9 @@ def apply_migrations(conn):
     for version, name, migrate in MIGRATIONS:
         if version in applied:
             continue
+        foreign_keys = conn.execute('PRAGMA foreign_keys').fetchone()[0]
+        if version == 6:
+            conn.execute('PRAGMA foreign_keys=OFF')
         try:
             conn.execute('BEGIN')
             migrate(conn)
@@ -261,3 +280,5 @@ def apply_migrations(conn):
         except Exception:
             conn.rollback()
             raise
+        finally:
+            conn.execute('PRAGMA foreign_keys=%d' % foreign_keys)

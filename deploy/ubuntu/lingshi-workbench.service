@@ -11,6 +11,11 @@ Group=www-data
 WorkingDirectory=/opt/lingshi-workbench/workbench
 # 环境变量文件（含密钥），权限须为 600
 EnvironmentFile=/etc/lingshi/lingshi.env
+# stdout/stderr 进入 journal，并通过 rsyslog 按天保存；及时输出 Python print。
+Environment=PYTHONUNBUFFERED=1
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=lingshi-workbench
 # 单进程多线程：ASR 走进程内线程、SQLite 单机单写，切勿改成多 worker
 ExecStart=/opt/lingshi-workbench/venv/bin/waitress-serve --host=127.0.0.1 --port=8000 --threads=8 wsgi:app
 Restart=always

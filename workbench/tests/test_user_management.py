@@ -217,6 +217,47 @@ class UserManagementTests(unittest.TestCase):
         events = db.query('SELECT action FROM account_events WHERE user_id=?', (user['id'],))
         self.assertEqual([e['action'] for e in events], ['create', 'update', 'update', 'password_reset'])
 
+    def test_department_admin_scope_counts_and_role_changes(self):
+        manager = accounts.create_user('manager', '分部负责人', 'dept1', 'manager-secret', 'dept_admin')
+        client = self.login('manager', 'manager-secret')
+        html = client.get('/admin/users').get_data(as_text=True)
+        self.assertIn('已注册用户 <strong>3</strong>', html)
+        self.assertIn(self.owner['created_at'], html)
+        self.assertNotIn('data-user="carol"', html)
+        self.assertNotIn('data-user="admin"', html)
+        self.assertNotIn('href="/admin/users"', self.client.get('/projects').get_data(as_text=True))
+        rows = {u['username']: u for u in accounts.managed_users(manager)}
+        self.assertEqual(rows['alice']['project_count'], 1)
+        self.assertEqual(rows['bob']['project_count'], 0)
+        self.assertEqual(client.get(self.purl).status_code, 200)
+        self.assertIn(self.pid, client.get('/projects').get_data(as_text=True))
+        cross_project = repo.create_project('dept2', {'name': '跨分部私密'}, creator=self.cross)
+        self.assertEqual(client.get('/projects/' + cross_project['id']).status_code, 403)
+        self.assertNotIn(cross_project['id'], client.get('/projects').get_data(as_text=True))
+        info = {'display_name': '张三', 'dept_key': 'dept1', 'role': 'user', 'active': '1'}
+        for uid, change in ((self.owner['id'], {'role': 'admin'}),
+                            (self.owner['id'], {'role': 'dept_admin'}),
+                            (self.owner['id'], {'dept_key': 'dept2'}),
+                            (self.cross['id'], {}), (manager['id'], {}), (self.admin['id'], {})):
+            self.assertEqual(self.post(client, '/admin/users/' + uid + '/update',
+                                       data={**info, **change}).status_code, 403)
+        for uid in (manager['id'], self.cross['id'], self.admin['id']):
+            self.assertEqual(self.post(client, '/admin/users/' + uid + '/password',
+                                       data={'password': 'new-password'}).status_code, 403)
+        self.assertEqual(self.post(client, '/admin/users', data={
+            'username': 'evil', 'display_name': '越权', 'dept_key': 'dept1',
+            'role': 'admin', 'password': 'evil-secret'}).status_code, 403)
+        self.assertEqual(self.post(client, '/admin/users/' + self.other['id'] + '/update',
+                                   data={**info, 'active': '0'}).status_code, 302)
+        self.assertFalse(accounts.get_user(self.other['id'])['active'])
+        admin = self.login('admin', 'admin-secret')
+        self.assertIn('data-user="carol"', admin.get('/admin/users').get_data(as_text=True))
+        self.assertEqual(self.post(admin, '/admin/users/' + self.owner['id'] + '/update',
+                                   data={**info, 'role': 'dept_admin'}).status_code, 302)
+        self.assertEqual(self.client.get('/projects').status_code, 302)
+        promoted = self.login('alice', 'alice-secret')
+        self.assertEqual(promoted.get('/admin/users').status_code, 200)
+
     def test_password_change_revokes_other_sessions_and_preserves_current(self):
         other_session = self.login('alice', 'alice-secret')
         self.post(self.client, '/password', data={'old_password': 'alice-secret',
@@ -370,6 +411,29 @@ class RegistrationTests(unittest.TestCase):
 
 
 class AccountMigrationTests(unittest.TestCase):
+    def test_v5_role_upgrade_preserves_accounts_credentials_and_project_links(self):
+        with closing(sqlite3.connect(':memory:')) as conn:
+            conn.execute('PRAGMA foreign_keys=ON')
+            conn.executescript(db.SCHEMA)
+            with patch.object(migrations, 'MIGRATIONS', migrations.MIGRATIONS[:5]):
+                migrations.apply_migrations(conn)
+            conn.execute('''INSERT INTO users VALUES
+                ('old-user', 'old-user', '旧用户', 'dept1', 'admin', 1, 'saved-hash', 7, 'old', 'old')''')
+            conn.execute('''INSERT INTO projects
+                (id, dept_key, category, name, created_at, updated_at, creator_user_id)
+                VALUES ('owned', 'dept1', '内部项目', '旧项目', 'old', 'old', 'old-user')''')
+            conn.commit()
+            before = conn.execute('SELECT * FROM users').fetchall()
+            migrations.apply_migrations(conn)
+            self.assertEqual(conn.execute('SELECT * FROM users').fetchall(), before)
+            self.assertEqual(conn.execute('PRAGMA foreign_keys').fetchone()[0], 1)
+            self.assertEqual(conn.execute('PRAGMA foreign_key_check').fetchall(), [])
+            conn.execute("UPDATE users SET role='dept_admin' WHERE id='old-user'")
+            conn.commit()
+            migrations.apply_migrations(conn)
+            self.assertEqual(conn.execute('SELECT creator_user_id FROM projects').fetchone()[0], 'old-user')
+            self.assertEqual(conn.execute('PRAGMA integrity_check').fetchone()[0], 'ok')
+
     def test_v4_upgrade_preserves_rows_backs_up_wal_and_is_idempotent(self):
         original = getattr(db._local, 'conn', None)
         db._local.conn = None

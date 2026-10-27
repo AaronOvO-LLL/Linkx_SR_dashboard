@@ -29,12 +29,29 @@ def list_users():
     return db.query('SELECT %s FROM users ORDER BY created_at, username' % PUBLIC_COLUMNS)
 
 
+def managed_users(actor):
+    sql = '''SELECT %s, (SELECT COUNT(*) FROM projects p
+        WHERE p.creator_user_id=u.id) AS project_count FROM users u''' % ', '.join(
+            'u.' + column.strip() for column in PUBLIC_COLUMNS.split(','))
+    args = ()
+    if actor['role'] != 'admin':
+        sql += ' WHERE u.dept_key=?'
+        args = (actor['dept_key'],)
+    return db.query(sql + ' ORDER BY u.created_at DESC, u.username', args)
+
+
+def can_manage(actor, target):
+    return bool(actor and actor['active'] and target and (
+        actor['role'] == 'admin' or (actor['role'] == 'dept_admin' and
+        actor['dept_key'] == target['dept_key'] and target['role'] == 'user')))
+
+
 def _validate(display_name, dept_key, role):
     if not display_name.strip() or len(display_name) > 80:
         raise ValueError('姓名不能为空且不能超过 80 字。')
     if not departments.find(dept_key):
         raise ValueError('请选择有效分部。')
-    if role not in ('user', 'admin'):
+    if role not in ('user', 'dept_admin', 'admin'):
         raise ValueError('账号角色无效。')
 
 
@@ -146,6 +163,9 @@ def authenticate(username, password):
 
 def can_access(project, user, dept_key):
     if user and user['active'] and user['role'] == 'admin':
+        return True
+    if (user and user['active'] and user['role'] == 'dept_admin'
+            and project['dept_key'] == user['dept_key']):
         return True
     if project.get('visibility') == 'private':
         return bool(user and user['active'] and project.get('creator_user_id') == user['id'])
