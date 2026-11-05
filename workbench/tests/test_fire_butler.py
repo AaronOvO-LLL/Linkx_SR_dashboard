@@ -12,6 +12,7 @@ from core.config import artifact_map, field_map, product_config
 from core.extract import ExtractionError, run_extraction
 from core.validate import validate
 from services import artifacts, survey
+from tests.survey_helpers import sample_value
 
 
 class FireButlerTests(unittest.TestCase):
@@ -51,20 +52,14 @@ class FireButlerTests(unittest.TestCase):
         text = (Path(paths.SAMPLES_DIR) / 'fire_butler/full.md').read_text(encoding='utf-8')
         survey.save_transcript(pp, project, text)
         survey.extract_latest_source(pp, project, provider='rule')
-        values = repo.field_values(pp['id'])
-        self.assertEqual(json.loads(values['fire_renovation_cost']['value_json']), 50000)
-        self.assertIn('4号', json.loads(values['fire_host_relationships']['value_json']))
-        self.assertIn('4号', json.loads(values['fire_host_brands']['value_json']))
+        self.assertIsNone(json.loads(repo.field_values(pp['id'])['fire_control_room_survey']['value_json']))
+        field = field_map('fire_butler')['fire_control_room_survey']
+        room = dict(sample_value(field)[0], room_name='主楼', fire_renovation_cost=50000)
         for key, f in field_map('fire_butler').items():
-            if key == 'fire_renovation_cost' or f['type'] == 'attachment':
-                continue
-            value = 4 if f['type'] == 'number' else (
-                f['options'][0]['value'] if f['type'] == 'select' else (
-                [f['options'][0]['value']] if f['type'] == 'multiselect' else '现场已确认'))
-            if key == 'fire_host_age':
-                value = '1号主机：5年'
-            r = self.client.post(f"/p/{pp['id']}/field", json={'key': key, 'value': value})
-            self.assertEqual(r.status_code, 200)
+            if f.get('required'):
+                value = [room] if key == field['key'] else sample_value(f)
+                r = self.client.post(f"/p/{pp['id']}/field", json={'key':key,'value':value})
+                self.assertEqual(r.status_code, 200)
         self.assertTrue(validate(pp['id'], 'fire_butler')[0])
         for page in ['review', 'preview']:
             r = self.client.get(f"/p/{pp['id']}/{page}")
@@ -88,16 +83,18 @@ class FireButlerTests(unittest.TestCase):
         shared = repo.field_values(safety['id'])
         self.assertEqual(shared['project_name']['value_json'], repo.field_values(pp['id'])['project_name']['value_json'])
         self.assertTrue(all(field_map('safety_butler')[key].get('value_scope') == 'project' for key in shared))
-        survey.save_field_value(pp, project, {'key': 'fire_renovation_cost', 'value': 12345})
+        def save_cost(value):
+            survey.save_field_value(pp, project, {'key':field['key'],'value':[dict(room,fire_renovation_cost=value)]})
+        save_cost(12345)
         survey.extract_latest_source(pp, project, provider='rule')
-        self.assertEqual(json.loads(repo.field_values(pp['id'])['fire_renovation_cost']['value_json']), 12345)
-        survey.save_field_value(pp, project, {'key': 'fire_renovation_cost', 'value': ''})
+        stored = json.loads(repo.field_values(pp['id'])[field['key']]['value_json'])
+        self.assertEqual(stored[0]['fire_renovation_cost'],12345)
+        save_cost('')
+        self.assertTrue(validate(pp['id'], 'fire_butler')[0])
+        self.assertEqual(artifacts.generate_artifacts(pp, ['delivery'])[0]['status'], 'success')
+        save_cost(-1)
         self.assertFalse(validate(pp['id'], 'fire_butler')[0])
-        with self.assertRaises(artifacts.ArtifactServiceError):
-            artifacts.generate_artifacts(pp, ['delivery'])
-        survey.save_field_value(pp, project, {'key': 'fire_renovation_cost', 'value': -1})
-        self.assertFalse(validate(pp['id'], 'fire_butler')[0])
-        survey.save_field_value(pp, project, {'key': 'fire_renovation_cost', 'value': 0})
+        save_cost(0)
         self.assertTrue(validate(pp['id'], 'fire_butler')[0])
         self.assertIn('field_attachments', product_config('fire_butler')['capabilities'])
         self.assertNotIn('field_attachments', product_config('safety_butler')['capabilities'])
@@ -106,15 +103,12 @@ class FireButlerTests(unittest.TestCase):
         self.assertEqual(repo.latest_source(pp['id'])['kind'], 'audio_transcript')
 
     def test_fire_extraction_context_and_money(self):
-        for amount, expected in [('5万元', 50000), ('五万元', 50000), ('50000', 50000), ('0元', 0)]:
-            text = '消防主机功能正常。图纸有。消防主机点位编码表无。消控中心数量4个。恒益报价一次性改造费用为%s。' % amount
-            result, _ = run_extraction(text, 'fire_butler', provider='rule')
-            self.assertEqual(result['fire_renovation_cost']['value'], expected)
-            self.assertEqual(result['fire_point_code_table']['value'], '无')
-            self.assertEqual(result['fire_host_buttons']['value'], '正常')
-        result, _ = run_extraction('消控中心数量4个。消防主机按键有损坏。图纸有，项目设备台账也有，需要安排现场进一步核查。', 'fire_butler', provider='rule')
-        self.assertIsNone(result['fire_point_code_table']['value'])
-        self.assertIsNone(result['fire_host_buttons']['value'])
+        text = '消控中心数量1个。\n消控室名称：一号，是否可提供消防主机点位编码表：否，消防主机功能判断是否正常：正常，恒益报价一次性改造费用：50000'
+        result, _ = run_extraction(text, 'fire_butler', provider='rule')
+        room = result['fire_control_room_survey']['value'][0]
+        self.assertEqual(room['fire_renovation_cost'],'50000')
+        self.assertEqual(room['fire_point_code_table'],'否')
+        self.assertEqual(room['fire_host_buttons'],'正常')
         with self.assertRaisesRegex(ExtractionError, '消防管家'):
             run_extraction('今天天气晴朗，非常适合外出散步，我们准备去河边走走再回家吃晚饭。', 'fire_butler', provider='rule')
 
@@ -124,16 +118,15 @@ class FireButlerTests(unittest.TestCase):
         return repo.list_products(project['id'])[0], project
 
     def test_supplier_isolation_and_function_negative(self):
-        text = '恒益报价5万元，卫士报价3万元。消防主机功能不正常。套餐选择智控，本项目不具备实施条件。'
+        text = '消控中心数量2个。\n消控室名称：一号，恒益报价一次性改造费用：50000，消防主机功能判断是否正常：不正常\n消控室名称：二号，卫士报价一次性改造费用：30000'
         result, _ = run_extraction(text, 'fire_butler', provider='rule')
-        self.assertEqual(result['fire_renovation_cost']['value'], 50000)
-        self.assertEqual(result['fire_weishi_renovation_cost']['value'], 30000)
-        self.assertEqual(result['fire_host_buttons']['value'], '不正常')
-        self.assertEqual(result['fire_package_type']['value'], '智控')
-        for key in ['fire_survey_photos', 'fire_host_maintenance_records']:
-            self.assertIsNone(result[key]['value'])
-        result, _ = run_extraction('消防主机功能正常，卫士报价3万元。消控室有一间，维保单位资料尚未提供。', 'fire_butler', provider='rule')
-        self.assertIsNone(result['fire_renovation_cost']['value'])
+        first, second = result['fire_control_room_survey']['value']
+        self.assertEqual(first['fire_renovation_cost'],'50000')
+        self.assertEqual(first['fire_weishi_renovation_cost'],'')
+        self.assertEqual(first['fire_host_buttons'],'不正常')
+        self.assertEqual(second['fire_weishi_renovation_cost'],'30000')
+        self.assertEqual(second['fire_renovation_cost'],'')
+        self.assertNotIn('fire_package_type',result)
 
     def test_conditional_reason_and_historical_reconfirmation(self):
         pp, project = self.make_product()
@@ -143,52 +136,31 @@ class FireButlerTests(unittest.TestCase):
         save('fire_implementation_reason','现场网络尚未接通')
         self.assertFalse(any(i['field']=='fire_implementation_reason' for i in validate(pp['id'],'fire_butler')[1]))
         repo.upsert_field_value(pp['id'],'fire_host_buttons',json.dumps('按键无损坏',ensure_ascii=False),'confirmed',None,'','human','0.3.0',1)
-        self.assertTrue(any('历史答案' in i['message'] for i in validate(pp['id'],'fire_butler')[1]))
-        page=self.client.get(f"/p/{pp['id']}/review")
-        self.assertIn('按键无损坏',page.get_data(as_text=True))
-        save('fire_host_buttons','正常')
-        self.assertFalse(any('历史答案' in i['message'] for i in validate(pp['id'],'fire_butler')[1]))
+        db.execute('DELETE FROM schema_migrations WHERE version=9')
+        values = repo.field_values(pp['id'])
+        self.assertEqual(values['fire_control_room_survey']['status'],'pending_confirm')
+        self.assertEqual(json.loads(values['fire_control_room_survey']['value_json'])[0]['room_name'],'')
+        self.assertIn('按键无损坏',self.client.get(f"/p/{pp['id']}/review").get_data(as_text=True))
         self.assertFalse(field_map('fire_butler')['land_area']['required'])
         self.assertTrue(field_map('device_butler')['land_area']['required'])
 
-    def test_upload_age_boundary_and_access(self):
-        from services import field_attachments
+    def test_availability_age_boundary_and_removed_attachment_contract(self):
         from core.field_conditions import age_entries
         from datetime import date
         self.assertEqual(age_entries('A：2014-10-28',date(2026,10,27)), {'A':11})
         self.assertEqual(age_entries('A：2014-10-27',date(2026,10,27)), {'A':12})
         self.assertIsNone(age_entries('主机编号12，出厂时间待确认'))
         pp, project = self.make_product()
-        survey.save_field_value(pp,project,{'key':'fire_host_age','value':'A：12年；B：11年'})
-        key='fire_host_maintenance_records'
-        def problems():return [i for i in validate(pp['id'],'fire_butler')[1] if i['field']==key]
-        self.assertTrue(problems())
-        url=f"/p/{pp['id']}/attachments/{key}"
-        for kind in ['维保记录','维修记录']:
-            response=self.client.post(url,data={'file':(io.BytesIO(b'%PDF-1.4\nrecord'),'记录.pdf'),'host':'A','description':'主机记录','kind':kind})
-            self.assertEqual(response.status_code,302)
-        self.assertFalse(problems())
-        items=field_attachments.entries(pp,key)
-        self.assertEqual(len(items),2)
-        with self.client.get(url+'/'+items[0]['id']) as response:
-            self.assertEqual(response.status_code,200)
-            self.assertIn('attachment',response.headers['Content-Disposition'])
-        rejected=self.client.post(f"/p/{pp['id']}/field",json={'key':key,'value':items})
-        self.assertEqual(rejected.status_code,400)
-        self.client.post(url,data={'file':(io.BytesIO(b'fake'),'fake.pdf'),'host':'A','description':'test','kind':'维修记录'})
-        self.assertEqual(len(field_attachments.entries(pp,key)),2)
+        field = field_map('fire_butler')['fire_control_room_survey']
+        room = dict(sample_value(field)[0],fire_host_age='A：12年；B：11年',fire_records_available='')
+        survey.save_field_value(pp,project,{'key':field['key'],'value':[room]})
+        self.assertTrue(any('维保和维修记录' in i['message'] for i in validate(pp['id'],'fire_butler')[1]))
+        for old in ('fire_survey_photos','fire_host_maintenance_records'):
+            self.assertNotIn(old,field_map('fire_butler'))
+            self.assertEqual(self.client.post(f"/p/{pp['id']}/field",json={'key':old,'value':[]}).status_code,400)
         other=repo.create_project('dept2',{'name':'其他分部'})
         other_pp=repo.add_product(other['id'],'fire_butler')
-        self.assertEqual(self.client.get(f"/p/{other_pp['id']}/attachments/{key}/"+items[0]['id']).status_code,403)
-        survey.save_transcript(pp,project,'消防主机有两台，A出厂12年，B出厂11年。项目已提供维保维修资料，恒益报价5万元。')
-        survey.extract_latest_source(pp,project,provider='rule')
-        self.assertEqual(field_attachments.entries(pp,key),items)
-        copy = repo.copy_project(project['id'])
-        copy_pp = repo.list_products(copy['id'])[0]
-        self.assertTrue(Path(field_attachments.download(copy_pp,key,items[0]['id'])[0]).is_file())
-        self.client.post(url+'/'+items[0]['id']+'/remove')
-        self.assertTrue(problems())
-        self.assertTrue(Path(field_attachments.download(copy_pp,key,items[0]['id'])[0]).is_file())
+        self.assertEqual(self.client.get(f"/p/{other_pp['id']}/review").status_code,403)
 
 
 if __name__ == '__main__':

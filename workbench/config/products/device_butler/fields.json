@@ -1,20 +1,328 @@
 {
-  "template_version": "0.2.0",
+  "template_version": "0.5.0",
   "product_type": "device_butler",
-  "note": "来源：《设备管家Demo需求文档.md》第 7 章。复用三个 common 字段包，产品差异全部落在 device_survey 包的表格字段与同目录 rules.json。首版按需求 7.1 精简，不引入 common_decision / common_requirements。传感器类型与传感器数量是规则引擎的派生结果，不作为用户输入字段存储（需求 7.2）。",
+  "note": "来源：《设备管家Demo需求文档.md》第 7 章。复用 common 字段包，产品差异全部落在 device_survey 包的表格字段与同目录 rules.json。决策地图和特殊要求作为选填公共配置接入。传感器类型与传感器数量是规则引擎的派生结果，不作为用户输入字段存储（需求 7.2）。 2026-11-05按人工审核稿同步三大部分及字段变更。",
   "packs": [
     "common_project",
     "common_docs",
     "common_property",
-    "device_survey"
+    "device_survey",
+    "common_decision",
+    "common_requirements"
   ],
   "group_order": [
     "basic",
     "docs",
     "property",
-    "device_survey"
+    "device_survey",
+    "decision",
+    "special"
   ],
-  "overrides": {},
-  "extra_fields": [],
-  "remove_fields": []
+  "overrides": {
+    "contract_years": {
+      "required": false
+    },
+    "fee_mode": {
+      "required": false
+    },
+    "mgmt_scope": {
+      "required": false
+    },
+    "service_type": {
+      "required": false
+    }
+  },
+  "extra_fields": [
+    {
+      "key": "engineering_staff_count",
+      "label": "工程班组人员数量",
+      "group": "business",
+      "type": "number",
+      "required": false,
+      "ai_hint": "仅提取明确陈述的事实，未知留空，不得推测。",
+      "extract": {
+        "mode": "number",
+        "keywords": [
+          "工程班组人员数量"
+        ],
+        "negation_guard": false
+      },
+      "unit": "人",
+      "validate": {
+        "min": 0,
+        "integer": true,
+        "message": "工程班组人员数量须为非负整数。"
+      }
+    },
+    {
+      "key": "inspection_frequency",
+      "label": "巡检频率",
+      "group": "business",
+      "type": "textarea",
+      "required": false,
+      "ai_hint": "仅提取明确陈述的事实，未知留空，不得推测。",
+      "extract": {
+        "mode": "sentence",
+        "keywords": [
+          "巡检频率"
+        ],
+        "negation_guard": false
+      }
+    },
+    {
+      "key": "automation_systems",
+      "label": "是否有BA/BMS/IBMS系统（多选）",
+      "group": "business",
+      "type": "multiselect",
+      "required": false,
+      "ai_hint": "仅提取明确陈述的事实，未知留空，不得推测。",
+      "extract": {
+        "mode": "list",
+        "keywords": [
+          "是否有BA/BMS/IBMS系统（多选）"
+        ],
+        "negation_guard": false,
+        "context_keywords": [
+          "BA",
+          "BMS",
+          "IBMS",
+          "楼宇自控"
+        ]
+      },
+      "options": [
+        {
+          "value": "BA"
+        },
+        {
+          "value": "BMS"
+        },
+        {
+          "value": "IBMS"
+        },
+        {
+          "value": "无"
+        },
+        {
+          "value": "待确认"
+        }
+      ],
+      "allow_custom": true
+    },
+    {
+      "key": "third_party_inspection",
+      "label": "是否有第三方巡检系统",
+      "group": "business",
+      "type": "select",
+      "required": false,
+      "ai_hint": "仅提取明确陈述的事实，未知留空，不得推测。",
+      "extract": {
+        "mode": "enum",
+        "keywords": [
+          "是否有第三方巡检系统"
+        ],
+        "negation_guard": false,
+        "context_keywords": [
+          "是否有第三方巡检系统"
+        ]
+      },
+      "options": [
+        {
+          "value": "是"
+        },
+        {
+          "value": "否"
+        },
+        {
+          "value": "待确认"
+        }
+      ]
+    },
+    {
+      "key": "systems_in_use",
+      "label": "以上系统是否正常使用",
+      "group": "business",
+      "type": "textarea",
+      "required": false,
+      "ai_hint": "仅提取明确陈述的事实，未知留空，不得推测。",
+      "extract": {
+        "mode": "sentence",
+        "keywords": [
+          "以上系统是否正常使用"
+        ],
+        "negation_guard": false
+      },
+      "help": "分别说明BA、BMS、IBMS或第三方巡检系统是否正常使用，避免将多个系统的状态混为一项。"
+    },
+    {
+      "key": "priority_rooms",
+      "label": "是否有重点关注的设备房（如：快充站配电房、消防水泵房等）",
+      "group": "business",
+      "type": "textarea",
+      "required": false,
+      "ai_hint": "仅提取明确陈述的事实，未知留空，不得推测。",
+      "extract": {
+        "mode": "sentence",
+        "keywords": [
+          "是否有重点关注的设备房（如：快充站配电房、消防水泵房等）"
+        ],
+        "negation_guard": false
+      }
+    },
+    {
+      "key": "priority_devices",
+      "label": "有无重点关注的设备（常故障、影响环境品质）（如：冷水机组、水泵等）",
+      "group": "business",
+      "type": "textarea",
+      "required": false,
+      "ai_hint": "仅提取明确陈述的事实，未知留空，不得推测。",
+      "extract": {
+        "mode": "sentence",
+        "keywords": [
+          "有无重点关注的设备（常故障、影响环境品质）（如：冷水机组、水泵等）"
+        ],
+        "negation_guard": false
+      }
+    },
+    {
+      "key": "device_complaints",
+      "label": "现场哪些地方投诉较多？主要原因？",
+      "group": "business",
+      "type": "textarea",
+      "required": false,
+      "ai_hint": "仅提取明确陈述的事实，未知留空，不得推测。",
+      "extract": {
+        "mode": "sentence",
+        "keywords": [
+          "现场哪些地方投诉较多？主要原因？"
+        ],
+        "negation_guard": false
+      }
+    },
+    {
+      "key": "device_management_difficulties",
+      "label": "还有哪些管理难点？",
+      "group": "business",
+      "type": "textarea",
+      "required": false,
+      "ai_hint": "仅提取明确陈述的事实，未知留空，不得推测。",
+      "extract": {
+        "mode": "sentence",
+        "keywords": [
+          "还有哪些管理难点？"
+        ],
+        "negation_guard": false
+      }
+    }
+  ],
+  "remove_fields": [
+    "business_desc",
+    "service_type"
+  ],
+  "sections": [
+    {
+      "key": "project",
+      "name": "项目基础信息",
+      "groups": [
+        {
+          "key": "project_1",
+          "name": "项目概况",
+          "fields": [
+            "project_name",
+            "project_source",
+            "business_type",
+            "build_type",
+            "land_area",
+            "building_area",
+            "site_address"
+          ]
+        },
+        {
+          "key": "project_2",
+          "name": "物业与服务信息",
+          "fields": [
+            "property_company",
+            "project_owner",
+            "contract_years",
+            "business_tracks",
+            "fee_mode",
+            "mgmt_scope"
+          ]
+        },
+        {
+          "key": "project_3",
+          "name": "项目资料",
+          "fields": [
+            "drawings",
+            "equipment_ledger",
+            "staffing_table"
+          ]
+        },
+        {
+          "key": "project_4",
+          "name": "决策地图",
+          "fields": [
+            "decision_maker",
+            "customer_contact",
+            "expected_launch",
+            "has_budget"
+          ]
+        },
+        {
+          "key": "project_5",
+          "name": "特殊要求",
+          "fields": [
+            "compliance",
+            "highlights",
+            "procurement"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "delivery",
+      "name": "产品交付条件踏勘",
+      "groups": [
+        {
+          "key": "delivery_1",
+          "name": "设备房与设备数量",
+          "fields": [
+            "device_room_survey"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "interview",
+      "name": "相关业务访谈",
+      "groups": [
+        {
+          "key": "interview_1",
+          "name": "巡检与操作方式",
+          "fields": [
+            "engineering_staff_count",
+            "inspection_frequency",
+            "automation_systems",
+            "third_party_inspection",
+            "systems_in_use"
+          ]
+        },
+        {
+          "key": "interview_2",
+          "name": "重点设备房",
+          "fields": [
+            "priority_rooms",
+            "priority_devices"
+          ]
+        },
+        {
+          "key": "interview_3",
+          "name": "投诉与管理难点",
+          "fields": [
+            "device_complaints",
+            "device_management_difficulties"
+          ]
+        }
+      ]
+    }
+  ]
 }

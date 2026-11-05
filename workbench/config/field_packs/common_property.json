@@ -246,6 +246,50 @@
       "extract": {
         "mode": "enum"
       }
+    },
+    {
+      "key": "business_tracks",
+      "label": "灵石八大赛道",
+      "group": "property",
+      "type": "multiselect",
+      "required": false,
+      "options": [
+        {
+          "value": "园区"
+        },
+        {
+          "value": "住区"
+        },
+        {
+          "value": "城区"
+        },
+        {
+          "value": "公园"
+        },
+        {
+          "value": "酒店"
+        },
+        {
+          "value": "医疗"
+        },
+        {
+          "value": "学校"
+        },
+        {
+          "value": "商业"
+        }
+      ],
+      "help": "按项目实际涉及的灵石赛道选择，可多选。",
+      "ai_hint": "只选择明确提到的赛道，不从项目名称推断。",
+      "extract": {
+        "mode": "list",
+        "context_keywords": [
+          "赛道"
+        ],
+        "keywords": [
+          "赛道"
+        ]
+      }
     }
   ]
 }

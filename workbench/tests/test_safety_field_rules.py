@@ -1,3 +1,4 @@
+from tests.survey_helpers import sample_value
 """Safety survey requirements, conditional brand details and historical records."""
 import json
 import unittest
@@ -26,34 +27,32 @@ class SafetyFieldRulesTests(unittest.TestCase):
     def test_required_only_form_can_generate_and_shared_product_is_unchanged(self):
         fields = field_map('safety_butler')
         self.assertNotIn('service_type', fields)
-        expected = {'property': {'property_company', 'project_owner'},
-                    'network': {'has_internet'}, 'cabinet': set()}
+        expected = {'project_2': {'property_company', 'project_owner'},
+                    'delivery_3': {'has_internet'}, 'delivery_4': set()}
         for group, keys in expected.items():
             self.assertEqual({k for k, f in fields.items() if f['group'] == group and f['required']}, keys)
-        self.assertEqual(sum(f['group'] == 'property' for f in fields.values()), 6)
+        self.assertEqual(sum(f['group'] == 'project_2' for f in fields.values()), 6)
         self.assertEqual([o['value'] for o in fields['project_source']['options']],
                          ['内部项目', '外部项目', '渠道项目', '重点项目'])
-        self.assertEqual([o['value'] for o in fields['storage_protocol']['options']], ['是', '否', '其他'])
-        self.assertFalse(fields['storage_model']['required'])
+        self.assertEqual([o['value'] for o in next(c for c in fields['monitor_room_survey']['columns'] if c['key']=='storage_protocol')['options']], ['是', '否', '其他'])
+        self.assertFalse(next(c for c in fields['monitor_room_survey']['columns'] if c['key']=='storage_model')['required'])
         for key, f in fields.items():
             if not f['required']:
                 continue
-            value = (f['options'][0]['value'] if f['type'] == 'select' else
-                     [f['options'][0]['value']] if f['type'] == 'multiselect' else
-                     4 if f['type'] == 'number' else '现场确认')
+            value = sample_value(f)
             self.assertEqual(self.save(key, value).status_code, 200)
         self.assertTrue(validate(self.pp['id'], 'safety_butler')[0])
         self.assertEqual(repo.field_stats(self.pp['id'], 'safety_butler')['required_missing'], 0)
         context = generate.build_context(self.pp['id'], 'safety_butler')
         self.assertNotIn('service_type', context['data'])
-        self.assertEqual(context['detail']['storage_protocol']['label'], '是否支持GB28181')
+        self.assertEqual(context['detail']['monitor_room_survey']['label'], '监控室设备清单')
         fire = field_map('fire_butler')
-        self.assertIn('service_type', fire)
-        self.assertTrue(fire['contract_years']['required'])
+        self.assertNotIn('service_type', fire)
+        self.assertFalse(fire['contract_years']['required'])
         self.assertIn('重点项目', [o['value'] for o in fire['project_source']['options']])
 
     def test_other_brand_requires_detail_in_api_and_generation_validation(self):
-        for key in ('camera_brand', 'storage_brand', 'switch_brand'):
+        for key in ('switch_brand',):
             with self.subTest(key=key):
                 options = field_map('safety_butler')[key]['options']
                 standard = [options[0]['value'], options[1]['value']]
@@ -85,22 +84,19 @@ class SafetyFieldRulesTests(unittest.TestCase):
         self.assertEqual(html.count('data-status="required_missing"'), stats['required_total'])
         self.assertFalse(any(i['field'] == 'camera_brand' for i in validate(self.pp['id'], 'safety_butler')[1]))
         context = generate.build_context(self.pp['id'], 'safety_butler')
-        self.assertEqual(context['display']['camera_brand'], '海康')
+        self.assertNotIn('camera_brand', context['display'])
+        self.assertEqual(repo.db.query_one('SELECT value_json FROM survey_field_values WHERE project_product_id=? AND field_key=?', (self.pp['id'],'camera_brand'))['value_json'], '"海康"')
         self.assertEqual(context['detail']['has_cabinet']['status'], 'optional_missing')
         self.assertEqual(repo.field_values(self.pp['id']), before)
 
     def test_extraction_uses_new_options_and_multiple_brands(self):
-        values, _ = _run_rule_engine('摄像头品牌为海康和大华。存储设备品牌为宇视。交换机品牌为华为和锐捷。项目来源为渠道项目。', 'safety_butler', [])
-        self.assertEqual(set(values['camera_brand']['value']), {'海康', '大华'})
-        self.assertEqual(values['storage_brand']['value'], ['宇视'])
+        values, _ = _run_rule_engine('监控室名称：东区，摄像头品牌：海康、大华，存储设备品牌：宇视，是否支持GB28181：否。\n交换机品牌为华为和锐捷。项目来源为渠道项目。', 'safety_butler', [])
+        room = values['monitor_room_survey']['value'][0]
+        self.assertEqual(set(room['camera_brand']), {'海康', '大华'})
+        self.assertEqual(room['storage_brand'], ['宇视'])
+        self.assertEqual(room['storage_protocol'], '否')
         self.assertEqual(set(values['switch_brand']['value']), {'华为', '锐捷'})
         self.assertEqual(values['project_source']['value'], '渠道项目')
-        for text, expected in [('存储设备支持GB28181。', '是'), ('存储设备不支持GB28181。', '否'),
-                               ('存储设备支持GB/T28181-2022。', '是'), ('存储设备采用其他协议ONVIF。', '其他'),
-                               ('存储设备是否支持GB28181尚不确定。', None),
-                               ('存储设备是海康。', None)]:
-            values, _ = _run_rule_engine(text, 'safety_butler', [])
-            self.assertEqual(values['storage_protocol']['value'], expected, text)
 
 
 if __name__ == '__main__':

@@ -50,12 +50,15 @@ def validate_capabilities(product_type):
     if any(f['type'] == 'attachment' for f in fields.values()) and 'field_attachments' not in declared:
         issues.append('附件字段必须声明 field_attachments 能力')
     for rule in product_config(product_type).get('eligibility_rules', []):
-        if rule.get('field') not in fields or rule.get('operator') not in ('contains_any', 'not_equals'):
+        if rule.get('field') not in fields or rule.get('operator') not in ('contains_any', 'not_equals', 'any_row_equals'):
             issues.append('准入规则引用未知字段或操作符')
         elif rule['operator'] == 'contains_any' and not rule.get('values'):
             issues.append('contains_any 准入规则需提供 values')
         elif rule['operator'] == 'not_equals' and 'value' not in rule:
             issues.append('not_equals 准入规则需提供 value')
+        elif rule['operator'] == 'any_row_equals' and ('value' not in rule or rule.get('column') not in
+                {column['key'] for column in fields[rule['field']].get('columns', [])}):
+            issues.append('any_row_equals 准入规则须引用有效表格列并提供 value')
         if not rule.get('message'): issues.append('准入规则需提供 message')
     if 'artifact_generation' in declared:
         for artifact in artifacts_config(product_type)['artifacts']:
@@ -67,7 +70,14 @@ def validate_capabilities(product_type):
                 if field.get('type') != 'table': issues.append('xlsx_table 必须引用 table 字段')
                 if not artifact.get('filename'): issues.append('xlsx_table 必须声明 filename')
                 if artifact.get('formats') != ['xlsx']: issues.append('xlsx_table 仅支持 xlsx 格式')
-                if any(k not in [c['key'] for c in field.get('columns', [])] for k in artifact.get('merge_columns', [])):
+                columns = field.get('columns', [])
+                if artifact.get('nested_table'):
+                    nested = next((c for c in columns if c['key'] == artifact['nested_table'] and c['type'] == 'table'), None)
+                    if nested:
+                        columns = [c for c in columns if c is not nested] + nested['columns']
+                    else:
+                        issues.append('nested_table 必须引用子表格列')
+                if any(k not in [c['key'] for c in columns] for k in artifact.get('merge_columns', [])):
                     issues.append('merge_columns 引用了不存在的列')
     return issues
 

@@ -103,6 +103,10 @@ def validate_fields(pp_id, product_type):
             if output_def and isinstance(v, list) and all(isinstance(r, dict) for r in v):
                 v = rule_engine.materialize(output_def, v)
             issues.extend(table_issues(f, v))
+            count_field = f.get('validate', {}).get('row_count_field')
+            if count_field and isinstance(v, list) and as_number(get(count_field)) != len(v):
+                issues.append({'level':'error', 'field':key,
+                               'message':'%s数量须与%s一致。' % (label, fmap[count_field]['label'])})
 
         # 类型与格式
         if f['type'] == 'number':
@@ -179,11 +183,11 @@ def _business_rules(get, fmap):
     """跨字段业务规则。规则依据：收资清单『备注』列。"""
     out = []
 
-    # 摄像头类型：纯模拟 → 无法配置安全管家（硬门槛）
+    # 摄像头类型：纯模拟 → 无法配置安全管家/云眸（硬门槛）
     cam_type = get('camera_type')
     if cam_type and '模拟' in str(cam_type) and '混合' not in str(cam_type):
         out.append({'level': 'error', 'field': 'camera_type',
-                    'message': '摄像头类型为纯模拟，无法配置安全管家（需先改造为数字或混合摄像头）。'})
+                    'message': '摄像头类型为纯模拟，无法配置安全管家/云眸（需先改造为数字或混合摄像头）。'})
 
     return out
 
@@ -204,6 +208,9 @@ def eligibility_issues(product_type, get):
         failed = (rule['operator'] == 'contains_any' and
                   (not isinstance(value, list) or not any(x in value for x in rule['values'])))
         failed |= rule['operator'] == 'not_equals' and value == rule['value']
+        if rule['operator'] == 'any_row_equals':
+            failed = not isinstance(value, list) or not any(
+                isinstance(row, dict) and row.get(rule['column']) == rule['value'] for row in value)
         if failed:
             out.append(dict(level='error', field=rule['field'], message=rule['message'], kind='eligibility'))
     return out
@@ -217,14 +224,32 @@ def table_issues(field, value):
     if not isinstance(value, list) or any(not isinstance(row, dict) for row in value):
         error('【%s】需要设备行列表。' % field['label'])
         return out
+    unique_column = field.get('validate', {}).get('unique_column')
+    seen = set()
     for index, row in enumerate(value, 1):
+        if unique_column and row.get(unique_column):
+            name = str(row[unique_column]).strip()
+            if name in seen:
+                error('第%d行：名称重复，请分别命名。' % index)
+            seen.add(name)
+        analog = field.get('validate', {}).get('reject_analog_column')
+        if analog and row.get(analog) == '模拟摄像头':
+            error('第%d个监控室为纯模拟摄像头，需先改造后接入。' % index)
         for col in field['columns']:
             v = row.get(col['key'])
             prefix = '第%d行【%s】' % (index, col['label'])
+            rule = col.get('required_if', {})
+            ages = age_entries(row.get(rule.get('field'))) if rule.get('operator') == 'age_at_least' else None
             if is_empty(v):
-                if col.get('required'): error(prefix + '为必填项。')
+                if col.get('required') or (ages and any(age >= rule['value'] for age in ages.values())):
+                    error(prefix + '为必填项。')
                 continue
-            if col.get('type') == 'number':
+            if col.get('validate', {}).get('age_entries') and age_entries(v) is None:
+                error(prefix + '请按“主机编号：13年”或“主机编号：2013-10-27”填写。')
+            if col.get('type') == 'table':
+                for issue in table_issues(col, v):
+                    error(prefix + issue['message'])
+            elif col.get('type') == 'number':
                 try:
                     n = float(v)
                     valid = not isinstance(v, bool) and math.isfinite(n)
@@ -233,8 +258,12 @@ def table_issues(field, value):
                     valid &= not col.get('integer') or n.is_integer()
                 except (ValueError, TypeError): valid = False
                 if not valid: error(prefix + col.get('message', '需要符合范围与整数约束的有效数字。'))
-            elif col.get('type') == 'select':
-                if v not in [o['value'] for o in col['options']]: error(prefix + '不在候选范围内。')
+            elif col.get('type') in ('select', 'multiselect'):
+                from .choices import normalize_manual_choice
+                try:
+                    normalize_manual_choice(col, v)
+                except ValueError as exc:
+                    error(prefix + str(exc))
             elif not isinstance(v, str): error(prefix + '需要文字。')
         if any(x in str(row.get('equipment', '')) for x in field.get('validate', {}).get('excluded_equipment', [])):
             error('第%d行：%s' % (index, field['validate'].get('excluded_message', '包含不应登记的设备，请删除该行。')))

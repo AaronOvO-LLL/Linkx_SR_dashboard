@@ -91,8 +91,9 @@
       initRuleTable(tbl);
     });
     if (window.RoomEditor) window.RoomEditor.init(scheduleSave);
+    if (window.CardEditor) window.CardEditor.init(scheduleSave);
 
-    document.querySelectorAll('form.attachment-upload, form[action$="/remove"]').forEach(function (form) {
+    document.querySelectorAll('form.attachment-upload, form.survey-table-import, form[action$="/remove"]').forEach(function (form) {
       form.addEventListener('submit', async function (event) {
         event.preventDefault();
         saveTimers.forEach(function (timer) { clearTimeout(timer); });
@@ -178,6 +179,7 @@
   function readValue(el) {
     var type = el.getAttribute('data-type');
     if (type === 'rooms') return window.RoomEditor.read(el);
+    if (type === 'cards') return window.CardEditor.read(el);
     if (type === 'choice-single') {
       var selected = el.querySelector('input[type=radio]:checked, select option:checked');
       if (!selected) return '';

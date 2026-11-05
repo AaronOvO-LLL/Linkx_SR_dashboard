@@ -1,4 +1,4 @@
-# {{ project.customer_name or project.name }} · 安全管家价值卡片
+# {{ project.customer_name or project.name }} · {{ product.name }}价值卡片
 
 ## 一、客户现状
 
@@ -7,8 +7,10 @@
 - 项目：{{ display['project_name'] or '（未填写）' }}（{{ display['business_type'] or '业态未确认' }}，建筑面积 {{ display['building_area'] or '?' }} m²）
 - 地址：{{ display['site_address'] or '（未填写）' }}
 - 物业公司：{{ display['property_company'] or '（未填写）' }}　|　项目业主：{{ display['project_owner'] or '（未填写）' }}
-- 现有监控：{{ display['camera_brand'] or '（未确认品牌）' }} 摄像头约 {{ display['camera_count'] or '?' }} 路{% if display['camera_type'] %}（{{ display['camera_type'] }}）{% endif %}
-- 现有人员：{{ display['current_staffing'] or '（未填写）' }}
+- 监控室设备：{{ display['monitor_room_survey'] or '（未填写）' }}
+- 安全班组人数：{{ display['security_staff_total'] or '（未填写）' }}
+- 固定岗：{{ display['fixed_post_staff'] or '（未填写）' }} 人；{{ display['fixed_post_shifts'] or '班次待确认' }}
+- 巡逻岗：{{ display['patrol_post_staff'] or '（未填写）' }} 人；{{ display['patrol_post_shifts'] or '班次待确认' }}
 
 ## 二、核心问题
 
@@ -16,7 +18,7 @@
 
 ## 三、方案价值
 
-针对上述现状，安全管家以「远程值守 + 智能识别 + 现场巡检」的组合方式补强现有安保体系：
+针对上述现状，{{ product.name }}以「远程值守 + 智能识别 + 现场巡检」的组合方式补强现有安保体系：
 
 | 价值维度 | 具体说明 |
 |---|---|
@@ -39,7 +41,7 @@
 
 - 客户诉求：{{ display['expectations'] or '（未填写）' }}
 - 期望上线：{{ display['expected_launch'] or '（未填写）' }}
-- 重点位置：{{ display['key_points'] or '（未填写）' }}
+- 重点位置：{{ display['security_focus_survey'] or '（未填写）' }}
 
 ---
 *生成时间：{{ meta.generated_at }}　|　模板版本：{{ meta.template_version }}*

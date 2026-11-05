@@ -43,7 +43,7 @@ class SurveyExportTests(unittest.TestCase):
             return load_workbook(BytesIO(response.data))
 
     def answers(self, book):
-        return {row[1]: row for row in book['调研结果'].iter_rows(min_row=2, values_only=True)}
+        return {row[2]: row[1:] for row in book['调研结果'].iter_rows(min_row=2, values_only=True)}
 
     def test_all_products_have_entry_and_download_before_generation(self):
         products = list_products()
@@ -74,7 +74,7 @@ class SurveyExportTests(unittest.TestCase):
         text = '=HYPERLINK("https://example.invalid","原样文本")\n第二行'
         for key, value in {'asset_customer_name': text, 'operating_project_count': 0,
                            'asset_types': ['产业园区', '写字楼'],
-                           'submitter_contact': '陈岚 13800000000'}.items():
+                           'customer_contact': '陈岚 13800000000'}.items():
             self.save(pp, key, value)
         with closing(self.download(pp)) as book:
             answers = self.answers(book)
@@ -82,7 +82,7 @@ class SurveyExportTests(unittest.TestCase):
             self.assertEqual(answers[fields['asset_customer_name']['label']][2], text)
             self.assertEqual(answers[fields['operating_project_count']['label']][2], 0)
             self.assertEqual(answers[fields['asset_types']['label']][2], '产业园区、写字楼')
-            self.assertEqual(answers[fields['submitter_contact']['label']][4], '已人工确认')
+            self.assertEqual(answers[fields['customer_contact']['label']][4], '已人工确认')
             cell = next(cell for row in book['调研结果'] for cell in row if cell.value == text)
             self.assertEqual(cell.data_type, 's')
             self.assertTrue(cell.alignment.wrap_text)
@@ -91,17 +91,21 @@ class SurveyExportTests(unittest.TestCase):
     def test_energy_export_includes_all_fields_and_unmerged_raw_equipment(self):
         pp = self.product('energy_butler')
         sample = json.loads((Path(paths.SAMPLES_DIR) / 'energy_butler/expected.json').read_text(encoding='utf-8'))
-        for key, value in sample.items():
-            self.save(pp, key, value)
+        self.save(pp, 'energy_system_types', sample['energy_system_types'])
+        rows = sample['energy_equipment_list']
+        for row in rows:
+            row['equipment'] = {'冷水主机':'制冷主机','冷冻水泵':'冷冻泵'}.get(row['equipment'], row['equipment'])
+        self.save(pp, 'energy_station_survey', [{'room_name':'甲冷站','energy_fee_over_1m':'是','energy_equipment_list':rows}])
         operation = '夏季：东塔两台主机运行\n冬季：西塔一台主机运行'
         self.save(pp, 'energy_season_combination', operation)
         with closing(self.download(pp)) as book:
-            field = field_map('energy_butler')['energy_equipment_list']
+            field = field_map('energy_butler')['energy_station_survey']
+            columns = field['columns'][-1]['columns']
             sheet = book[field['label']]
             self.assertEqual(sheet.max_row, len(sample['energy_equipment_list']) + 1)
-            self.assertEqual(list(next(sheet.values)), ['序号'] + [c['label'] for c in field['columns']])
+            self.assertEqual(list(next(sheet.values)), ['序号'] + [c['label'] for c in field['columns'][:-1] + columns])
             for index, original in enumerate(sample['energy_equipment_list'], 2):
-                for column, definition in enumerate(field['columns'], 2):
+                for column, definition in enumerate(columns, 4):
                     expected = original.get(definition['key'])
                     if definition.get('type') == 'number' and expected not in (None, ''):
                         expected = float(expected)
@@ -130,17 +134,17 @@ class SurveyExportTests(unittest.TestCase):
         fire = self.product('fire_butler')
         safety = self.product('safety_butler')
         self.save(fire, 'project_name', '公共项目第一版')
-        self.save(fire, 'fire_renovation_cost', 10)
+        self.save(fire, 'fire_control_room_survey', [{'room_name':'主楼','fire_renovation_cost':10}])
         with closing(self.download(fire)) as book:
             self.assertEqual(self.answers(book)['项目名称'][2], '公共项目第一版')
         self.save(safety, 'project_name', '公共项目第二版')
-        self.save(fire, 'fire_renovation_cost', 20)
+        self.save(fire, 'fire_control_room_survey', [{'room_name':'主楼','fire_renovation_cost':20}])
         with closing(self.download(fire)) as book:
             answers = self.answers(book)
             self.assertEqual(answers['项目名称'][2], '公共项目第二版')
-            self.assertEqual(answers[field_map('fire_butler')['fire_renovation_cost']['label']][2], 20)
+            self.assertIn(20, list(book['消控室踏勘清单'].values)[1])
         with closing(self.download(safety)) as book:
-            self.assertNotIn(field_map('fire_butler')['fire_renovation_cost']['label'], self.answers(book))
+            self.assertNotIn('消控室踏勘清单', self.answers(book))
 
     def test_download_authorizes_before_export_and_unknown_id_is_404(self):
         pp = self.product('asset_butler')

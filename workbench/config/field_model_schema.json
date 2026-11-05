@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.5.0",
+  "schema_version": "1.7.0",
   "note": "字段模型的元定义（契约）。它不描述业务，只描述『字段模型可以怎么写』。新增产品、新增字段前先读这份文件；写完用 `python check_config.py` 校验。",
   "layers": [
     {
@@ -25,7 +25,7 @@
     "desc": "一句话说明这个包收了什么",
     "groups": "分组定义数组，元素见 group_attributes",
     "fields": "字段定义数组，元素见 field_attributes",
-    "value_scope": "project：同项目所有引用该包的管家共享答案；缺省 product：各管家独立保存。与 scope 的定义复用含义不同。"
+    "value_scope": "project：同项目各管家共享答案；缺省 product：各管家独立保存。字段可声明 value_scope 覆盖包的默认值；产品 overrides 不可改变归属。"
   },
   "manifest_file_format": {
     "template_version": "本产品字段模型版本号，改字段就升版本（数据留痕）",
@@ -36,7 +36,9 @@
     "group_overrides": "{分组key: {name, desc}} 覆盖共用分组的显示名称和说明，保留稳定key和排序。",
     "overrides": "{字段key: {要改的属性}} 字段级改写；dict 递归合并，其余类型整体覆盖",
     "extra_fields": "本产品独有的字段，直接内联，格式同字段包里的 fields 元素",
-    "remove_fields": "要从所引用字段包中剔除的字段 key 数组"
+    "remove_fields": "要从所引用字段包中剔除的字段 key 数组",
+    "sections": "三大部分数组；各部分包含key/name/groups，分组包含key/name/fields（字段key列表）。必须完整覆盖全部有效字段且不重复；覆盖原group和排序，是页面、生成物与导出的共同分类。",
+    "legacy_fields": "只读历史字段key/label清单，供结构化拆分核对，不作为活动采集字段。"
   },
   "group_attributes": [
     {
@@ -140,7 +142,7 @@
       "type": "enum",
       "required": false,
       "default": "text",
-      "desc": "text / number / select。决定核对页渲染成什么控件以及 core/validate.py::table_issues 用哪套校验。"
+      "desc": "text / number / select / multiselect。表格或空间卡片使用同一列定义和校验。"
     },
     {
       "key": "required",
@@ -492,6 +494,18 @@
       "type": "string",
       "required": false,
       "desc": "语义变化时，早于此模板版本的已有答案须重新人工确认。"
+    },
+    {
+      "key": "value_scope",
+      "type": "string",
+      "required": false,
+      "desc": "project 或 product。由字段包中的字段定义指定，优先于字段包默认值；不允许通过产品 overrides 改变。"
+    },
+    {
+      "key": "ui",
+      "type": "object",
+      "required": false,
+      "desc": "table可配置mode:cards及item_name，按独立空间展示可重复卡片，值仍为对象数组。"
     }
   ],
   "rules": [

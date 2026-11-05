@@ -9,14 +9,15 @@
       "name": "设备清单",
       "purpose": "导出可改造部分的冷站设备清单。",
       "includes": [
-        "设备清单（10列）"
+        "冷站名称及可改造设备清单"
       ],
       "formats": [
         "xlsx"
       ],
       "renderer": "xlsx_table",
-      "table_field": "energy_equipment_list",
+      "table_field": "energy_station_survey",
       "merge_columns": [
+        "room_name",
         "supply_area",
         "building"
       ],
@@ -27,7 +28,8 @@
         "energy_eligibility",
         "energy_equipment"
       ],
-      "order": 1
+      "order": 1,
+      "nested_table": "energy_equipment_list"
     }
   ]
 }

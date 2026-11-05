@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>踏勘条件及问题指引（供踏勘时备查）</title>
+  <style>
+    :root { font-family: system-ui, "Microsoft YaHei", sans-serif; color: #24364b; background: #f2f5fa; line-height: 1.65; }
+    body { margin: 0; } main { max-width: 900px; margin: auto; padding: 24px; }
+    h1 { font-size: clamp(24px, 4vw, 34px); line-height: 1.3; } h2 { color: #204d7c; }
+    section { background: white; border: 1px solid #dce4ee; border-radius: 12px; padding: 16px 24px; margin: 16px 0; }
+    h3 { color: #346a99; margin-top: 0; } ul { list-style: none; padding-left: 0; }
+    li { border-top: 1px solid #edf1f6; padding: 8px 0; } li ul { padding-left: 26px; }
+    label { display: flex; align-items: baseline; gap: 8px; cursor: pointer; }
+    input { accent-color: #245b93; flex: none; } input:checked + span { color: #627489; text-decoration: line-through; }
+    small { display: block; margin-left: 26px; color: #536983; }
+    .required { color: #a63a30; font-size: .8em; font-weight: normal; }
+    nav { display: flex; flex-wrap: wrap; gap: 16px; } a { color: #245b93; }
+    @media (max-width: 600px) { main { padding: 16px; } section { padding: 12px 16px; } }
+    @media print { :root { background: white; } nav { display: none; } li { break-inside: avoid; } }
+  </style>
+</head>
+<body>
+<main>
+  <div>{{ product.name }} v{{ product.version }} · 字段模板 v{{ field_version }}</div>
+  <h1>踏勘条件及问题指引（供踏勘时备查）</h1>
+  <p>逐项核对后勾选销项。遇到多个房间、冷站或位置时，请对每处分别核实。勾选进度保存在当前浏览器中。</p>
+  {% if not download %}<nav aria-label="指引操作"><a href="{{ url_for('survey_guide', pp_id=pp_id, download=1) }}">下载 HTML（可离线查看）</a></nav>{% endif %}
+  {% macro question(field, id, siblings) %}
+  <li>
+    <label><input type="checkbox" data-question="{{ id }}"><span>{{ field.label }}
+      {% if field.required_if %}<b class="required">条件必填</b>{% elif field.required %}<b class="required">必填</b>{% endif %}
+    </span></label>
+    {% if field.help %}<small>{{ field.help }}</small>{% endif %}
+    {% if field.required_if %}
+      {% set rule = field.required_if %}
+      {% set source = siblings|selectattr('key', 'equalto', rule.field)|first %}
+      <small>{% if rule.operator == 'age_at_least' %}主机出厂年限满 {{ rule.value }} 年时必填。{% elif rule.operator == 'equals' and source %}「{{ source.label }}」为「{{ rule.value }}」时必填。{% endif %}</small>
+    {% endif %}
+    {% if field.unit %}<small>单位 {{ field.unit }}</small>{% endif %}
+    {% if field.options %}
+      {% for category, options in field.options|groupby('category', default='') %}
+      <small>{{ category or ('可多选' if field.type == 'multiselect' else '单选') }} · {{ options|map(attribute='value')|join('、') }}{% if field.allow_custom %} · 可填写补充说明{% endif %}</small>
+      {% endfor %}
+    {% endif %}
+    {% if field.columns %}<ul>{% for col in field.columns %}{{ question(col, id ~ '.' ~ col.key, field.columns) }}{% endfor %}</ul>{% endif %}
+  </li>
+  {% endmacro %}
+  {% set state = namespace(section=none) %}
+  {% for group, fields in groups %}
+    {% if group.section_key and group.section_key != state.section %}
+      {% set state.section = group.section_key %}
+      <h2>{{ group.section_number }}. {{ group.section_name }}</h2>
+    {% endif %}
+    <section>
+      <h3>{{ group.number or '' }} {{ group.name }}</h3>
+      <ul>{% for field in fields %}{{ question(field, field.key, fields) }}{% endfor %}</ul>
+    </section>
+  {% endfor %}
+</main>
+<script>
+  const storageKey = {{ ('survey-guide:' ~ pp_id ~ ':' ~ field_version)|tojson }};
+  let completed = new Set();
+  try { completed = new Set(JSON.parse(localStorage.getItem(storageKey) || '[]')); } catch (_) {}
+  document.querySelectorAll('[data-question]').forEach(input => {
+    const id = input.dataset.question;
+    input.checked = completed.has(id);
+    input.addEventListener('change', () => {
+      if (input.checked) completed.add(id); else completed.delete(id);
+      try { localStorage.setItem(storageKey, JSON.stringify([...completed])); } catch (_) {}
+    });
+  });
+</script>
+</body>
+</html>

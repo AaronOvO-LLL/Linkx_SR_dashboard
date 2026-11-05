@@ -189,6 +189,9 @@ def init_db():
         conn = connect()
         _backup_before_project_fields(conn)
         _backup_before_accounts(conn)
+        _backup_before_decision_contacts(conn)
+        _backup_before_reviewed_survey(conn)
+        _backup_before_reviewed_survey(conn, version=9)
         conn.executescript(SCHEMA)
         conn.commit()
         apply_migrations(conn)
@@ -222,6 +225,40 @@ def _backup_before_accounts(conn):
             'SELECT 1 FROM schema_migrations WHERE version=5').fetchone():
         return
     backup_path = db_path() + '.pre-users-v5.bak'
+    if not os.path.exists(backup_path):
+        staging = backup_path + '.tmp'
+        with closing(sqlite3.connect(staging)) as backup:
+            conn.backup(backup)
+        os.replace(staging, backup_path)
+
+
+def _backup_before_decision_contacts(conn):
+    tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+    if 'survey_field_values' not in tables:
+        return
+    if 'schema_migrations' in tables and conn.execute(
+            'SELECT 1 FROM schema_migrations WHERE version=7').fetchone():
+        return
+    if not conn.execute("SELECT 1 FROM survey_field_values WHERE field_key IN ('decision_maker', 'customer_contact') LIMIT 1").fetchone():
+        return
+    backup_path = db_path() + '.pre-decision-v7.bak'
+    if not os.path.exists(backup_path):
+        staging = backup_path + '.tmp'
+        with closing(sqlite3.connect(staging)) as backup:
+            conn.backup(backup)
+        os.replace(staging, backup_path)
+
+
+def _backup_before_reviewed_survey(conn, version=8):
+    tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+    if 'survey_field_values' not in tables:
+        return
+    if 'schema_migrations' in tables and conn.execute(
+            'SELECT 1 FROM schema_migrations WHERE version=?', (version,)).fetchone():
+        return
+    if not conn.execute('SELECT 1 FROM survey_field_values LIMIT 1').fetchone():
+        return
+    backup_path = db_path() + '.pre-review-v%d.bak' % version
     if not os.path.exists(backup_path):
         staging = backup_path + '.tmp'
         with closing(sqlite3.connect(staging)) as backup:

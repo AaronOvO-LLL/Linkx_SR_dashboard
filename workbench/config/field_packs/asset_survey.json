@@ -122,7 +122,7 @@
       "extract": {"mode": "list", "context_keywords": ["增值服务", "拟采购", "可能采购", "需要对接"], "fallback_text": true, "preserve_details": true}
     },
     {
-      "key": "asset_launch_time", "label": "客户期望系统落地时间", "group": "asset_purchase", "type": "select", "required": false, "allow_custom": true,
+      "key": "asset_launch_time", "label": "客户期望系统落地时间", "group": "decision", "type": "select", "required": false, "allow_custom": true,
       "source": "飞书表单 / 问题12",
       "help": "选择客户期望的上线时间；具体日期或其他安排可填写详细说明。",
       "options": [

@@ -149,6 +149,14 @@ def _add_project_fields(conn):
     keys = ('project_name', 'project_source', 'business_type', 'build_type', 'land_area',
             'building_area', 'site_address', 'contract_years', 'property_company',
             'project_owner', 'service_type', 'business_desc', 'fee_mode', 'mgmt_scope')
+    _promote_project_answers(conn, keys)
+
+
+def _promote_project_answers(conn, keys):
+    """保留旧答案和冲突快照；字段集合由各版本迁移固定声明。"""
+    tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+    if 'survey_field_values' not in tables:
+        return
     rows = conn.execute('''SELECT fv.*, pp.project_id FROM survey_field_values fv
         JOIN project_products pp ON pp.id=fv.project_product_id
         WHERE fv.field_key IN (%s) ORDER BY fv.updated_at DESC, fv.id''' %
@@ -238,6 +246,113 @@ def _add_department_admin(conn):
         raise ValueError('用户角色升级失败：存在无效的项目归属。')
 
 
+def _share_decision_contacts(conn):
+    """v7：只提升决策人与甲方对接人，预算、上线时间仍由各产品维护。"""
+    _promote_project_answers(conn, ('decision_maker', 'customer_contact'))
+    # 新增公共配置也会改变结果文档；已有项目的生成结果需要重新生成。
+    conn.execute('''INSERT INTO project_field_revisions (project_id, revision)
+        SELECT DISTINCT project_id, 1 FROM project_products WHERE 1
+        ON CONFLICT(project_id) DO UPDATE SET revision=revision+1''')
+    tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+    if 'validation_results' in tables:
+        conn.execute('DELETE FROM validation_results')
+
+
+def _apply_reviewed_survey(conn):
+    """v8：保留原答案，将旧汇总设备转成待拆分清单；不猜测人数或资料可用性。"""
+    tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+    if 'survey_field_values' not in tables:
+        return
+    keys = ('camera_brand', 'camera_type', 'camera_count', 'storage_brand', 'storage_type',
+            'storage_model', 'storage_count', 'storage_protocol', 'sdk_device_compatible')
+    products = (conn.execute("SELECT id FROM project_products WHERE product_type='safety_butler'").fetchall()
+                if 'product_type' in _column_names(conn, 'project_products') else [])
+    for pp in products:
+        rows = {r['field_key']: dict(r) for r in conn.execute(
+            'SELECT * FROM survey_field_values WHERE project_product_id=?', (pp['id'],))}
+        if 'monitor_room_survey' in rows:
+            continue
+        old = [rows[k] for k in keys if k in rows and rows[k]['value_json'] not in ('null', '""', '[]')]
+        if not old:
+            continue
+        data = {'room_name': ''}
+        for row in old:
+            try:
+                value = json.loads(row['value_json'])
+            except (ValueError, TypeError):
+                value = row['value_json']
+            if row['field_key'] in ('camera_brand', 'storage_brand') and isinstance(value, str):
+                value = [value]
+            data[row['field_key']] = value
+        template = old[0]
+        conn.execute('''INSERT INTO survey_field_values
+            (id, project_product_id, field_key, value_json, status, confidence, source_quote,
+             updated_by, template_version, protected, note, updated_at)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)''',
+            ('fv_rooms_' + pp['id'], pp['id'], 'monitor_room_survey', json.dumps([data], ensure_ascii=False),
+             'pending_confirm', 'low', '；'.join(r['source_quote'] or '' for r in old), 'migration',
+             '0.11.0', 1, '历史数据为项目汇总，请按实际监控室拆分并补充名称后确认。', template['updated_at']))
+    conn.execute('''INSERT INTO project_field_revisions (project_id, revision)
+        SELECT DISTINCT project_id, 1 FROM project_products WHERE 1
+        ON CONFLICT(project_id) DO UPDATE SET revision=revision+1''')
+    if 'validation_results' in tables:
+        conn.execute('DELETE FROM validation_results')
+
+
+def _apply_room_and_station_survey(conn):
+    """v9：将旧汇总答案复制到待核对卡片，保留原始字段。"""
+    if 'product_type' not in _column_names(conn, 'project_products'):
+        return
+    if not _column_names(conn, 'survey_field_values'):
+        return
+    layouts = {
+        'safety_butler': ('security_focus_survey', {'key_points':'room_name', 'key_events':'events', 'algorithms':'algorithm_other'}),
+        'fire_butler': ('fire_control_room_survey', {key:key for key in (
+            'fire_host_relationships', 'fire_host_brands', 'fire_host_age', 'fire_host_buttons',
+            'fire_point_code_table', 'fire_records_available', 'fire_renovation_cost', 'fire_weishi_renovation_cost')}),
+        'energy_butler': ('energy_station_survey', {'energy_equipment_list':'energy_equipment_list'}),
+    }
+    for product_type, (target, mapping) in layouts.items():
+        for pp in conn.execute('SELECT id FROM project_products WHERE product_type=?', (product_type,)).fetchall():
+            rows = {row['field_key']: row for row in conn.execute(
+                'SELECT * FROM survey_field_values WHERE project_product_id=?', (pp['id'],))}
+            if target in rows:
+                continue
+            card = {'room_name': ''}
+            sources = []
+            for source, column in mapping.items():
+                row = rows.get(source)
+                if not row or not _valid_json(row['value_json']):
+                    continue
+                value = json.loads(row['value_json'])
+                if value in (None, '', []):
+                    continue
+                if source == 'energy_equipment_list' and not (isinstance(value, list) and all(isinstance(item, dict) for item in value)):
+                    continue
+                if isinstance(value, list) and source != 'energy_equipment_list':
+                    value = '、'.join(str(item) for item in value)
+                card[column] = value
+                sources.append(row)
+            if not sources:
+                continue
+            conn.execute('''INSERT INTO survey_field_values
+                (id, project_product_id, field_key, value_json, status, confidence, source_quote,
+                 updated_by, template_version, protected, note, updated_at)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?)''',
+                ('fv_v9_' + pp['id'], pp['id'], target, json.dumps([card], ensure_ascii=False),
+                 'pending_confirm', 'low', '\n'.join(dict.fromkeys(r['source_quote'] for r in sources if r['source_quote'])),
+                 'migration', '', 1, '旧版为汇总信息，请逐处拆分并确认归属后保存。', sources[0]['updated_at']))
+    for row in conn.execute("SELECT id, value_json FROM survey_field_values WHERE field_key IN ('compliance', 'highlights', 'procurement')").fetchall():
+        if _valid_json(row['value_json']):
+            value = json.loads(row['value_json'])
+            if isinstance(value, list):
+                conn.execute('UPDATE survey_field_values SET value_json=? WHERE id=?',
+                             (json.dumps('\n'.join(str(item) for item in value), ensure_ascii=False), row['id']))
+    conn.execute('''INSERT INTO project_field_revisions (project_id, revision)
+        SELECT DISTINCT project_id, 1 FROM project_products WHERE 1
+        ON CONFLICT(project_id) DO UPDATE SET revision=revision+1''')
+
+
 MIGRATIONS = [
     (1, 'remove_pricing_settings', _remove_pricing_settings),
     (2, 'add_audio_transcription_jobs', _add_audio_transcription_jobs),
@@ -245,6 +360,9 @@ MIGRATIONS = [
     (4, 'add_project_fields', _add_project_fields),
     (5, 'add_personal_accounts', _add_personal_accounts),
     (6, 'add_department_admin', _add_department_admin),
+    (7, 'share_decision_contacts', _share_decision_contacts),
+    (8, 'apply_reviewed_survey', _apply_reviewed_survey),
+    (9, 'apply_room_and_station_survey', _apply_room_and_station_survey),
 ]
 
 

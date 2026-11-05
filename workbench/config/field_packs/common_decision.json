@@ -2,7 +2,7 @@
   "pack": "common_decision",
   "name": "决策地图",
   "scope": "common",
-  "desc": "上线时间、决策人、对接人与预算——任何产品都要谈",
+  "desc": "决策人、甲方对接人按项目共享；上线时间与预算按产品独立填写",
   "groups": [
     {
       "key": "decision",
@@ -17,7 +17,7 @@
       "label": "期望上线时间",
       "group": "decision",
       "type": "text",
-      "required": true,
+      "required": false,
       "help": "如：下个月、Q4 前",
       "ai_hint": "提取客户期望的交付或上线时间",
       "extract": {
@@ -39,7 +39,7 @@
       "label": "决策人",
       "group": "decision",
       "type": "text",
-      "required": true,
+      "required": false,
       "ai_hint": "提取项目的决策人姓名与角色",
       "extract": {
         "mode": "entity",
@@ -57,14 +57,15 @@
           "长",
           "老板"
         ]
-      }
+      },
+      "value_scope": "project"
     },
     {
       "key": "customer_contact",
       "label": "甲方对接人",
       "group": "decision",
       "type": "text",
-      "required": true,
+      "required": false,
       "ai_hint": "提取甲方对接人姓名与联系方式",
       "extract": {
         "mode": "entity",
@@ -85,14 +86,15 @@
           "部长",
           "老师"
         ]
-      }
+      },
+      "value_scope": "project"
     },
     {
       "key": "has_budget",
       "label": "是否有预算",
       "group": "decision",
       "type": "select",
-      "required": true,
+      "required": false,
       "ai_hint": "选择预算状态；金额、审批安排等具体情况可选择“其他 / 详细说明”填写。 优先使用候选项；选项无法表达的具体事实可保留原文，不得推测。",
       "extract": {
         "mode": "enum",

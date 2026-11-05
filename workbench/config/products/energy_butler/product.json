@@ -1,7 +1,7 @@
 {
   "product_type": "energy_butler",
   "name": "能源管家",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "status": "active",
   "short_desc": "空调冷站节能管理：准入判断、设备清单与运行现状调研。",
   "coverage": "可改造冷站及受控 VRV 的设备与运行基线。",
@@ -22,10 +22,11 @@
       "message": "无法匹配该产品：未选择受支持的空调系统。"
     },
     {
-      "field": "energy_fee_over_1m",
-      "operator": "not_equals",
-      "value": "否",
-      "message": "无法匹配该产品：可改造部分的空调电费不大于100万。"
+      "field": "energy_station_survey",
+      "operator": "any_row_equals",
+      "column": "energy_fee_over_1m",
+      "value": "是",
+      "message": "无法匹配该产品：至少一个独立冷站的可改造空调电费须大于100万元。"
     }
   ]
 }

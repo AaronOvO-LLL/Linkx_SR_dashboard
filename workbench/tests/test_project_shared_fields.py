@@ -1,3 +1,4 @@
+from tests.survey_helpers import sample_value
 """Project-wide answers, legacy conflict resolution and artifact freshness."""
 import json
 import sqlite3
@@ -48,12 +49,7 @@ class ProjectSharedFieldsTests(unittest.TestCase):
                 continue
             if private_only and field.get('value_scope') == 'project':
                 continue
-            value = (4 if field['type'] == 'number' else
-                     field['options'][0]['value'] if field['type'] == 'select' else
-                     [field['options'][0]['value']] if field['type'] == 'multiselect' else '现场确认')
-            if field['type'] == 'table':
-                value = [{c['key']: (4 if c['type'] == 'number' else c['options'][0]['value']
-                                     if c['type'] == 'select' else '现场确认') for c in field['columns']}]
+            value = sample_value(field)
             self.save(pp, key, value)
 
     def legacy(self, pp, key, value, protected=1):
@@ -68,11 +64,70 @@ class ProjectSharedFieldsTests(unittest.TestCase):
         db.execute('DELETE FROM schema_migrations WHERE version=4')
         db.init_db()
 
+    def test_decision_contacts_share_with_every_butler_but_business_terms_stay_private(self):
+        self.save(self.safety, 'decision_maker', '李总')
+        self.save(self.safety, 'customer_contact', '张经理 13800000000')
+        for product in ('safety_butler', 'fire_butler', 'device_butler', 'energy_butler', 'asset_butler'):
+            pp = repo.ensure_product(self.project['id'], product)
+            with self.subTest(product=product):
+                self.assertEqual(self.value(pp, 'decision_maker'), '李总')
+                self.assertEqual(self.value(pp, 'customer_contact'), '张经理 13800000000')
+                self.save(pp, 'has_budget', product + '预算')
+                self.save(pp, 'procurement', '需招投标，' + product + '审批')
+                self.assertEqual(self.value(pp, 'has_budget'), product + '预算')
+                self.assertEqual(self.value(pp, 'procurement'), '需招投标，' + product + '审批')
+                for key in ('decision_maker', 'customer_contact', 'has_budget', 'compliance', 'highlights', 'procurement'):
+                    self.assertFalse(field_map(product)[key]['required'])
+                launch = 'asset_launch_time' if product == 'asset_butler' else 'expected_launch'
+                self.assertFalse(field_map(product)[launch]['required'])
+                self.assertNotIn('expected_launch' if product == 'asset_butler' else 'asset_launch_time', field_map(product))
+        self.assertEqual(self.value(self.safety, 'has_budget'), 'safety_butler预算')
+        repo.upsert_field_value(self.fire['id'], 'decision_maker', '"AI猜测"',
+            'extracted', 'high', '', 'ai', 'test')
+        self.assertEqual(self.value(self.safety, 'decision_maker'), '李总')
+        self.save(self.fire, 'expected_launch', '明年')
+        self.assertNotIn('expected_launch', repo.field_values(self.safety['id']))
+        self.assertNotIn('expected_launch', repo.field_values(repo.ensure_product(self.project['id'], 'device_butler')['id']))
+        asset = repo.ensure_product(self.project['id'], 'asset_butler')
+        self.save(asset, 'asset_launch_time', '3个月内')
+        self.assertEqual(field_map('asset_butler')['asset_launch_time']['group'], 'project_3')
+        self.assertEqual(self.value(asset, 'asset_launch_time'), '3个月内')
+        self.save(asset, 'decision_maker', '王总')
+        self.assertEqual(self.value(self.safety, 'decision_maker'), '王总')
+        other = repo.create_project('dept1', {'name': '独立项目'})
+        self.assertNotIn('decision_maker', repo.field_values(repo.ensure_product(other['id'], 'fire_butler')['id']))
+
+    def test_decision_migration_preserves_contacts_protection_conflicts_and_private_answers(self):
+        self.legacy(self.safety, 'decision_maker', '李总')
+        self.legacy(self.safety, 'customer_contact', '张经理')
+        self.legacy(self.fire, 'customer_contact', '王经理')
+        self.save(self.safety, 'expected_launch', '月底')
+        self.save(self.safety, 'has_budget', '已明确预算')
+        db.execute('DELETE FROM schema_migrations WHERE version=7')
+        db.init_db()
+        self.assertTrue(Path(db.db_path() + '.pre-decision-v7.bak').exists())
+        self.assertEqual(self.value(self.fire, 'decision_maker'), '李总')
+        self.assertEqual(repo.field_values(self.fire['id'])['decision_maker']['protected'], 1)
+        self.assertEqual(self.value(self.safety, 'expected_launch'), '月底')
+        self.assertEqual(self.value(self.safety, 'has_budget'), '已明确预算')
+        self.assertEqual(len(repo.shared_field_conflicts(self.fire['id'])['customer_contact']), 2)
+        self.assertIsNone(self.value(self.fire, 'customer_contact'))
+        html = self.client.get('/p/%s/review' % self.fire['id']).get_data(as_text=True)
+        self.assertIn('张经理', html)
+        self.assertIn('王经理', html)
+        self.save(self.fire, 'customer_contact', '张经理')
+        self.assertEqual(self.value(self.safety, 'customer_contact'), '张经理')
+        before = db.query('SELECT * FROM project_field_history ORDER BY id')
+        apply_migrations(db.connect())
+        self.assertEqual(before, db.query('SELECT * FROM project_field_history ORDER BY id'))
+        self.assertEqual(len(db.query('SELECT * FROM survey_field_values WHERE field_key IN (?,?)',
+            ('decision_maker', 'customer_contact'))), 3)
+
     def test_shared_answers_reach_existing_and_later_products_and_their_context(self):
         self.save(self.safety, 'project_name', '共享产业园')
         self.save(self.safety, 'property_company', '同一物业公司')
         self.save(self.safety, 'project_source', '渠道项目')
-        self.save(self.safety, 'business_desc', ['园区'])
+        self.save(self.safety, 'business_tracks', ['园区'])
         for product in ('safety_butler', 'fire_butler', 'device_butler', 'energy_butler'):
             pp = repo.ensure_product(self.project['id'], product)
             self.assertEqual(self.value(pp, 'property_company'), '同一物业公司')
@@ -108,13 +163,13 @@ class ProjectSharedFieldsTests(unittest.TestCase):
         self.assertEqual(self.value(self.safety, 'project_name'), '')
 
     def test_shared_value_and_product_requiredness_are_separate(self):
-        self.save(self.safety, 'contract_years', '')
+        self.save(self.safety, 'build_type', '')
         safety_issues = validate(self.safety['id'], 'safety_butler')[1]
         fire_issues = validate(self.fire['id'], 'fire_butler')[1]
-        self.assertFalse(any(i['field'] == 'contract_years' for i in safety_issues))
-        self.assertTrue(any(i['field'] == 'contract_years' for i in fire_issues))
-        self.save(self.fire, 'contract_years', '三年')
-        self.assertEqual(self.value(self.safety, 'contract_years'), '三年')
+        self.assertTrue(any(i['field'] == 'build_type' for i in safety_issues))
+        self.assertFalse(any(i['field'] == 'build_type' for i in fire_issues))
+        self.save(self.fire, 'build_type', '新建')
+        self.assertEqual(self.value(self.safety, 'build_type'), '新建')
         for product in ('safety_butler', 'fire_butler', 'device_butler', 'energy_butler'):
             self.assertEqual([o['value'] for o in field_map(product)['project_source']['options']],
                              ['内部项目', '外部项目', '渠道项目', '重点项目'])
@@ -175,9 +230,10 @@ class ProjectSharedFieldsTests(unittest.TestCase):
     def test_energy_can_generate_using_shared_answers_and_its_current_table_choices(self):
         self.fill_required(self.fire)
         energy = repo.ensure_product(self.project['id'], 'energy_butler')
-        before = repo.project_fields_revision(self.project['id'])
         self.fill_required(energy, private_only=True)
-        self.assertEqual(before, repo.project_fields_revision(self.project['id']))
+        # 消防选填、能源必填的公共字段仍需补齐。
+        for key, value in [('build_type', '新建'), ('land_area', 1000), ('building_area', 2000)]:
+            self.save(energy, key, value)
         self.assertTrue(validate(energy['id'], 'energy_butler')[0])
         self.assertEqual(artifacts.generate_artifacts(energy, ['equipment_list'])[0]['status'], 'success')
         self.assertEqual(self.value(energy, 'project_name'), self.value(self.fire, 'project_name'))
@@ -306,11 +362,11 @@ class ProjectSharedFieldsTests(unittest.TestCase):
 
     def test_copy_and_purge_preserve_project_boundaries_including_hidden_shared_fields(self):
         self.save(self.fire, 'project_name', '原项目')
-        self.save(self.fire, 'service_type', field_map('fire_butler')['service_type']['options'][0]['value'])
+        self.save(self.fire, 'business_tracks', ['园区','酒店'])
         copied = repo.copy_project(self.project['id'])
         copied_fire = next(pp for pp in repo.list_products(copied['id']) if pp['product_type'] == 'fire_butler')
         self.assertEqual(self.value(copied_fire, 'project_name'), '原项目')
-        self.assertEqual(self.value(copied_fire, 'service_type'), self.value(self.fire, 'service_type'))
+        self.assertEqual(self.value(copied_fire, 'business_tracks'), self.value(self.fire, 'business_tracks'))
         survey.save_field_value(copied_fire, copied, {'key': 'project_name', 'value': '副本项目'})
         self.assertEqual(self.value(self.fire, 'project_name'), '原项目')
         repo.purge_project(copied['id'])

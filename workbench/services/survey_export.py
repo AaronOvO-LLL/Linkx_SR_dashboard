@@ -106,14 +106,18 @@ def export_survey(pp):
     ]:
         _append(overview, [label, value])
 
-    results = _sheet(book, '调研结果', ['分组', '调研项', '结果', '单位', '核对状态'],
-                     [22, 34, 85, 12, 20])
+    results = _sheet(book, '调研结果', ['部分', '分类', '调研项', '结果', '单位', '核对状态'],
+                     [24, 28, 34, 85, 12, 20])
     for group in context['groups']:
         for field in group['fields']:
             value = field['value']
             if field['type'] == 'table' and (isinstance(value, list) or is_empty(value)):
                 value = value or []
                 columns = field['columns']
+                nested = next((c for c in columns if c.get('type') == 'table'), None)
+                if nested:
+                    from core.table_values import flatten_nested_rows
+                    columns, value = flatten_nested_rows(columns, value, nested['key'])
                 detail = _sheet(book, field['label'],
                                 ['序号'] + [col['label'] for col in columns],
                                 [8] + [26] * len(columns))
@@ -128,8 +132,13 @@ def export_survey(pp):
                 value = '（未填写）'
             else:
                 value = _number(value, field)
-            _append(results, [group['name'], field['label'], value,
+            _append(results, [group.get('section_name', ''), group['name'], field['label'], value,
                               field['unit'], field['status_label']])
+
+    if context.get('legacy_fields'):
+        legacy = _sheet(book, '历史信息供核对', ['原字段', '原答案'], [36, 90])
+        for field in context['legacy_fields']:
+            _append(legacy, [field['label'], field['text']])
 
     for dataset in context['datasets'].values():
         columns = dataset['columns']

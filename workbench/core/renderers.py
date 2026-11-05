@@ -12,6 +12,9 @@ def render_xlsx_table(definition, context, fields, output_dir):
     field = fields[definition['table_field']]
     rows = context['data'][field['key']]
     columns = field['columns']
+    if definition.get('nested_table'):
+        from .table_values import flatten_nested_rows
+        columns, rows = flatten_nested_rows(columns, rows, definition['nested_table'])
     book = Workbook()
     sheet = book.active
     sheet.title = definition.get('sheet_name', '清单')
