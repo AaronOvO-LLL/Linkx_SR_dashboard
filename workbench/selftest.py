@@ -152,21 +152,26 @@ def main():
     r = client.get('/p/%s/review' % pp_id)
     check('核对页可访问', r.status_code == 200)
     fs = repo.field_stats(pp_id, 'safety_butler')
-    check('必填字段共 20 项', fs['required_total'] == 20, '必填 %d 项' % fs['required_total'])
+    check('必填字段共 13 项', fs['required_total'] == 13, '必填 %d 项' % fs['required_total'])
 
     # ---------------------------------------------------------------- 场景 C：低置信度
     section('场景 C · 低置信度内容')
-    fv = repo.field_values(pp_id)
+    from tests.survey_helpers import sample_value
+    from core.config import field_map
+    room_rows = sample_value(field_map('safety_butler')['monitor_room_survey'])
+    room_rows[0]['room_name'] = ''
+    repo.upsert_field_value(pp_id, 'monitor_room_survey', json.dumps(room_rows,ensure_ascii=False),
+        'pending_confirm', 'low', '原文摄像头数量存在不同口径，监控室归属待核实。', 'ai', '0.11.0')
+    fs = repo.field_stats(pp_id, 'safety_butler')
+    cc = repo.field_values(pp_id)['monitor_room_survey']
     check('存在待确认字段', fs['pending_confirm'] >= 1, '%d 项' % fs['pending_confirm'])
-    cc = fv['camera_count']
-    check('摄像头数量标记为待确认', cc['status'] == 'pending_confirm', '值=%s' % cc['value_json'])
-    check('待确认字段展示原文依据', len(cc['source_quote']) > 10,
-          cc['source_quote'][:40])
-
-    r = client.post('/p/%s/field' % pp_id, json={'key': 'camera_count', 'value': 68})
+    check('监控室设备标记为待确认', cc['status'] == 'pending_confirm')
+    check('待确认字段展示原文依据', len(cc['source_quote']) > 10, cc['source_quote'][:40])
+    room_rows[0]['room_name'] = '一号监控室'
+    r = client.post('/p/%s/field' % pp_id, json={'key': 'monitor_room_survey', 'value': room_rows})
     res = r.get_json()
     check('人工确认后状态更新', res['ok'] and res['status'] == 'confirmed')
-    check('人工确认后计入受保护', repo.field_values(pp_id)['camera_count']['protected'] == 1)
+    check('人工确认后计入受保护', repo.field_values(pp_id)['monitor_room_survey']['protected'] == 1)
 
     # ---------------------------------------------------------------- 场景 B：必填缺失
     section('场景 B · 必填项缺失')
@@ -198,12 +203,13 @@ def main():
         'site_address': '苏州市相城区测试路 1 号',
         'contract_years': '新签合同，服务期3年', 'property_company': '测试物业服务有限公司',
         'project_owner': '测试业主有限公司',
-        'business_desc': ['厂房', '办公', '1-3层厂房，4层办公'], 'fee_mode': '包干制',
+        'business_tracks': ['园区'], 'fee_mode': '包干制',
         'mgmt_scope': '全委',
         'monitor_center_count': 1,
-        'camera_brand': ['海康'], 'camera_type': '数字摄像头', 'camera_count': 68,
-        'storage_brand': ['海康'], 'storage_type': 'NVR', 'storage_model': 'DS-8664N',
-        'storage_count': 2, 'storage_protocol': '是',
+        'monitor_room_survey': [{'room_name':'一号监控室', 'camera_brand':['海康'], 'camera_type':'数字摄像头',
+                                'camera_count':68, 'storage_brand':['海康'], 'storage_type':'NVR',
+                                'storage_model':'DS-8664N', 'storage_count':2, 'storage_protocol':'是'}],
+        'security_staff_total':10,
         'has_internet': '有', 'switch_brand': ['华为'], 'switch_port_type': '千兆',
         'switch_ports_free': 8, 'network_topo': '有', 'network_admin': '王工 13900000000',
         'has_cabinet': '有（机柜深度1米，剩余20U，供电插口8个）',

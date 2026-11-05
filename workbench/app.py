@@ -25,6 +25,7 @@ from core.choices import choice_state  # noqa: E402
 from services import artifacts as artifact_service  # noqa: E402
 from services import survey as survey_service  # noqa: E402
 from services import survey_export  # noqa: E402
+from services import survey_import  # noqa: E402
 from services import field_attachments  # noqa: E402
 from core.field_conditions import required_now  # noqa: E402
 from core.capabilities import CapabilityError  # noqa: E402
@@ -70,6 +71,8 @@ def csrf_token():
 def protect_personal_session():
     if request.endpoint == 'upload_field_attachment':
         request.max_content_length = 12 * 1024 * 1024
+    if request.endpoint == 'survey_table_import':
+        request.max_content_length = survey_import.MAX_BYTES + 64 * 1024
     if request.endpoint == 'static':
         return None
     if session.get('user_id') and not current_user():
@@ -78,7 +81,7 @@ def protect_personal_session():
         if request.endpoint != 'login':
             return redirect(url_for('login'))
     # 兼容分部入口维持旧写接口；个人登录及个人账号的所有写操作都校验 token。
-    if request.method == 'POST' and (current_user() or
+    if request.method == 'POST' and (current_user() or request.endpoint == 'survey_table_import' or
             request.endpoint == 'register' or
             (request.endpoint == 'login' and 'username' in request.form)):
         supplied = request.headers.get('X-CSRF-Token') or request.form.get('csrf_token', '')
@@ -531,12 +534,12 @@ def project_update(pid):
     r = require_dept()
     if r:
         return r
-    load_project(pid)
+    project = load_project(pid)
     repo.update_project(pid, {
         'category': request.form.get('category', '外部项目'),
         'name': request.form.get('name', '').strip(),
         'customer_name': request.form.get('customer_name', '').strip(),
-        'location': request.form.get('location', '').strip(),
+        'location': project['location'],
         'owner': request.form.get('owner', '').strip(),
         'contact': request.form.get('contact', '').strip(),
     })
@@ -747,6 +750,30 @@ def audio_approve(pid, job_id):
 
 # ---------------------------------------------------------------- 4. 调研输入
 
+app.add_template_filter(generate.table_cell_text, 'table_cell_text')
+
+
+@app.get('/p/<pp_id>/survey-guide')
+def survey_guide(pp_id):
+    r = require_dept()
+    if r:
+        return r
+    pp, _ = load_pp(pp_id)
+    product_type = pp['product_type']
+    model = field_config(product_type)
+    download = request.args.get('download') == '1'
+    response = make_response(render_template(
+        'survey_guide.html', product=product_config(product_type),
+        groups=fields_by_group(product_type), field_version=model['template_version'],
+        pp_id=pp_id, download=download))
+    response.headers['Cache-Control'] = 'no-store'
+    if download:
+        from urllib.parse import quote
+        name = product_config(product_type)['name'].replace('/', '／') + '_踏勘条件及问题指引.html'
+        response.headers['Content-Disposition'] = "attachment; filename=survey-guide.html; filename*=UTF-8''" + quote(name)
+    return response
+
+
 @app.route('/p/<pp_id>/survey', methods=['GET', 'POST'])
 def survey(pp_id):
     r = require_dept()
@@ -884,6 +911,8 @@ def review(pp_id):
                            status_labels=repo.FIELD_STATUS_LABELS,
                            product=product_config(ptype),
                            run=repo.latest_extraction_run(pp_id),
+                           legacy_fields=repo.legacy_fields(pp_id, ptype),
+                           sections=field_config(ptype).get('sections', []),
                            field_template_version=field_config(ptype)['template_version'])
 
 
@@ -925,6 +954,36 @@ def remove_field_attachment(pp_id, key, token):
         field_attachments.remove(pp, project, key, token)
         flash_msg('附件已删除。')
     except (field_attachments.AttachmentError, CapabilityError) as exc:
+        flash_msg(str(exc), 'warn')
+    return redirect(url_for('review', pp_id=pp_id))
+
+
+@app.get('/p/<pp_id>/survey-table-template')
+def survey_table_template(pp_id):
+    r = require_dept()
+    if r:
+        return r
+    pp, _ = load_pp(pp_id)
+    if pp['product_type'] not in survey_import.TEMPLATES:
+        abort(404)
+    path = survey_import.template_path(pp['product_type'])
+    return send_file(path, as_attachment=True, download_name=path.name)
+
+
+@app.post('/p/<pp_id>/survey-table-import')
+def survey_table_import(pp_id):
+    r = require_dept()
+    if r:
+        return r
+    pp, _ = load_pp(pp_id)
+    if pp['product_type'] not in survey_import.TEMPLATES:
+        abort(404)
+    try:
+        if request.form.get('replace') != 'yes':
+            raise survey_import.SurveyImportError('请勾选确认替换现有清单。')
+        survey_import.replace(pp, request.files.get('workbook'))
+        flash_msg('设备清单已替换。请核对新清单，已有材料需重新生成。', 'ok')
+    except survey_import.SurveyImportError as exc:
         flash_msg(str(exc), 'warn')
     return redirect(url_for('review', pp_id=pp_id))
 

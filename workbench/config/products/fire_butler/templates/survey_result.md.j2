@@ -7,15 +7,21 @@
 | 项目名称 | {{ project.name }} |
 | 客户名称 | {{ project.customer_name or '（未填写）' }} |
 | 项目分类 | {{ project.category }} |
-| 项目地点 | {{ project.location or '（未填写）' }} |
-| 项目负责人 | {{ project.owner or '（未填写）' }} |
+| 项目AR | {{ project.owner or '（未填写）' }} |
+| 项目FR | {{ project.contact or '（未填写）' }} |
 | 产品 | {{ product.name }}（版本 {{ meta.product_version }}） |
 | 文字稿字数 | {{ meta.source_chars }} 字 |
 | 提取方式 | {{ meta.extraction_provider }} |
 | 生成时间 | {{ meta.generated_at }} |
 
+{% set hierarchy = namespace(section=none) %}
 {% for g in groups %}
-## {{ loop.index }}. {{ g.name }}
+{% if g.section_key and hierarchy.section != g.section_key %}
+{% set hierarchy.section = g.section_key %}
+## {{ g.section_number }}. {{ g.section_name }}
+
+{% endif %}
+### {{ g.number or loop.index }} {{ g.name }}
 
 {% if g.desc %}> {{ g.desc }}
 

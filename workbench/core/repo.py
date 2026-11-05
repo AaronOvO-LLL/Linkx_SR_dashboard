@@ -402,6 +402,22 @@ def all_project_transcripts(project_id):
 
 # ---------------------------------------------------------------- 字段值
 
+def legacy_fields(pp_id, product_type):
+    """已退出采集模型但需供人工拆分核对的原始答案，只读。"""
+    result = []
+    for field in field_config(product_type).get('legacy_fields', []):
+        row = db.query_one('SELECT value_json FROM survey_field_values WHERE project_product_id=? AND field_key=?',
+                           (pp_id, field['key']))
+        if row:
+            try:
+                value = json.loads(row['value_json'])
+            except (TypeError, ValueError):
+                value = row['value_json']
+            if value not in (None, '', [], {}):
+                result.append({'label':field['label'], 'text':str(value)})
+    return result
+
+
 def field_values(pp_id):
     """产品字段与项目公共答案合并；公共字段不回退到迁移前的旧副本。"""
     pp = get_pp(pp_id)
@@ -507,6 +523,25 @@ def upsert_field_value(pp_id, field_key, value_json, status, confidence, source_
                VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
             (new_id('fv'), pp_id, field_key, value_json, status, confidence, source_quote,
              updated_by, template_version, protected, note, ts))
+
+
+def replace_imported_table(pp, field_key, rows, version):
+    """Save the replacement and expire generated material in one transaction."""
+    conn = db.init_db()
+    timestamp = now_iso()
+    with conn:
+        conn.execute('''INSERT INTO survey_field_values
+            (id, project_product_id, field_key, value_json, status, updated_by,
+             template_version, protected, updated_at)
+            VALUES (?, ?, ?, ?, 'confirmed', 'human', ?, 1, ?)
+            ON CONFLICT(project_product_id, field_key) DO UPDATE SET
+                value_json=excluded.value_json, status='confirmed', updated_by='human',
+                template_version=excluded.template_version, protected=1, updated_at=excluded.updated_at,
+                confidence=NULL, source_quote='', note='' ''',
+            (new_id('fv'), pp['id'], field_key, json.dumps(rows, ensure_ascii=False), version, timestamp))
+        conn.execute('''INSERT INTO project_field_revisions (project_id, revision) VALUES (?, 1)
+            ON CONFLICT(project_id) DO UPDATE SET revision=revision+1''', (pp['project_id'],))
+        conn.execute('UPDATE projects SET updated_at=? WHERE id=?', (timestamp, pp['project_id']))
 
 
 def bulk_upsert_field_values(pp_id, items):

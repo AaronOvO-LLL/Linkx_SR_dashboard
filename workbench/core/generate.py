@@ -60,6 +60,15 @@ def _value_to_text(v):
     return str(v)
 
 
+def table_cell_text(column, value):
+    if column.get('type') == 'table' and isinstance(value, list):
+        return '；'.join(
+            '、'.join(child['label'] + '：' + table_cell_text(child, row.get(child['key']))
+                     for child in column['columns'] if row.get(child['key']) not in (None, '', []))
+            for row in value if isinstance(row, dict))
+    return _value_to_text(value)
+
+
 def build_context(pp_id, product_type):
     """构造模板渲染上下文：所有业务数据都在这里解析好，模板只负责表达。"""
     pp = get_pp(pp_id)
@@ -77,6 +86,8 @@ def build_context(pp_id, product_type):
         text = ('；'.join('%s / %s / %s：%s' % (x.get('host', ''), x.get('kind', ''),
                 x.get('name', ''), x.get('description', '')) for x in (v or []))
                 if f['type'] == 'attachment' and isinstance(v, list) else _value_to_text(v))
+        if f['type'] == 'table' and isinstance(v, list):
+            text = table_cell_text(f, v)
         display[key] = text
         detail[key] = {
             'label': f['label'],
@@ -95,9 +106,12 @@ def build_context(pp_id, product_type):
     groups = []
     for g, fs in fields_by_group(product_type):
         groups.append({
-            'key': g['key'], 'name': g['name'], 'desc': g.get('desc', ''),
+            **g,
+            'desc': g.get('desc', ''),
             'fields': [detail[f['key']] for f in fs],
         })
+
+    legacy = repo.legacy_fields(pp_id, product_type)
 
     cfg_ver = product_config(product_type)['version']
     return {
@@ -108,6 +122,8 @@ def build_context(pp_id, product_type):
         'data': data,
         'display': display,
         'detail': detail,
+        'legacy_fields': legacy,
+        'sections': field_config(product_type).get('sections', []),
         # 规则库派生的结果集（如设备管家的传感器配置清单）。每次构造上下文都按
         # 当下录入重算、不落库，避免「改了数量但清单还是旧的」这类陈旧派生数据。
         'datasets': rules.compute_all(product_type, data),

@@ -1,17 +1,21 @@
 {
-  "template_version": "0.2.0",
+  "template_version": "0.5.0",
   "product_type": "asset_butler",
-  "note": "来源：灵石资产管家（SpaceUp）客户信息收集飞书表单（2026-10-09读取）。保留14个问题及8个必填项；项目名称复用公共字段但为选填。提交时间在新增产品时自动记录北京时间，可人工调整。需求文件先记录文件名/共享链接；通用附件上传待另行扩展。产出物清单待确认，目前仅用客户调研结果验证闭环。原表单中的价格描述仅保留为背景提示，不构成报价规则。",
+  "note": "来源：灵石资产管家（SpaceUp）客户信息收集飞书表单（2026-10-09读取）。保留原表单问题及8个必填项；项目名称复用公共字段但为选填。提交时间在新增产品时自动记录北京时间，可人工调整。需求文件先记录文件名/共享链接；通用附件上传待另行扩展。产出物清单待确认，目前仅用客户调研结果验证闭环。原表单中的价格描述仅保留为背景提示，不构成报价规则。 决策地图及特殊要求接入公共配置；上线时间沿用 asset_launch_time，归入决策地图，不重复采集。 2026-11-05按人工审核稿同步三大部分及字段变更。",
   "packs": [
     "common_project",
-    "asset_survey"
+    "asset_survey",
+    "common_decision",
+    "common_requirements"
   ],
   "group_order": [
     "asset_customer",
     "basic",
     "asset_scale",
     "asset_needs",
-    "asset_purchase"
+    "asset_purchase",
+    "decision",
+    "special"
   ],
   "group_overrides": {
     "basic": {
@@ -40,6 +44,101 @@
     "build_type",
     "land_area",
     "building_area",
-    "site_address"
+    "site_address",
+    "expected_launch",
+    "submitter_contact",
+    "submitted_at"
+  ],
+  "sections": [
+    {
+      "key": "project",
+      "name": "项目基础信息",
+      "groups": [
+        {
+          "key": "project_1",
+          "name": "客户与项目概况",
+          "fields": [
+            "asset_customer_name",
+            "asset_customer_city",
+            "project_name"
+          ]
+        },
+        {
+          "key": "project_2",
+          "name": "项目资料",
+          "fields": [
+            "asset_requirement_documents"
+          ]
+        },
+        {
+          "key": "project_3",
+          "name": "决策地图",
+          "fields": [
+            "decision_maker",
+            "customer_contact",
+            "asset_launch_time",
+            "has_budget"
+          ]
+        },
+        {
+          "key": "project_4",
+          "name": "特殊要求",
+          "fields": [
+            "compliance",
+            "highlights",
+            "procurement"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "delivery",
+      "name": "产品交付条件踏勘",
+      "groups": [
+        {
+          "key": "delivery_1",
+          "name": "系统部署条件",
+          "fields": [
+            "asset_deployment"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "interview",
+      "name": "相关业务访谈",
+      "groups": [
+        {
+          "key": "interview_1",
+          "name": "经营性资产与租赁规模",
+          "fields": [
+            "operating_project_count",
+            "asset_types",
+            "tenant_scale"
+          ]
+        },
+        {
+          "key": "interview_2",
+          "name": "数字化建设与使用现状",
+          "fields": [
+            "digitalization_status"
+          ]
+        },
+        {
+          "key": "interview_3",
+          "name": "业务痛点与需求优先级",
+          "fields": [
+            "asset_pain_points"
+          ]
+        },
+        {
+          "key": "interview_4",
+          "name": "增值服务与对接需求",
+          "fields": [
+            "asset_value_services"
+          ]
+        }
+      ]
+    }
   ]
 }

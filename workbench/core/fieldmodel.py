@@ -133,7 +133,10 @@ def _merge(manifest, product_type, problems=None):
                 fail('字段 key 重复（跨包冲突）：%s' % f.get('key'))
                 continue
             seen_field.add(f.get('key'))
-            raw_fields.append(dict(f, value_scope=pk.get('value_scope', 'product')))
+            scope = f.get('value_scope', pk.get('value_scope', 'product'))
+            if scope not in ('project', 'product'):
+                fail('字段 %s 的 value_scope 必须为 project 或 product' % f.get('key'))
+            raw_fields.append(dict(f, value_scope=scope))
 
     removed = set(manifest.get('remove_fields') or [])
     overrides = manifest.get('overrides') or {}
@@ -167,6 +170,33 @@ def _merge(manifest, product_type, problems=None):
     fields.sort(key=lambda f: (gidx.get(f.get('group'), len(gidx) + 99),
                                seq.get(f.get('key'), 0)))
 
+    # 审核后的信息架构同时决定字段归组和显示顺序，避免页面另存一套分类。
+    sections = manifest.get('sections') or []
+    if sections:
+        by_key = {f['key']: f for f in fields}
+        ordered, groups, assigned, group_ids, section_ids = [], [], set(), set(), set()
+        for si, section in enumerate(sections, 1):
+            if not section.get('key') or section['key'] in section_ids or not section.get('name'):
+                fail('sections 的 key/name 缺失或 key 重复')
+            section_ids.add(section.get('key'))
+            for gi, group in enumerate(section.get('groups', []), 1):
+                key = group.get('key')
+                if not key or key in group_ids or not group.get('name'):
+                    fail('sections 分组 key/name 缺失或 key 重复')
+                group_ids.add(key)
+                groups.append(dict(key=key, name=group.get('name', ''), desc=group.get('desc', ''),
+                                   order=len(groups), number='%d.%d' % (si, gi),
+                                   section_key=section['key'], section_name=section['name'], section_number=si))
+                for field_key in group.get('fields', []):
+                    if field_key not in by_key or field_key in assigned:
+                        fail('sections 引用了未知或重复字段：%s' % field_key)
+                        continue
+                    assigned.add(field_key)
+                    ordered.append(dict(by_key[field_key], group=key))
+        if set(by_key) != assigned:
+            fail('sections 未覆盖字段：%s' % '、'.join(sorted(set(by_key) - assigned)))
+        fields = ordered
+
     return {
         'template_version': manifest.get('template_version', '0.0.0'),
         'product_type': product_type,
@@ -175,6 +205,8 @@ def _merge(manifest, product_type, problems=None):
         'packs': manifest.get('packs') or [],
         'groups': groups,
         'fields': fields,
+        'sections': sections,
+        'legacy_fields': manifest.get('legacy_fields', []),
     }
 
 
@@ -272,9 +304,11 @@ def validate_field_model(product_type):
             for c in cols:
                 if not (c.get('key') and c.get('label')):
                     issues.append(_issue('error', w, 'columns 每项必须含 key 与 label'))
-                if c.get('type', 'text') not in ('text', 'number', 'select'):
-                    issues.append(_issue('error', w, '表格列 type 必须为 text / number / select'))
-                if c.get('type') == 'select':
+                if c.get('type', 'text') not in ('text', 'textarea', 'number', 'select', 'multiselect', 'table'):
+                    issues.append(_issue('error', w, '表格列类型无效'))
+                if c.get('type') == 'table' and (not c.get('columns') or f.get('ui', {}).get('mode') != 'cards'):
+                    issues.append(_issue('error', w, '嵌套表格须声明列并使用卡片编辑器'))
+                if c.get('type') in ('select', 'multiselect'):
                     values = [o.get('value') for o in c.get('options', [])]
                     if not values or len(values) != len(set(values)) or (c.get('default') and c['default'] not in values):
                         issues.append(_issue('error', w, '表格选择列需提供唯一选项，默认值必须属于选项'))
@@ -312,8 +346,8 @@ def validate_field_model(product_type):
                 condition.get('operator') not in ('equals', 'age_at_least') or 'value' not in condition):
             issues.append(_issue('error', w, 'required_if 必须引用已知字段及支持的操作符和值'))
         if isinstance(condition, dict) and condition.get('operator') == 'age_at_least' and (
-                not isinstance(condition.get('value'), (int, float)) or condition['value'] < 0 or t != 'attachment'):
-            issues.append(_issue('error', w, 'age_at_least 仅用于附件，阈值必须非负'))
+                not isinstance(condition.get('value'), (int, float)) or condition['value'] < 0 or t not in ('attachment', 'select')):
+            issues.append(_issue('error', w, 'age_at_least 仅用于附件或资料可提供状态，阈值必须非负'))
         if t == 'attachment':
             upload = f.get('upload') or {}
             if (not upload.get('extensions') or not upload.get('record_kinds') or

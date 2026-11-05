@@ -1,12 +1,14 @@
 {
-  "template_version": "0.4.0",
+  "template_version": "0.7.0",
   "product_type": "fire_butler",
-  "note": "2026-10-27按用户确认的消防管家-踏勘字段-20261023.xlsx更新。套餐单选；满12年及以上须提供对应主机维保维修记录；恒益与卫士报价独立记录；旧主机字段保留原编码并要求重新确认。",
+  "note": "2026-10-27按用户确认的消防管家-踏勘字段-20261023.xlsx更新。套餐单选；满12年及以上须提供对应主机维保维修记录；恒益与卫士报价独立记录；旧主机字段保留原编码并要求重新确认。 2026-11-05按人工审核稿同步三大部分及字段变更。",
   "packs": [
     "common_project",
     "common_docs",
     "common_property",
-    "fire_survey"
+    "fire_survey",
+    "common_decision",
+    "common_requirements"
   ],
   "group_order": [
     "basic",
@@ -14,7 +16,9 @@
     "property",
     "fire_control",
     "fire_maintenance",
-    "fire_cost"
+    "fire_cost",
+    "decision",
+    "special"
   ],
   "overrides": {
     "build_type": {
@@ -25,8 +29,417 @@
     },
     "building_area": {
       "required": false
+    },
+    "fire_renovation_cost": {
+      "required": false
+    },
+    "fire_point_code_table": {
+      "label": "是否可提供消防主机点位编码表",
+      "options": [
+        {
+          "value": "是",
+          "synonyms": [
+            "有",
+            "已提供",
+            "可提供"
+          ]
+        },
+        {
+          "value": "否",
+          "synonyms": [
+            "无",
+            "没有",
+            "未提供",
+            "无法提供",
+            "不能提供"
+          ]
+        }
+      ],
+      "allow_custom": false,
+      "help": "确认是否可提供点位编码表，选择是或否。",
+      "reconfirm_before_template": "0.6.0",
+      "extract": {
+        "mode": "enum",
+        "context_keywords": [
+          "点位编码表"
+        ],
+        "keywords": [
+          "点位编码表"
+        ],
+        "prefer_longest_match": true,
+        "negation_guard": false
+      }
+    },
+    "contract_years": {
+      "required": false
+    },
+    "fee_mode": {
+      "required": false
+    },
+    "mgmt_scope": {
+      "required": false
+    },
+    "service_type": {
+      "required": false
+    },
+    "fire_contract_expiry": {
+      "required": false
+    },
+    "fire_contract_party": {
+      "required": false
+    },
+    "fire_maintenance_company": {
+      "required": false
+    },
+    "fire_maintenance_contact": {
+      "required": false
     }
   },
-  "extra_fields": [],
-  "remove_fields": []
+  "extra_fields": [
+    {
+      "key": "fire_duty_shifts",
+      "label": "消防值班班次安排情况",
+      "group": "business",
+      "type": "textarea",
+      "required": true,
+      "ai_hint": "仅提取明确陈述的事实，未知留空，不得推测。",
+      "extract": {
+        "mode": "sentence",
+        "keywords": [
+          "消防值班",
+          "消防值守",
+          "消控室值班",
+          "两班两岗"
+        ],
+        "negation_guard": false
+      },
+      "help": "例如“两班两岗”；请尽量说明每班人数、岗位分工、值守时段及轮班方式。"
+    },
+    {
+      "key": "fire_key_unit",
+      "label": "是否为消防安全重点单位",
+      "group": "business",
+      "type": "select",
+      "required": false,
+      "ai_hint": "仅提取明确陈述的事实，未知留空，不得推测。",
+      "extract": {
+        "mode": "enum",
+        "keywords": [
+          "消防安全重点单位"
+        ],
+        "negation_guard": false,
+        "context_keywords": [
+          "消防安全重点单位"
+        ]
+      },
+      "options": [
+        {
+          "value": "是"
+        },
+        {
+          "value": "否"
+        },
+        {
+          "value": "待确认"
+        }
+      ]
+    },
+    {
+      "key": "fire_penalty_history",
+      "label": "此前是否因为消防问题受过处罚（行政处罚、安全事故、公司内部管理处罚等）",
+      "group": "business",
+      "type": "textarea",
+      "required": false,
+      "ai_hint": "仅提取明确陈述的事实，未知留空，不得推测。",
+      "extract": {
+        "mode": "sentence",
+        "keywords": [
+          "消防处罚",
+          "行政处罚",
+          "消防事故",
+          "内部管理处罚"
+        ],
+        "negation_guard": false
+      }
+    },
+    {
+      "key": "fire_control_room_survey",
+      "label": "消控室踏勘清单",
+      "group": "delivery",
+      "type": "table",
+      "required": true,
+      "columns": [
+        {
+          "key": "room_name",
+          "label": "消控室名称",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "fire_host_relationships",
+          "label": "消防主机品牌型号及数量",
+          "type": "textarea",
+          "required": true,
+          "help": "按消控室逐行填写编号、消防主机品牌、型号及数量；不同品牌或型号分别列明。"
+        },
+        {
+          "key": "fire_host_brands",
+          "label": "消防主机主从关系",
+          "type": "textarea",
+          "required": true,
+          "help": "按消控室及主机编号说明主机、从机的对应关系；无主从关系时明确注明。"
+        },
+        {
+          "key": "fire_host_age",
+          "label": "消防主机出厂年限",
+          "type": "textarea",
+          "required": true,
+          "help": "逐台或按同批次主机注明出厂日期及出厂年限，以12年为限；12年及以上须提供主机维保和维修记录。投入使用年限不能替代出厂年限。",
+          "validate": {
+            "age_entries": true
+          }
+        },
+        {
+          "key": "fire_host_buttons",
+          "label": "消防主机功能判断是否正常",
+          "type": "select",
+          "required": true,
+          "options": [
+            {
+              "value": "正常",
+              "synonyms": [
+                "主机功能正常"
+              ]
+            },
+            {
+              "value": "不正常",
+              "synonyms": [
+                "主机功能异常",
+                "功能不正常",
+                "不正常"
+              ]
+            }
+          ],
+          "help": "综合现场功能核查选择正常或不正常，不能仅凭按键完好判定功能正常；异常情况可在详细说明中填写。",
+          "allow_custom": true
+        },
+        {
+          "key": "fire_point_code_table",
+          "label": "是否可提供消防主机点位编码表",
+          "type": "select",
+          "required": true,
+          "options": [
+            {
+              "value": "是",
+              "synonyms": [
+                "有",
+                "已提供",
+                "可提供"
+              ]
+            },
+            {
+              "value": "否",
+              "synonyms": [
+                "无",
+                "没有",
+                "未提供",
+                "无法提供",
+                "不能提供"
+              ]
+            }
+          ],
+          "allow_custom": false,
+          "help": "确认是否可提供点位编码表，选择是或否。"
+        },
+        {
+          "key": "fire_records_available",
+          "label": "是否可提供消防主机维保和维修记录",
+          "type": "select",
+          "required": false,
+          "options": [
+            {
+              "value": "是"
+            },
+            {
+              "value": "否"
+            }
+          ],
+          "required_if": {
+            "field": "fire_host_age",
+            "operator": "age_at_least",
+            "value": 12
+          },
+          "help": "逐台核实出厂年限；任一主机达到12年时必须明确选择是或否。仅询问资料是否可提供，本字段不要求上传附件。"
+        },
+        {
+          "key": "fire_renovation_cost",
+          "label": "恒益报价一次性改造费用",
+          "type": "number",
+          "required": false,
+          "unit": "元",
+          "validate": {
+            "min": 0,
+            "message": "一次性改造费用不能为负数"
+          },
+          "min": 0
+        },
+        {
+          "key": "fire_weishi_renovation_cost",
+          "label": "卫士报价一次性改造费用",
+          "type": "number",
+          "required": false,
+          "help": "卫士报价独立录入，金额以元填写；与恒益报价分别展示，不自动相加或替代。",
+          "unit": "元",
+          "validate": {
+            "min": 0,
+            "message": "卫士报价一次性改造费用不能为负数"
+          },
+          "min": 0
+        }
+      ],
+      "ui": {
+        "mode": "cards",
+        "item_name": "消控室"
+      },
+      "extract": {
+        "mode": "table",
+        "labeled_columns": true
+      },
+      "help": "每个独立管理的消控室分别填写主机、资料和两家改造费用。清单数量须与消控中心数量一致。",
+      "ai_hint": "每个独立消控室单独一行。仅在原文明确归属时填写主机、资料和报价，不要跨消控室合并。",
+      "validate": {
+        "row_count_field": "fire_control_count",
+        "unique_column": "room_name"
+      }
+    }
+  ],
+  "remove_fields": [
+    "fire_survey_photos",
+    "fire_host_maintenance_records",
+    "business_desc",
+    "fire_host_relationships",
+    "fire_host_brands",
+    "fire_host_age",
+    "fire_host_buttons",
+    "fire_point_code_table",
+    "fire_renovation_cost",
+    "fire_weishi_renovation_cost",
+    "fire_package_type",
+    "service_type"
+  ],
+  "sections": [
+    {
+      "key": "project",
+      "name": "项目基础信息",
+      "groups": [
+        {
+          "key": "project_1",
+          "name": "项目概况",
+          "fields": [
+            "project_name",
+            "project_source",
+            "business_type",
+            "build_type",
+            "land_area",
+            "building_area",
+            "site_address"
+          ]
+        },
+        {
+          "key": "project_2",
+          "name": "物业与服务信息",
+          "fields": [
+            "property_company",
+            "project_owner",
+            "contract_years",
+            "business_tracks",
+            "fee_mode",
+            "mgmt_scope"
+          ]
+        },
+        {
+          "key": "project_3",
+          "name": "项目资料",
+          "fields": [
+            "drawings",
+            "equipment_ledger",
+            "staffing_table"
+          ]
+        },
+        {
+          "key": "project_4",
+          "name": "决策地图",
+          "fields": [
+            "decision_maker",
+            "customer_contact",
+            "expected_launch",
+            "has_budget"
+          ]
+        },
+        {
+          "key": "project_5",
+          "name": "特殊要求",
+          "fields": [
+            "compliance",
+            "highlights",
+            "procurement"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "delivery",
+      "name": "产品交付条件踏勘",
+      "groups": [
+        {
+          "key": "delivery_1",
+          "name": "消控中心与信号传输",
+          "fields": [
+            "fire_control_count",
+            "fire_signal_transmission"
+          ]
+        },
+        {
+          "key": "delivery_2",
+          "name": "消防主机现状",
+          "fields": [
+            "fire_control_room_survey"
+          ]
+        },
+        {
+          "key": "delivery_5",
+          "name": "交付范围与实施条件",
+          "fields": [
+            "fire_implementation_ready",
+            "fire_implementation_reason"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "interview",
+      "name": "相关业务访谈",
+      "groups": [
+        {
+          "key": "interview_1",
+          "name": "现有消防值守情况",
+          "fields": [
+            "fire_duty_shifts",
+            "fire_key_unit",
+            "fire_penalty_history"
+          ]
+        },
+        {
+          "key": "interview_2",
+          "name": "现有维保合同与协作关系",
+          "fields": [
+            "fire_contract_expiry",
+            "fire_contract_party",
+            "fire_maintenance_company",
+            "fire_maintenance_contact"
+          ]
+        }
+      ]
+    }
+  ]
 }

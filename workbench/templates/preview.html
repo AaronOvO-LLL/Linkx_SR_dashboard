@@ -37,8 +37,13 @@
 <div class="card">
   <h2>踏勘结果预览</h2>
   <p class="sub">以下内容为将用于生成的最终数据，按业务章节展示。</p>
+  {% set hierarchy = namespace(section=none) %}
   {% for g in groups %}
-  <h3>{{ loop.index }}. {{ g.name }} <span class="tag">{{ g.desc }}</span></h3>
+  {% if g.section_key and hierarchy.section != g.section_key %}
+  {% set hierarchy.section = g.section_key %}
+  <h2 class="survey-section" id="section-{{ g.section_key }}" data-section="{{ g.section_key }}">{{ g.section_number }}. {{ g.section_name }}</h2>
+  {% endif %}
+  <h3>{{ g.number or loop.index }}. {{ g.name }} {% if g.desc %}<span class="tag">{{ g.desc }}</span>{% endif %}</h3>
   <table class="tbl summary-table">
     <tbody>
     {% for f in g.fields %}
@@ -47,7 +52,7 @@
         <td>
           {% if f.type == 'table' and f.value %}
           <div class="table-scroll"><table class="tbl"><thead><tr><th>序号</th>{% for c in f.columns %}<th>{{ c.label }}</th>{% endfor %}</tr></thead><tbody>
-          {% for row in f.value %}<tr><td>{{ loop.index }}</td>{% for c in f.columns %}<td>{{ row.get(c.key,'') if row.get(c.key) is not none else '' }}</td>{% endfor %}</tr>{% endfor %}
+          {% for row in f.value %}<tr><td>{{ loop.index }}</td>{% for c in f.columns %}<td>{{ c|table_cell_text(row.get(c.key)) }}</td>{% endfor %}</tr>{% endfor %}
           </tbody></table></div>
           {% elif f.text %}<span style="white-space:pre-wrap">{{ f.text }}</span>
             {% if f.unit %}<span class="tag" style="margin-left:6px">{{ f.unit }}</span>{% endif %}

@@ -11,7 +11,11 @@
 
 {% include '_input_modes.html' %}
 
-<div class="flash ok">「项目基本情况」「物业信息」中的公共字段在同一项目的各管家之间共享。修改后自动保存，其他管家刷新页面即可看到；各管家的必填要求仍分别校验。</div>
+<div class="flash ok">标有「项目共享」的字段（项目基本情况、物业信息、决策人、甲方对接人）在同一项目的各管家之间共享。修改后自动保存，其他管家刷新页面即可看到。上线时间、预算、特殊要求由各管家独立填写；各管家的必填要求分别校验。</div>
+
+<nav class="survey-navigation" aria-label="调研三大部分">
+{% for section in sections %}<a class="btn ghost sm" href="#section-{{ section.key }}">{{ loop.index }}. {{ section.name }}</a>{% endfor %}
+</nav>
 
 <div class="stat-bar">
   <div class="stat green"><b id="sDone">{{ stats.required_done }}/{{ stats.required_total }}</b><span>必填已完成</span></div>
@@ -43,10 +47,15 @@
 </div>
 
 <div id="fieldArea">
+{% set hierarchy = namespace(section=none) %}
 {% for g in groups %}
+{% if g.def.section_key and hierarchy.section != g.def.section_key %}
+{% set hierarchy.section = g.def.section_key %}
+<h2 class="survey-section" id="section-{{ g.def.section_key }}" data-section="{{ g.def.section_key }}">{{ g.def.section_number }}. {{ g.def.section_name }}</h2>
+{% endif %}
 <div class="grp">
   <div class="grp-head">
-    <span class="nm">{{ g.def.name }}</span>
+    <h3 class="nm">{% if g.def.number %}{{ g.def.number }} {% endif %}{{ g.def.name }}</h3>
     <span class="tag">{{ g['items']|length }} 项</span>
     <span class="cnt">
       {% if g.miss %}<span class="tag red">必填补填 {{ g.miss }}</span>{% endif %}
@@ -95,9 +104,23 @@
       {% endif %}
 
       {% if f.help %}<div class="hint" style="margin-bottom:5px">{{ f.help }}</div>{% endif %}
+      {% if row and row.note %}<div class="flash warn">{{ row.note }}</div>{% endif %}
       {% if f.get('required_if', {}).get('operator') == 'equals' %}<span hidden data-required-condition='{{ f.required_if|tojson }}'></span>{% endif %}
       {% if f.key == 'sdk_device_compatible' %}
       <a class="btn ghost sm" href="{{ url_for('static', filename='sdk-device-list.html') }}" target="_blank" rel="noopener" style="margin-bottom:10px">查看 SDK 可对接设备清单 ↗</a>
+      {% endif %}
+
+      {% if f.key in ('device_room_survey', 'energy_station_survey') %}
+        <form class="survey-table-import" method="post" enctype="multipart/form-data" action="{{ url_for('survey_table_import', pp_id=pp.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <div class="btn-row">
+            <a class="btn ghost sm" href="{{ url_for('survey_table_template', pp_id=pp.id) }}" download>下载 Excel 模板</a>
+            <label>选择 Excel <input type="file" name="workbook" accept=".xlsx" required></label>
+            <label><input type="checkbox" name="replace" value="yes" required> 确认替换当前整份清单</label>
+            <button class="btn sm" type="submit">校验并替换</button>
+          </div>
+          <p class="hint">上传 .xlsx 文件，最大 2 MB。校验通过后替换此处清单，其他踏勘答案保留。</p>
+        </form>
       {% endif %}
 
       {% if f.type == 'attachment' %}
@@ -135,6 +158,14 @@
                   placeholder="{{ f.get('placeholder','') }}">{{ row.value_json|jval if row else '' }}</textarea>
       {% elif f.type in ('select', 'multiselect') %}
         {% include '_choice_field.html' %}
+      {% elif f.type == 'table' and f.get('ui', {}).get('mode') == 'cards' %}
+        <div class="card-editor" data-key="{{ f.key }}" data-type="cards"
+             data-columns='{{ f.columns|tojson }}' data-item-name="{{ f.ui.item_name }}"
+             data-rows="{{ row.value_json if row else '[]' }}">
+          <div class="room-toolbar"><span class="hint" data-card-count></span><button class="btn" type="button" data-add-card>+ 新增{{ f.ui.item_name }}</button></div>
+          <div class="card-list"></div>
+          <noscript>请启用 JavaScript 后按{{ f.ui.item_name }}填写。</noscript>
+        </div>
       {% elif f.type == 'table' and f.key == 'device_room_survey' and f.rules_ui %}
         <div class="room-editor" data-key="{{ f.key }}" data-type="rooms"
              data-rules='{{ f.rules_ui|tojson }}'
@@ -199,6 +230,12 @@
 {% endfor %}
 </div>
 
+{% if legacy_fields %}
+<details class="card"><summary>历史答案（供核对）</summary>
+{% for f in legacy_fields %}<p><b>{{ f.label }}</b></p><p style="white-space:pre-wrap">{{ f.text }}</p>{% endfor %}
+</details>
+{% endif %}
+
 <div class="card">
   <h2>下一步</h2>
   <p class="sub">{% if pp.product_type == 'device_butler' %}填写完成后进入审阅，查看按设备房汇总的表格及传感器配置清单。{% else %}确认无误后进入预览，勾选需要生成的材料。{% endif %}</p>
@@ -213,6 +250,7 @@
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='room-editor.js') }}"></script>
+<script src="{{ url_for('static', filename='card-editor.js') }}"></script>
 <script>
 var SAVE_URL = "{{ url_for('save_field', pp_id=pp.id) }}";
 </script>

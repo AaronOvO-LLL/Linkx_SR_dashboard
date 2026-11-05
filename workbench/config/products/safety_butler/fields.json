@@ -1,7 +1,7 @@
 {
-  "template_version": "0.8.0",
+  "template_version": "0.12.0",
   "product_type": "safety_butler",
-  "note": "安全管家字段模型 = 引用字段包（config/field_packs/）+ 本产品组装。字段本体在字段包里，本文件只负责「引用哪些包、按什么顺序、改哪几个例外」。口径唯一权威来源：『踏勘要求的项目具体内容.xlsx』；MVP 阶段不做增删。 2026-09-21：按用户授权将适合的文本字段改为选择题，字段 key 与必填范围保留，历史文字兼容显示。 2026-09-22：按用户授权调整项目来源、删除服务类型、缩减必填范围，品牌改为多选且其他须填写具体品牌，协议改为是否支持GB28181；仅覆盖安全管家。 2026-10-20：项目基本情况与物业信息按项目共享，项目来源统一保留内部、外部、渠道、重点四项。",
+  "note": "安全管家字段模型 = 引用字段包（config/field_packs/）+ 本产品组装。字段本体在字段包里，本文件只负责「引用哪些包、按什么顺序、改哪几个例外」。口径唯一权威来源：『踏勘要求的项目具体内容.xlsx』；MVP 阶段不做增删。 2026-09-21：按用户授权将适合的文本字段改为选择题，字段 key 与必填范围保留，历史文字兼容显示。 2026-09-22：按用户授权调整项目来源、删除服务类型、缩减必填范围，品牌改为多选且其他须填写具体品牌，协议改为是否支持GB28181；仅覆盖安全管家。 2026-10-20：项目基本情况与物业信息按项目共享，项目来源统一保留内部、外部、渠道、重点四项。 2026-11-05：决策地图与特殊要求统一采用公共配置，全部选填，不设安全管家专属必填要求。 2026-11-05按人工审核稿同步三大部分及字段变更。",
   "packs": [
     "common_project",
     "common_docs",
@@ -168,22 +168,677 @@
         ],
         "prefer_longest_match": true
       }
+    },
+    "main_risks": {
+      "label": "项目最关注的主要问题/风险（问项目经理或业主）"
+    },
+    "current_mode": {
+      "help": "选择当前采用的安全管理方式，人员及班次请在下方分别填写。"
+    },
+    "monitor_center_count": {
+      "validate": {
+        "min": 1,
+        "integer": true,
+        "message": "视频监控中心数量须为正整数，并与监控室清单一致。"
+      }
     }
   },
   "extra_fields": [
     {
-      "key": "sdk_device_compatible",
-      "label": "请确认设备是否满足SDK协议可对接的设备清单",
+      "key": "monitor_room_survey",
+      "label": "监控室设备清单",
       "group": "devices",
-      "type": "select",
+      "type": "table",
+      "required": true,
+      "columns": [
+        {
+          "key": "room_name",
+          "label": "监控室名称",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "camera_brand",
+          "label": "摄像头品牌",
+          "type": "multiselect",
+          "required": false,
+          "options": [
+            {
+              "value": "海康",
+              "synonyms": [
+                "海康威视"
+              ]
+            },
+            {
+              "value": "大华",
+              "synonyms": []
+            },
+            {
+              "value": "宇视",
+              "synonyms": []
+            },
+            {
+              "value": "华为",
+              "synonyms": []
+            },
+            {
+              "value": "其他",
+              "synonyms": [
+                "杂牌",
+                "非主流"
+              ]
+            }
+          ],
+          "allow_custom": true,
+          "require_other_detail": true,
+          "help": "选填，可多选；选择“其他”时必须填写具体品牌名称。"
+        },
+        {
+          "key": "camera_type",
+          "label": "摄像头类型",
+          "type": "select",
+          "required": true,
+          "options": [
+            {
+              "value": "数字摄像头",
+              "synonyms": [
+                "数字",
+                "网络摄像头",
+                "IP摄像头",
+                "IPC",
+                "高清网络"
+              ]
+            },
+            {
+              "value": "模拟摄像头",
+              "synonyms": [
+                "模拟",
+                "同轴",
+                "模拟头",
+                "标清模拟"
+              ]
+            },
+            {
+              "value": "混合",
+              "synonyms": [
+                "混合",
+                "数字加模拟",
+                "都有"
+              ]
+            }
+          ]
+        },
+        {
+          "key": "camera_count",
+          "label": "摄像头数量",
+          "type": "number",
+          "required": true,
+          "unit": "路",
+          "min": 0,
+          "integer": true
+        },
+        {
+          "key": "storage_brand",
+          "label": "存储设备品牌",
+          "type": "multiselect",
+          "required": false,
+          "options": [
+            {
+              "value": "海康",
+              "synonyms": [
+                "海康威视"
+              ]
+            },
+            {
+              "value": "大华",
+              "synonyms": []
+            },
+            {
+              "value": "宇视",
+              "synonyms": []
+            },
+            {
+              "value": "华为",
+              "synonyms": []
+            },
+            {
+              "value": "其他",
+              "synonyms": [
+                "杂牌",
+                "非主流"
+              ]
+            }
+          ],
+          "allow_custom": true,
+          "require_other_detail": true,
+          "help": "选填，可多选；选择“其他”时必须填写具体品牌名称。"
+        },
+        {
+          "key": "storage_type",
+          "label": "存储设备类型",
+          "type": "select",
+          "required": true,
+          "options": [
+            {
+              "value": "CVR",
+              "synonyms": [
+                "cvr",
+                "集中存储"
+              ]
+            },
+            {
+              "value": "NVR",
+              "synonyms": [
+                "nvr",
+                "网络录像机",
+                "录像机"
+              ]
+            },
+            {
+              "value": "DVR",
+              "synonyms": [
+                "dvr",
+                "硬盘录像机"
+              ]
+            },
+            {
+              "value": "其他",
+              "synonyms": []
+            }
+          ]
+        },
+        {
+          "key": "storage_model",
+          "label": "存储设备型号",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "storage_count",
+          "label": "存储设备数量",
+          "type": "number",
+          "required": true,
+          "unit": "台",
+          "min": 0,
+          "integer": true
+        },
+        {
+          "key": "storage_protocol",
+          "label": "是否支持GB28181",
+          "type": "select",
+          "required": true,
+          "options": [
+            {
+              "value": "是",
+              "synonyms": [
+                "支持GB28181",
+                "支持 GB28181",
+                "支持GB/T28181",
+                "支持 GB/T28181",
+                "GB28181-2016",
+                "GB/T28181-2022",
+                "支持国标"
+              ]
+            },
+            {
+              "value": "否",
+              "synonyms": [
+                "不支持GB28181",
+                "不支持 GB28181",
+                "不支持GB/T28181",
+                "不支持 GB/T28181",
+                "不支持国标",
+                "非国标"
+              ]
+            },
+            {
+              "value": "其他",
+              "synonyms": [
+                "其他协议",
+                "私有协议",
+                "ONVIF",
+                "onvif"
+              ]
+            }
+          ],
+          "help": "确认存储设备是否支持GB28181，选择是、否或其他。"
+        },
+        {
+          "key": "sdk_device_compatible",
+          "label": "请确认设备是否满足SDK协议可对接的设备清单",
+          "type": "select",
+          "required": false,
+          "options": [
+            {
+              "value": "是"
+            },
+            {
+              "value": "否"
+            },
+            {
+              "value": "待确认"
+            }
+          ],
+          "help": "无法使用GB-28181对接时，请打开设备清单核对品牌、型号及SDK版本；无法核实时请选择待确认。"
+        }
+      ],
+      "ui": {
+        "mode": "cards",
+        "item_name": "监控室"
+      },
+      "help": "每个独立管理的监控室单独填写名称及设备。不同监控室可分别增加、修改和删除；填写数量应与视频监控中心数量一致。品牌可多选并补充具体名称。",
+      "ai_hint": "按独立监控室分行提取设备信息。没有明确监控室归属时不得将项目汇总设备虚构分配到某间监控室，room_name留空并待人工确认。摄像头及存储品牌返回数组，数字未知留空。",
+      "extract": {
+        "mode": "table",
+        "keywords": [
+          "监控室",
+          "监控中心"
+        ],
+        "labeled_columns": true
+      },
+      "validate": {
+        "row_count_field": "monitor_center_count",
+        "unique_column": "room_name",
+        "reject_analog_column": "camera_type"
+      }
+    },
+    {
+      "key": "security_staff_total",
+      "label": "当前安全班组人数",
+      "group": "business",
+      "type": "number",
+      "required": true,
+      "ai_hint": "仅提取明确陈述的事实，未知留空，不得推测。",
+      "extract": {
+        "mode": "number",
+        "keywords": [
+          "安全班组人数",
+          "安保总人数",
+          "保安总人数"
+        ],
+        "negation_guard": false
+      },
+      "unit": "人",
+      "validate": {
+        "min": 0,
+        "integer": true,
+        "message": "当前安全班组人数须为非负整数。"
+      }
+    },
+    {
+      "key": "fixed_post_staff",
+      "label": "固定岗人数",
+      "group": "business",
+      "type": "number",
       "required": false,
-      "options": [{"value": "是"}, {"value": "否"}, {"value": "待确认"}],
-      "help": "无法使用GB-28181对接时，请打开设备清单核对品牌、型号及SDK版本；无法核实时请选择待确认。",
-      "ai_hint": "仅在明确不支持GB28181且原文明确说明SDK设备清单匹配情况时提取；不得仅根据品牌推断兼容性。",
-      "extract": {"mode": "enum", "context_keywords": ["SDK设备清单", "SDK兼容性"]}
+      "ai_hint": "仅提取明确陈述的事实，未知留空，不得推测。",
+      "extract": {
+        "mode": "number",
+        "keywords": [
+          "固定岗人数"
+        ],
+        "negation_guard": false
+      },
+      "unit": "人",
+      "validate": {
+        "min": 0,
+        "integer": true,
+        "message": "固定岗人数须为非负整数。"
+      }
+    },
+    {
+      "key": "fixed_post_shifts",
+      "label": "固定岗班次（一天x岗）",
+      "group": "business",
+      "type": "textarea",
+      "required": false,
+      "ai_hint": "仅提取明确陈述的事实，未知留空，不得推测。",
+      "extract": {
+        "mode": "sentence",
+        "keywords": [
+          "固定岗班次（一天x岗）"
+        ],
+        "negation_guard": false
+      }
+    },
+    {
+      "key": "patrol_post_staff",
+      "label": "巡逻岗人数",
+      "group": "business",
+      "type": "number",
+      "required": false,
+      "ai_hint": "仅提取明确陈述的事实，未知留空，不得推测。",
+      "extract": {
+        "mode": "number",
+        "keywords": [
+          "巡逻岗人数"
+        ],
+        "negation_guard": false
+      },
+      "unit": "人",
+      "validate": {
+        "min": 0,
+        "integer": true,
+        "message": "巡逻岗人数须为非负整数。"
+      }
+    },
+    {
+      "key": "patrol_post_shifts",
+      "label": "巡逻岗班次（一天x岗）",
+      "group": "business",
+      "type": "textarea",
+      "required": false,
+      "ai_hint": "仅提取明确陈述的事实，未知留空，不得推测。",
+      "extract": {
+        "mode": "sentence",
+        "keywords": [
+          "巡逻岗班次（一天x岗）"
+        ],
+        "negation_guard": false
+      }
+    },
+    {
+      "key": "past_security_incidents",
+      "label": "曾遇到过的典型安全问题（问项目经理或安全班长）",
+      "group": "business",
+      "type": "textarea",
+      "required": false,
+      "ai_hint": "仅提取明确陈述的事实，未知留空，不得推测。",
+      "extract": {
+        "mode": "sentence",
+        "keywords": [
+          "典型安全问题",
+          "曾发生",
+          "曾遇到",
+          "历史安全事件"
+        ],
+        "negation_guard": false
+      }
+    },
+    {
+      "key": "security_focus_survey",
+      "label": "重点位置及算法需求",
+      "group": "delivery",
+      "type": "table",
+      "required": false,
+      "columns": [
+        {
+          "key": "room_name",
+          "label": "重点位置",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "events",
+          "label": "重点事件",
+          "type": "textarea",
+          "required": false
+        },
+        {
+          "key": "algorithms",
+          "label": "使用算法",
+          "type": "multiselect",
+          "options": [
+            {
+              "value": "周界入侵",
+              "category": "安防类"
+            },
+            {
+              "value": "明火识别",
+              "category": "安防类"
+            },
+            {
+              "value": "烟雾检测",
+              "category": "安防类"
+            },
+            {
+              "value": "灭火器丢失",
+              "category": "安防类"
+            },
+            {
+              "value": "闸机翻越",
+              "category": "安防类"
+            },
+            {
+              "value": "人员摔倒",
+              "category": "安防类"
+            },
+            {
+              "value": "员工聚岗",
+              "category": "安防类"
+            },
+            {
+              "value": "机动车违停",
+              "category": "秩序类"
+            },
+            {
+              "value": "非机动车违停",
+              "category": "秩序类"
+            },
+            {
+              "value": "车辆拥堵",
+              "category": "秩序类"
+            },
+            {
+              "value": "人员拥堵",
+              "category": "秩序类"
+            },
+            {
+              "value": "违规抽烟",
+              "category": "秩序类"
+            },
+            {
+              "value": "人员聚集",
+              "category": "秩序类"
+            },
+            {
+              "value": "人员逗留",
+              "category": "秩序类"
+            },
+            {
+              "value": "专用车位占用",
+              "category": "秩序类"
+            },
+            {
+              "value": "桶边垃圾",
+              "category": "保洁类"
+            },
+            {
+              "value": "垃圾桶满溢",
+              "category": "保洁类"
+            },
+            {
+              "value": "公共区域物品遗留",
+              "category": "保洁类"
+            },
+            {
+              "value": "垃圾满溢（室内）",
+              "category": "保洁类"
+            },
+            {
+              "value": "桶内垃圾异常",
+              "category": "保洁类"
+            }
+          ]
+        },
+        {
+          "key": "algorithm_other",
+          "label": "其他算法需求",
+          "type": "textarea",
+          "required": false
+        }
+      ],
+      "ui": {
+        "mode": "cards",
+        "item_name": "重点位置"
+      },
+      "extract": {
+        "mode": "table",
+        "labeled_columns": true
+      },
+      "help": "每个重点位置单独填写事件和算法需求。后续可依据重点位置和事件生成算法需求。",
+      "ai_hint": "仅按原文明确关联的地点、事件及算法分别成行，禁止推断或跨地点合并。",
+      "validate": {
+        "unique_column": "room_name"
+      }
     }
   ],
   "remove_fields": [
-    "service_type"
+    "service_type",
+    "camera_brand",
+    "camera_type",
+    "camera_count",
+    "storage_brand",
+    "storage_type",
+    "storage_model",
+    "storage_count",
+    "storage_protocol",
+    "current_staffing",
+    "business_desc",
+    "key_points",
+    "key_events",
+    "algorithms"
+  ],
+  "sections": [
+    {
+      "key": "project",
+      "name": "项目基础信息",
+      "groups": [
+        {
+          "key": "project_1",
+          "name": "项目概况",
+          "fields": [
+            "project_name",
+            "project_source",
+            "business_type",
+            "build_type",
+            "land_area",
+            "building_area",
+            "site_address"
+          ]
+        },
+        {
+          "key": "project_2",
+          "name": "物业与服务信息",
+          "fields": [
+            "property_company",
+            "project_owner",
+            "contract_years",
+            "business_tracks",
+            "fee_mode",
+            "mgmt_scope"
+          ]
+        },
+        {
+          "key": "project_3",
+          "name": "项目资料",
+          "fields": [
+            "drawings",
+            "equipment_ledger",
+            "staffing_table"
+          ]
+        },
+        {
+          "key": "project_4",
+          "name": "决策地图",
+          "fields": [
+            "decision_maker",
+            "customer_contact",
+            "expected_launch",
+            "has_budget"
+          ]
+        },
+        {
+          "key": "project_5",
+          "name": "特殊要求",
+          "fields": [
+            "compliance",
+            "highlights",
+            "procurement"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "delivery",
+      "name": "产品交付条件踏勘",
+      "groups": [
+        {
+          "key": "delivery_1",
+          "name": "视频监控中心",
+          "fields": [
+            "monitor_center_count"
+          ]
+        },
+        {
+          "key": "delivery_2",
+          "name": "监控设备现状",
+          "fields": [
+            "monitor_room_survey"
+          ]
+        },
+        {
+          "key": "delivery_3",
+          "name": "网络与接入条件",
+          "fields": [
+            "has_internet",
+            "switch_brand",
+            "switch_port_type",
+            "switch_ports_free",
+            "network_topo",
+            "network_admin"
+          ]
+        },
+        {
+          "key": "delivery_4",
+          "name": "服务器与机柜安装条件",
+          "fields": [
+            "has_cabinet",
+            "cabinet_condition",
+            "server_noise_ok"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "interview",
+      "name": "相关业务访谈",
+      "groups": [
+        {
+          "key": "interview_1",
+          "name": "安全管理现状",
+          "fields": [
+            "current_mode",
+            "security_staff_total",
+            "fixed_post_staff",
+            "fixed_post_shifts",
+            "patrol_post_staff",
+            "patrol_post_shifts"
+          ]
+        },
+        {
+          "key": "interview_2",
+          "name": "问题风险与客户目标",
+          "fields": [
+            "main_risks",
+            "past_security_incidents",
+            "expectations"
+          ]
+        },
+        {
+          "key": "interview_3",
+          "name": "重点场景与识别需求",
+          "fields": [
+            "security_focus_survey"
+          ]
+        }
+      ]
+    }
+  ],
+  "legacy_fields": [
+    {
+      "key": "current_staffing",
+      "label": "原人员与岗位安排（供拆分核对）"
+    }
   ]
 }

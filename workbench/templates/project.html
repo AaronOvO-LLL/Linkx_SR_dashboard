@@ -22,11 +22,9 @@
       <label class="fld"><span>项目分类</span>
         <select name="category">{% for c in categories %}
           <option {% if c == project.category %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></label>
-      <label class="fld"><span>项目地点</span>
-        <input type="text" name="location" value="{{ project.location }}" placeholder="例如：苏州市吴中区"></label>
-      <label class="fld"><span>项目负责人</span>
+      <label class="fld"><span>项目AR</span>
         <input type="text" name="owner" value="{{ project.owner }}" placeholder="我方负责人"></label>
-      <label class="fld"><span>联系人及联系方式</span>
+      <label class="fld"><span>项目FR</span>
         <input type="text" name="contact" value="{{ project.contact }}" placeholder="例如：陈主任 138xxxx"></label>
     </div>
     <div class="btn-row">
@@ -44,6 +42,7 @@
     <strong>{{ pp.cfg.name }}</strong>
     <a class="btn sm" href="{{ url_for('review', pp_id=pp.id) }}">直接手动填写</a>
     <a class="btn ghost sm" href="{{ url_for('survey', pp_id=pp.id) }}">导入 / 编辑文字稿</a>
+    <a class="btn ghost sm" href="{{ url_for('survey_guide', pp_id=pp.id) }}" target="_blank" rel="noopener">踏勘条件及问题指引（供踏勘时备查）</a>
   </div>
   {% else %}<a class="btn" href="#products">先添加调研产品</a>{% endfor %}
 </div>
@@ -103,7 +102,7 @@
   <div class="prod-grid">
     {% for pp in pps %}
     <div class="prod">
-      <h4>{{ pp.cfg.name }} <span class="tag blue">v{{ pp.product_version }}</span></h4>
+      <h4>{{ pp.cfg.name }} <span class="tag blue">v{{ pp.cfg.version }}</span></h4>
       <p>{{ pp.cfg.short_desc }}</p>
       <div class="proj-prog" style="margin-top:10px">
         <div class="bar" style="flex:1"><i style="width:{{ pp.progress }}%"></i></div>

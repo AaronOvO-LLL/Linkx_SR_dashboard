@@ -1,3 +1,4 @@
+from tests.survey_helpers import sample_value
 import json
 import unittest
 from pathlib import Path
@@ -54,13 +55,13 @@ class ChoiceTests(unittest.TestCase):
         for product in ('safety_butler', 'fire_butler'):
             pp = repo.ensure_product(self.project['id'], product)
             self.assertEqual(repo.field_values(pp['id']), {})
-            field = field_map(product)['business_desc']
+            field = field_map(product)['business_tracks']
             self.assertEqual(choice_state(field, None)['selected'], [])
             for value in ('文字不能作为新的多选提交', {'a': 1}, [1], [{'a': 1}]):
-                result = self.client.post('/p/' + pp['id'] + '/field', json={'key': 'business_desc', 'value': value})
+                result = self.client.post('/p/' + pp['id'] + '/field', json={'key': 'business_tracks', 'value': value})
                 self.assertEqual(result.status_code, 400)
-            self.assertNotIn('business_desc', repo.field_values(pp['id']))
-        fixed = field_map('safety_butler')['camera_type']
+            self.assertNotIn('business_tracks', repo.field_values(pp['id']))
+        fixed = next(c for c in field_map('safety_butler')['monitor_room_survey']['columns'] if c['key']=='camera_type')
         with self.assertRaises(ValueError):
             normalize_manual_choice(fixed, '随意编写')
 
@@ -73,10 +74,8 @@ class ChoiceTests(unittest.TestCase):
             values, _ = _run_rule_engine(text, 'safety_butler', [])
             self.assertEqual(values['has_cabinet']['status'], 'pending_confirm')
             self.assertIn('机柜', values['has_cabinet']['value'])
-        values, _ = _run_rule_engine('业态：2-5层公寓，5-22层酒店。', 'fire_butler', [])
-        self.assertIn('公寓', values['business_desc']['value'])
-        self.assertIn('酒店', values['business_desc']['value'])
-        self.assertTrue(any('2-5' in v for v in values['business_desc']['value']))
+        values, _ = _run_rule_engine('项目涉及的赛道：园区、酒店。', 'fire_butler', [])
+        self.assertEqual(set(values['business_tracks']['value']), {'园区', '酒店'})
         values, _ = _run_rule_engine('消控室可分控且可传输信号。', 'fire_butler', [])
         self.assertEqual(values['fire_signal_transmission']['value'], '可分控且可传输信号')
 
@@ -84,10 +83,9 @@ class ChoiceTests(unittest.TestCase):
         for product in ('safety_butler', 'fire_butler'):
             pp = repo.ensure_product(self.project['id'], product)
             for key, f in field_map(product).items():
-                if f['type'] == 'select': value = f['options'][0]['value']
-                elif f['type'] == 'multiselect': value = [f['options'][0]['value'], '补充：北门优先']
-                elif f['type'] == 'number': value = 4
-                else: value = '现场已确认'
+                value = sample_value(f)
+                if f['type'] == 'multiselect' and f.get('allow_custom'): value.append('补充：北门优先')
+                if key == 'procurement': value = '补充：北门优先'
                 survey.save_field_value(pp, self.project, {'key': key, 'value': value})
             self.assertTrue(validate(pp['id'], product)[0])
             with patch.object(paths, 'OUTPUT_DIR', str(Path(self.fixture.tmp.name) / 'outputs')):

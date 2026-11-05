@@ -1,3 +1,4 @@
+from tests.survey_helpers import sample_value
 """直接手填、文字稿往返切换及人工确认优先级的回归测试。"""
 import json
 import tempfile
@@ -54,9 +55,7 @@ class InputModeTests(unittest.TestCase):
     def test_manual_only_can_reach_preview_without_source_or_extraction(self):
         pp = repo.ensure_product(self.project['id'], 'fire_butler')
         for key, f in field_map('fire_butler').items():
-            value = 4 if f['type'] == 'number' else (
-                f['options'][0]['value'] if f['type'] == 'select' else (
-                [f['options'][0]['value']] if f['type'] == 'multiselect' else '现场已确认'))
+            value = sample_value(f)
             response = self.client.post(f"/p/{pp['id']}/field", json={'key': key, 'value': value})
             self.assertEqual(response.status_code, 200)
         self.assertTrue(validate(pp['id'], 'fire_butler')[0])
@@ -67,15 +66,15 @@ class InputModeTests(unittest.TestCase):
     def test_import_and_repeated_extraction_preserve_manual_values(self):
         pp = repo.ensure_product(self.project['id'], 'fire_butler')
         text = (Path(paths.SAMPLES_DIR) / 'fire_butler/full.md').read_text(encoding='utf-8')
-        survey.save_field_value(pp, self.project, {'key': 'fire_renovation_cost', 'value': 12345})
+        survey.save_field_value(pp, self.project, {'key': 'fire_duty_shifts', 'value': '两班两岗'})
         repo.save_project_transcript(self.project['id'], '', text)
         response = self.client.post(f"/p/{pp['id']}/import-transcript")
         self.assertEqual(response.status_code, 302)
         survey.extract_latest_source(pp, self.project, provider='rule')
         self.client.post(f"/p/{pp['id']}/survey", data={'transcript': text})
         survey.extract_latest_source(pp, self.project, provider='rule')
-        row = repo.field_values(pp['id'])['fire_renovation_cost']
-        self.assertEqual(json.loads(row['value_json']), 12345)
+        row = repo.field_values(pp['id'])['fire_duty_shifts']
+        self.assertEqual(json.loads(row['value_json']), '两班两岗')
         self.assertEqual((row['status'], row['protected'], row['updated_by']), ('confirmed', 1, 'human'))
         self.assertTrue(any(v['updated_by'] == 'ai' for v in repo.field_values(pp['id']).values()))
 
@@ -87,13 +86,13 @@ class InputModeTests(unittest.TestCase):
 
         def extract_while_editing(*args, **kwargs):
             result = original(*args, **kwargs)
-            survey.save_field_value(pp, self.project, {'key': 'fire_renovation_cost', 'value': 67890})
+            survey.save_field_value(pp, self.project, {'key': 'fire_duty_shifts', 'value': '三班轮值'})
             return result
 
         with patch.object(survey.extract, 'run_extraction', side_effect=extract_while_editing):
             _, protected = survey.extract_latest_source(pp, self.project, provider='rule')
         self.assertEqual(protected, 1)
-        self.assertEqual(json.loads(repo.field_values(pp['id'])['fire_renovation_cost']['value_json']), 67890)
+        self.assertEqual(json.loads(repo.field_values(pp['id'])['fire_duty_shifts']['value_json']), '三班轮值')
 
     def test_transcription_offers_manual_entry_in_every_status(self):
         pp = repo.ensure_product(self.project['id'], 'fire_butler')

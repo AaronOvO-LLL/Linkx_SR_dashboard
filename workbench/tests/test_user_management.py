@@ -57,7 +57,7 @@ class UserManagementTests(unittest.TestCase):
 
     def fill_and_generate(self):
         for key, value in {
-            'submitter_contact': '张三 13800000000', 'asset_customer_name': '私密客户',
+            'asset_customer_name': '私密客户',
             'asset_customer_city': '杭州', 'asset_types': ['产业园区'],
             'tenant_scale': '200-500户', 'asset_pain_points': ['运营重复性劳动多'],
             'asset_deployment': 'SaaS',

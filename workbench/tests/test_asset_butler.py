@@ -47,7 +47,6 @@ class AssetButlerTests(unittest.TestCase):
 
     def fill_required(self):
         values = {
-            'submitter_contact': '陈岚 13800000000',
             'asset_customer_name': '云澜资产运营有限公司',
             'asset_customer_city': '杭州市',
             'asset_types': ['产业园区', '写字楼'],
@@ -59,22 +58,18 @@ class AssetButlerTests(unittest.TestCase):
             self.assertEqual(self.save(key, value).status_code, 200)
 
     def test_source_contract_and_initial_time(self):
-        self.assertEqual(len(self.fmap), 14)
+        self.assertEqual(len(self.fmap), 18)
         required = {k for k, f in self.fmap.items() if f.get('required')}
-        self.assertEqual(required, {'submitter_contact', 'asset_customer_name',
+        self.assertEqual(required, {'asset_customer_name',
             'asset_customer_city', 'asset_types', 'tenant_scale', 'asset_pain_points',
-            'asset_deployment', 'submitted_at'})
+            'asset_deployment'})
         self.assertNotIn('camera_type', self.fmap)
         self.assertNotIn('land_area', self.fmap)
         self.assertEqual([len(self.fmap[k]['options']) for k in
             ('asset_types', 'asset_pain_points', 'asset_value_services')], [7, 9, 6])
-        initial = repo.field_values(self.pp['id'])['submitted_at']
-        stamp = datetime.strptime(json.loads(initial['value_json']), '%Y-%m-%d %H:%M:%S')
-        expected = datetime.now(timezone(timedelta(hours=8))).replace(tzinfo=None)
-        self.assertLess(abs((expected - stamp).total_seconds()), 5)
-        self.assertEqual((initial['updated_by'], initial['protected']), ('system', 1))
-        self.assertEqual(repo.ensure_product(self.project['id'], 'asset_butler')['id'], self.pp['id'])
-        self.assertEqual(repo.field_values(self.pp['id'])['submitted_at']['value_json'], initial['value_json'])
+        self.assertNotIn('submitter_contact', self.fmap)
+        self.assertNotIn('submitted_at', self.fmap)
+        self.assertNotIn('submitted_at', repo.field_values(self.pp['id']))
 
     def test_manual_workflow_preview_generation_zip_and_isolation(self):
         self.assertIn('value="asset_butler"', self.client.get('/projects').get_data(as_text=True))
@@ -86,7 +81,7 @@ class AssetButlerTests(unittest.TestCase):
         preview = self.client.get(f"/p/{self.pp['id']}/preview").get_data(as_text=True)
         self.assertIn('产业园区、写字楼', preview)
         self.assertIn('客户调研结果', preview)
-        self.assertIn('客户项目', preview)
+        self.assertIn('客户与项目概况', preview)
         self.assertNotIn('项目名称、来源、业态、建设类型与规模', preview)
         self.assertNotIn('摄像头品牌', preview)
         self.assertEqual(set(artifact_map('asset_butler')), {'survey_result'})
@@ -118,7 +113,6 @@ class AssetButlerTests(unittest.TestCase):
 
     def test_rule_extraction_and_protection(self):
         text = (Path(paths.SAMPLES_DIR) / 'asset_butler/full.md').read_text(encoding='utf-8')
-        stamp = repo.field_values(self.pp['id'])['submitted_at']['value_json']
         self.save('asset_customer_city', '苏州市')
         repo.save_project_transcript(self.project['id'], '', text)
         survey.import_project_transcript(self.pp, self.project)
@@ -134,7 +128,7 @@ class AssetButlerTests(unittest.TestCase):
         self.assertIn('运营重复性劳动多', json.loads(values['asset_pain_points']['value_json']))
         self.assertEqual(json.loads(values['tenant_scale']['value_json']), '200-500户')
         self.assertEqual(json.loads(values['asset_customer_city']['value_json']), '苏州市')
-        self.assertEqual(values['submitted_at']['value_json'], stamp)
+        self.assertNotIn('submitted_at', values)
         self.assertTrue(validate(self.pp['id'], 'asset_butler')[0])
 
     def test_unknown_zero_and_boundary_are_preserved(self):
@@ -150,7 +144,7 @@ class AssetButlerTests(unittest.TestCase):
         text = '客户名称：云澜公司。数字化现状：目前使用SaaS租赁系统，但新的部署方式尚未确定。经营性资产业态：产业园区。'
         result, _ = run_extraction(text, 'asset_butler', provider='rule')
         self.assertNotEqual(result['asset_deployment']['value'], 'SaaS')
-        self.assertIsNone(result['submitted_at']['value'])
+        self.assertNotIn('submitted_at', result)
         result, _ = run_extraction('客户名称：云澜公司。客户痛点：经营数据不准、不及时，运营重复性劳动多；没有多系统数据孤岛。', 'asset_butler', provider='rule')
         self.assertIn('运营重复性劳动多', result['asset_pain_points']['value'])
         self.assertNotIn('多系统数据孤岛', result['asset_pain_points']['value'])

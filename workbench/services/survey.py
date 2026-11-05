@@ -106,9 +106,11 @@ def save_field_value(pp, project, data):
         except ValueError as exc:
             raise SurveyServiceError(str(exc)) from exc
     if field['type'] == 'table':
-        if not isinstance(value, list) or any(not isinstance(r, dict) for r in value):
-            raise SurveyServiceError('表格值必须为对象数组')
-        value = [{c['key']: r.get(c['key']) if r.get(c['key']) not in (None, '') else c.get('default', '') for c in field['columns']} for r in value]
+        from core.table_values import normalize_rows
+        try:
+            value = normalize_rows(field, value)
+        except ValueError as exc:
+            raise SurveyServiceError(str(exc)) from exc
         output_def = extract.rules_output_for(pp['product_type'], field)
         if output_def:
             # 手动新增一间设备房后，固定项要按空间类型自动补出来，否则用户得自己

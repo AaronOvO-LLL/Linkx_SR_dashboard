@@ -469,15 +469,34 @@ QTY_RE = re.compile(r'([0-9]+|[一二三四五六七八九十百千万两]{1,4})
 
 
 def extract_table(sentences, spec, text):
+    nested = next((column for column in spec['columns'] if column.get('type') == 'table'), None)
+    if spec.get('room_cards') and nested:
+        identity = next(column for column in spec['columns'] if column['key'] == 'room_name')
+        blocks = re.split(r'(?m)(?=^\s*' + re.escape(identity['label']) + r'\s*[:：=])', text)
+        rows = []
+        for block in blocks:
+            header, _, body = block.strip().partition('\n')
+            parent, _, _ = extract_table(sentences, {**spec, 'columns': [c for c in spec['columns'] if c is not nested]}, header)
+            if not parent:
+                continue
+            children, _, _ = extract_table(sentences, {'labeled_columns': True, 'columns': nested['columns']}, body)
+            parent[0][nested['key']] = children or []
+            rows.extend(parent)
+        return (rows, clean_quote(text), 'medium') if rows else (None, '', 'low')
     if spec.get('labeled_columns'):
         rows = []
         for line in text.splitlines():
             row = {}
             for col in spec['columns']:
-                match = re.search(re.escape(col['label']) + r'\s*[:：=]\s*([^，,；;|\n]+)', line)
+                match = re.search(re.escape(col['label']) + r'\s*[:：=]\s*([^，,；;|。\n]+)', line)
                 value = match.group(1).strip() if match else col.get('default', '')
                 row[col['key']] = value
-            if row.get('equipment') and not any(x in row['equipment'] for x in spec.get('excluded_equipment', [])):
+            if spec.get('room_cards') and row.get('room_name'):
+                for col in spec['columns']:
+                    if col.get('type') == 'multiselect':
+                        row[col['key']] = [s.strip() for s in re.split(r'[、/]', row[col['key']]) if s.strip()]
+                rows.append(row)
+            elif row.get('equipment') and not any(x in row['equipment'] for x in spec.get('excluded_equipment', [])):
                 rows.append(row)
         return (rows, clean_quote(text), 'medium') if rows else (None, '', 'low')
 
@@ -536,6 +555,12 @@ def extract_rules_table(product_type, field, text):
 
 # ------------------------------------------------------------------ 规则引擎
 
+def _aggregate_station_only(text):
+    aggregate = re.search(r'(?:[2-9]|[两二三四五六七八九十])\s*(?:个|座)?冷站[^。\n]{0,30}(?:共|合计|总计|加起来)', text)
+    separate = re.search(r'(?:每个|每座|单个|独立|单站)[^。\n]{0,20}(?:电费|万)', text)
+    return bool(aggregate and not separate)
+
+
 def _run_rule_engine(text, product_type, protected_keys):
     cfg = field_config(product_type)
     sentences = split_sentences(text)
@@ -545,6 +570,7 @@ def _run_rule_engine(text, product_type, protected_keys):
         key = f['key']
         spec = dict(f.get('extract') or {})
         spec['columns'] = f.get('columns', [])
+        spec['room_cards'] = f.get('ui', {}).get('mode') == 'cards'
         spec['excluded_equipment'] = f.get('validate', {}).get('excluded_equipment', [])
         mode = spec.get('mode', 'sentence')
 
@@ -582,6 +608,8 @@ def _run_rule_engine(text, product_type, protected_keys):
                     value = value + [original]
                 quote = clean_quote(original)
 
+        if f.get('extract', {}).get('single_station_basis') and _aggregate_station_only(text):
+            value, conf = None, 'low'
         empty = value in (None, '', [], {})
         if empty:
             status = 'required_missing' if f.get('required') else 'optional_missing'
@@ -621,6 +649,12 @@ def _normalize_llm_value(field, value):
     ftype = field.get('type')
     if ftype == 'table':
         if not isinstance(value, list) or any(not isinstance(r, dict) for r in value): return None
+        if field.get('ui', {}).get('mode') == 'cards':
+            from .table_values import normalize_rows
+            try:
+                return normalize_rows(field, value)
+            except ValueError:
+                return None
         return [{c['key']: r.get(c['key']) if r.get(c['key']) not in (None, '') else c.get('default', '') for c in field['columns']} for r in value]
     if ftype == 'number':
         if isinstance(value, bool):
@@ -718,6 +752,8 @@ def _run_llm_engine(text, product_type, protected_keys):
         if f['type'] == 'attachment' or f.get('extract', {}).get('mode') == 'manual':
             got = {}
         value = _normalize_llm_value(f, got.get('value'))
+        if f.get('extract', {}).get('single_station_basis') and _aggregate_station_only(text):
+            value = None
         conf = got.get('confidence') if got.get('confidence') in ('high', 'medium', 'low') else 'medium'
         if isinstance(value, list) and rules_output_for(product_type, f):
             from . import rules

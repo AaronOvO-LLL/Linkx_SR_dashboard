@@ -1,11 +1,13 @@
 {
-  "template_version": "0.2.0",
+  "template_version": "0.5.0",
   "product_type": "energy_butler",
   "packs": [
     "common_project",
     "common_docs",
     "common_property",
-    "energy_survey"
+    "energy_survey",
+    "common_decision",
+    "common_requirements"
   ],
   "group_order": [
     "basic",
@@ -13,6 +15,354 @@
     "property",
     "energy_eligibility",
     "energy_equipment",
-    "energy_operation"
+    "energy_operation",
+    "decision",
+    "special"
+  ],
+  "overrides": {
+    "energy_fee_over_1m": {
+      "label": "可改造部分的空调电费是否大于100万？（以独立冷站计算，例：3个冷站共100万则不满足）",
+      "help": "按单个独立冷站的可改造部分空调电费判断，多个冷站合计超过100万元不能直接判为满足。未知时留空，逐站核实后填写。",
+      "ai_hint": "必须以独立冷站为口径；3个冷站共100万不满足，不得把多个冷站的合计费用判断为单站达标。不明确时留空待确认。",
+      "reconfirm_before_template": "0.4.0",
+      "extract": {
+        "single_station_basis": true
+      }
+    },
+    "contract_years": {
+      "required": false
+    },
+    "fee_mode": {
+      "required": false
+    },
+    "mgmt_scope": {
+      "required": false
+    },
+    "service_type": {
+      "required": false
+    }
+  },
+  "sections": [
+    {
+      "key": "project",
+      "name": "项目基础信息",
+      "groups": [
+        {
+          "key": "project_1",
+          "name": "项目概况",
+          "fields": [
+            "project_name",
+            "project_source",
+            "business_type",
+            "build_type",
+            "land_area",
+            "building_area",
+            "site_address"
+          ]
+        },
+        {
+          "key": "project_2",
+          "name": "物业与服务信息",
+          "fields": [
+            "property_company",
+            "project_owner",
+            "contract_years",
+            "business_tracks",
+            "fee_mode",
+            "mgmt_scope"
+          ]
+        },
+        {
+          "key": "project_3",
+          "name": "项目资料",
+          "fields": [
+            "drawings",
+            "equipment_ledger",
+            "staffing_table"
+          ]
+        },
+        {
+          "key": "project_4",
+          "name": "决策地图",
+          "fields": [
+            "decision_maker",
+            "customer_contact",
+            "expected_launch",
+            "has_budget"
+          ]
+        },
+        {
+          "key": "project_5",
+          "name": "特殊要求",
+          "fields": [
+            "compliance",
+            "highlights",
+            "procurement"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "delivery",
+      "name": "产品交付条件踏勘",
+      "groups": [
+        {
+          "key": "delivery_1",
+          "name": "空调系统与项目准入条件",
+          "fields": [
+            "energy_system_types"
+          ]
+        },
+        {
+          "key": "delivery_2",
+          "name": "可改造设备现状",
+          "fields": [
+            "energy_station_survey"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "interview",
+      "name": "相关业务访谈",
+      "groups": [
+        {
+          "key": "interview_1",
+          "name": "运行时段与操作方式",
+          "fields": [
+            "energy_schedule"
+          ]
+        },
+        {
+          "key": "interview_2",
+          "name": "季节性设备组合与调节策略",
+          "fields": [
+            "energy_season_combination",
+            "energy_pump_frequency",
+            "energy_chiller_adjust",
+            "energy_pump_adjust"
+          ]
+        },
+        {
+          "key": "interview_3",
+          "name": "供冷范围与末端管理",
+          "fields": [
+            "energy_supply_scope",
+            "energy_terminal_management"
+          ]
+        },
+        {
+          "key": "interview_4",
+          "name": "租户收费与运营关系",
+          "fields": [
+            "energy_fee_charging"
+          ]
+        },
+        {
+          "key": "interview_5",
+          "name": "投诉与管理难点",
+          "fields": [
+            "energy_complaints",
+            "energy_other_difficulties"
+          ]
+        }
+      ]
+    }
+  ],
+  "note": " 2026-11-05按人工审核稿同步三大部分及字段变更。",
+  "remove_fields": [
+    "business_desc",
+    "energy_equipment_list",
+    "energy_fee_over_1m",
+    "service_type"
+  ],
+  "extra_fields": [
+    {
+      "key": "energy_station_survey",
+      "label": "独立冷站踏勘清单",
+      "group": "delivery",
+      "type": "table",
+      "required": true,
+      "columns": [
+        {
+          "key": "room_name",
+          "label": "冷站名称",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "energy_fee_over_1m",
+          "label": "可改造部分的空调电费是否大于100万？（以独立冷站计算，例：3个冷站共100万则不满足）",
+          "type": "select",
+          "required": true,
+          "options": [
+            {
+              "value": "是"
+            },
+            {
+              "value": "否"
+            }
+          ],
+          "help": "按单个独立冷站的可改造部分空调电费判断，多个冷站合计超过100万元不能直接判为满足。未知时留空，逐站核实后填写。"
+        },
+        {
+          "key": "energy_equipment_list",
+          "label": "可改造部分设备清单",
+          "type": "table",
+          "required": true,
+          "help": "仅登记可改造部分；供冷区域→楼栋(机房)→设备，同类不同规格分行。板式换热器不登记；VRV一行概括，数量填套数，备注填接入范围。制冷量仅冷水主机填写。",
+          "validate": {
+            "excluded_equipment": [
+              "板式换热器",
+              "板换"
+            ],
+            "excluded_message": "板式换热器不登记，请删除该行。"
+          },
+          "columns": [
+            {
+              "key": "supply_area",
+              "label": "供冷区域",
+              "type": "text",
+              "required": true
+            },
+            {
+              "key": "building",
+              "label": "楼栋",
+              "type": "text",
+              "required": true
+            },
+            {
+              "key": "equipment",
+              "label": "设备",
+              "type": "select",
+              "required": true,
+              "options": [
+                {
+                  "value": "制冷主机"
+                },
+                {
+                  "value": "冷冻水总管（出）"
+                },
+                {
+                  "value": "冷冻水总管（回）"
+                },
+                {
+                  "value": "冷冻水支管（出）（如有）"
+                },
+                {
+                  "value": "冷冻水支管（回）（如有）"
+                },
+                {
+                  "value": "冷却水总管（出）"
+                },
+                {
+                  "value": "冷却水总管（回）"
+                },
+                {
+                  "value": "冷冻泵"
+                },
+                {
+                  "value": "冷却泵"
+                },
+                {
+                  "value": "阀门"
+                },
+                {
+                  "value": "冷却塔"
+                },
+                {
+                  "value": "末端环境"
+                },
+                {
+                  "value": "板式换热器两侧进出水（如有）"
+                },
+                {
+                  "value": "支管换能泵（如有）"
+                },
+                {
+                  "value": "VRV机组"
+                }
+              ]
+            },
+            {
+              "key": "brand",
+              "label": "品牌",
+              "type": "text",
+              "required": false
+            },
+            {
+              "key": "power_kw",
+              "label": "功率(KW)",
+              "type": "number",
+              "required": false,
+              "min": 0,
+              "exclusive_min": false,
+              "integer": false
+            },
+            {
+              "key": "cooling_kw",
+              "label": "制冷量(KW)",
+              "type": "number",
+              "required": false,
+              "min": 0,
+              "exclusive_min": false,
+              "integer": false
+            },
+            {
+              "key": "quantity",
+              "label": "数量",
+              "type": "number",
+              "required": true,
+              "min": 0,
+              "exclusive_min": true,
+              "integer": true
+            },
+            {
+              "key": "freq_type",
+              "label": "工/变频",
+              "type": "select",
+              "required": false,
+              "options": [
+                {
+                  "value": "变频"
+                },
+                {
+                  "value": "定频"
+                },
+                {
+                  "value": "待确认"
+                }
+              ],
+              "default": "待确认"
+            },
+            {
+              "key": "remark",
+              "label": "备注",
+              "type": "text",
+              "required": false
+            }
+          ]
+        }
+      ],
+      "ui": {
+        "mode": "cards",
+        "item_name": "冷站"
+      },
+      "extract": {
+        "mode": "table",
+        "labeled_columns": true
+      },
+      "help": "逐个增加独立冷站，分别核实该站的电费门槛并登记可改造设备。多个冷站的合计电费不能代替单站电费。",
+      "ai_hint": "仅按已明确的独立冷站分组填写电费准入和设备。多站合计不能当作单站值，不清楚归属留空。",
+      "validate": {
+        "unique_column": "room_name"
+      }
+    }
+  ],
+  "legacy_fields": [
+    {
+      "key": "energy_fee_over_1m",
+      "label": "原项目汇总电费判断（供逐站核对）"
+    }
   ]
 }

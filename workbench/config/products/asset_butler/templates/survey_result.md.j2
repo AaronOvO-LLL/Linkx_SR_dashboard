@@ -6,13 +6,18 @@
 |---|---|
 | 工作台项目 | {{ project.name | replace('|', '/') }} |
 | 产品 | {{ product.name }}（{{ meta.product_version }}） |
-| 信息提交时间 | {{ display.submitted_at or '（未填写）' }} |
 | 生成时间 | {{ meta.generated_at }} |
 | 提取方式 | {{ meta.extraction_provider }} |
 | 字段版本 | {{ meta.field_template_version }} |
 
+{% set hierarchy = namespace(section=none) %}
 {% for g in groups %}
-## {{ loop.index }}. {{ g.name }}
+{% if g.section_key and hierarchy.section != g.section_key %}
+{% set hierarchy.section = g.section_key %}
+## {{ g.section_number }}. {{ g.section_name }}
+
+{% endif %}
+### {{ g.number or loop.index }} {{ g.name }}
 
 {% if g.desc %}> {{ g.desc }}
 
